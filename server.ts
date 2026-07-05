@@ -45,7 +45,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     if (APIFY_DATASETS[placeId as string]) {
       try {
-        const datasetPath = path.join(process.cwd(), 'dataset', APIFY_DATASETS[placeId as string].filename);
+        let datasetPath = path.join(process.cwd(), 'dataset', APIFY_DATASETS[placeId as string].filename);
+        if (!fs.existsSync(datasetPath)) {
+          datasetPath = path.join(__dirname, '..', 'dataset', APIFY_DATASETS[placeId as string].filename);
+        }
+        if (!fs.existsSync(datasetPath)) {
+          datasetPath = path.join(__dirname, 'dataset', APIFY_DATASETS[placeId as string].filename);
+        }
+
         if (fs.existsSync(datasetPath)) {
           const rawData = fs.readFileSync(datasetPath, 'utf8');
           const apifyReviews = JSON.parse(rawData);
