@@ -1,0 +1,6 @@
+{
+  "name": "Dubai Park Review Miner",
+  "description": "A landscape design research tool that fetches reviews and Google Places data for Dubai parks, applies local and Gemini-powered NLP, and exports data to custom Excel datasets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
