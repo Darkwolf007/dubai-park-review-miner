@@ -2,8 +2,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
+
 import { PRESEEDED_PARKS } from './src/lib/googlePlaces.js';
 import { analyzeReviewLocally } from './src/lib/nlpPlaceholders.js';
 import fs from 'fs';
@@ -354,6 +354,7 @@ ${JSON.stringify(promptInput, null, 2)}`;
 async function initServer() {
   // Serve static assets or use Vite dev server
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
