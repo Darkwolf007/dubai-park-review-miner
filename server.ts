@@ -44,17 +44,23 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     };
 
     if (APIFY_DATASETS[placeId as string]) {
+      console.log(`[Dataset Loader] Attempting to load dataset for Place ID: ${placeId} (${APIFY_DATASETS[placeId as string].name})`);
       try {
         let datasetPath = path.join(process.cwd(), 'dataset', APIFY_DATASETS[placeId as string].filename);
+        console.log(`[Dataset Loader] Checking process.cwd path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
+
         if (!fs.existsSync(datasetPath)) {
           datasetPath = path.join(__dirname, '..', 'dataset', APIFY_DATASETS[placeId as string].filename);
+          console.log(`[Dataset Loader] Checking __dirname parent path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
         }
         if (!fs.existsSync(datasetPath)) {
           datasetPath = path.join(__dirname, 'dataset', APIFY_DATASETS[placeId as string].filename);
+          console.log(`[Dataset Loader] Checking __dirname direct path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
         }
 
         if (fs.existsSync(datasetPath)) {
           const rawData = fs.readFileSync(datasetPath, 'utf8');
+          console.log(`[Dataset Loader] Successfully read file. Size: ${rawData.length} bytes.`);
           const apifyReviews = JSON.parse(rawData);
           const mappedReviews = apifyReviews
             .filter((r: any) => r.text && r.text.trim().length > 0)
@@ -87,10 +93,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
           parkToReturn.reviews = mappedReviews;
           parkToReturn.userRatingsTotal = mappedReviews.length;
           
+          console.log(`[Dataset Loader] Loaded and mapped ${mappedReviews.length} reviews for ${APIFY_DATASETS[placeId as string].name}`);
           return res.json(parkToReturn);
+        } else {
+          console.warn(`[Dataset Loader] Dataset file not found in any checked location for Place ID: ${placeId}`);
         }
       } catch (err) {
-        console.error('Error loading Apify dataset:', err);
+        console.error('[Dataset Loader] Error loading Apify dataset:', err);
       }
     }
 
