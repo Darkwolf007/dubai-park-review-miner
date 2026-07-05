@@ -119,7 +119,7 @@ To push this codebase to a new private repository on GitHub:
 3. **Link Local Git and Push:**
    Run the following commands in your terminal:
    ```bash
-   git remote add origin https://github.com/shyleshkumar4012/dubai-park-review-miner.git
+   git remote add origin https://github.com/Darkwolf007/dubai-park-review-miner.git
    git push -u origin main
    ```
 
@@ -132,7 +132,7 @@ This repository is pre-configured for direct full-stack deployment on Vercel usi
 ### Step-by-Step Deployment Guide
 
 1. **Sign in / Sign up on Vercel:**
-   Go to [Vercel](https://vercel.com/) and log in using your GitHub account (`shyleshkumar4012`).
+   Go to [Vercel](https://vercel.com/) and log in using your GitHub account (`Darkwolf007`).
 
 2. **Import the Repository:**
    - On the Vercel Dashboard, click **Add New > Project**.
