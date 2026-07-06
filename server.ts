@@ -71,6 +71,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
               rating: r.stars || 0,
               reviewText: r.textTranslated || r.text || '',
               publishedTimeStr: r.publishAt || 'Unknown',
+              publishedAtDate: r.publishedAtDate || undefined,
               language: 'en',
               source: 'Apify Scraped Dataset',
               extractedDate: new Date().toISOString().split('T')[0]
@@ -169,6 +170,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
         rating: rev.rating || 3,
         reviewText: rev.text || '',
         publishedTimeStr: rev.relative_time_description || 'some time ago',
+        publishedAtDate: typeof rev.time === 'number' ? new Date(rev.time * 1000).toISOString() : undefined,
         language: rev.language || 'en',
         source: 'Google Places API (Live)',
         extractedDate: new Date().toISOString().split('T')[0]
@@ -326,6 +328,7 @@ ${JSON.stringify(promptInput, null, 2)}`;
           topic: analysis.topic || 'Leisure & General Landscape',
           issueCategory: analysis.issueCategory || 'landscape / greenery',
           designRequirement: analysis.designRequirement || 'Enhance planting diversity and introduce passive shade design structures.',
+          categoryConfidence: 0.85,
           source: `${rev.source} + Gemini 3.5 AI Analysis`
         };
       });

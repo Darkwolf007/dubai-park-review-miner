@@ -5,6 +5,7 @@ export interface Review {
   rating: number;
   reviewText: string;
   publishedTimeStr?: string;
+  publishedAtDate?: string;
   language?: string;
   source: string;
   extractedDate: string;
@@ -16,6 +17,7 @@ export interface NLPAnalyzedReview extends Review {
   topic: string;
   issueCategory: string;
   designRequirement: string;
+  categoryConfidence?: number;
 }
 
 const ISSUE_KEYWORDS: { category: string; keywords: string[]; designRec: string }[] = [
@@ -183,17 +185,41 @@ export function analyzeReviewLocally(review: Review): NLPAnalyzedReview {
     topic = 'Universal Access & Street Furniture';
   }
 
+  // categoryConfidence: normalize the winning keyword-match score into a 0-1 band.
+  // A score of 0 (fell through to the 'general landscape' default) is a low-confidence guess;
+  // a score of ~4+ (multiple exact-boundary keyword hits) is treated as fully confident.
+  const categoryConfidence = maxScore === 0 ? 0.3 : Math.min(1, 0.5 + maxScore / 8);
+
   return {
     ...review,
     sentiment,
     keywords,
     topic,
     issueCategory,
-    designRequirement
+    designRequirement,
+    categoryConfidence
   };
 }
 
 // Bulk process reviews locally
 export function analyzeReviewsLocally(reviews: Review[]): NLPAnalyzedReview[] {
   return reviews.map(analyzeReviewLocally);
+}
+
+/**
+ * Loose, multi-label version of the classification in analyzeReviewLocally:
+ * returns every category whose keywords appear at all (score >= 1), not just
+ * the single winning category. A review often touches multiple issues at
+ * once ("hot and no shade near the benches"), which analyzeReviewLocally
+ * collapses to one category by design -- this is what the co-occurrence
+ * network needs instead.
+ */
+export function matchAllCategories(text: string): string[] {
+  const lower = (text || '').toLowerCase();
+  const matched: string[] = [];
+  ISSUE_KEYWORDS.forEach(item => {
+    const hit = item.keywords.some(kw => lower.includes(kw));
+    if (hit) matched.push(item.category);
+  });
+  return matched;
 }

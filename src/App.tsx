@@ -29,11 +29,11 @@ import { exportParksToExcel, exportToCSV, exportToJSON } from './lib/exportExcel
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
-import ReactWordcloud from 'react-wordcloud';
+import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 
 export default function App() {
   // --- STATE ---
-  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize'>('explorer');
+  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics'>('explorer');
   const [parks, setParks] = useState<ParkDetails[]>(PRESEEDED_PARKS);
   const [selectedParkIds, setSelectedParkIds] = useState<string[]>([
     'ChIJK5g4bKNoXz4RHm7pI_U_mHk', // Safa Park
@@ -452,6 +452,12 @@ export default function App() {
               className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${currentTab === 'visualize' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
             >
               Visualize
+            </button>
+            <button
+              onClick={() => setCurrentTab('analytics')}
+              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${currentTab === 'analytics' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Analytics
             </button>
           </div>
 
@@ -1225,6 +1231,10 @@ export default function App() {
                 </>
               )}
             </div>
+          )}
+
+          {currentTab === 'analytics' && (
+            <AnalyticsDashboard analyzedReviews={analyzedReviews} selectedParks={selectedParks} allParks={parks} />
           )}
 
         </main>
