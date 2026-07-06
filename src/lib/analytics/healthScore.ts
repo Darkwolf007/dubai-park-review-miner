@@ -17,7 +17,7 @@ export interface HealthScoreResult {
 const FAMILY_KEYWORDS = ['family', 'kid', 'kids', 'child', 'children', 'toddler'];
 const BIODIVERSITY_KEYWORDS = ['bird', 'birds', 'wildlife', 'butterfly', 'butterflies', 'bee', 'bees', 'nature', 'squirrel', 'duck', 'ducks'];
 const WALK_KEYWORDS = ['path', 'walkway', 'trail', 'walk', 'jogging track', 'track'];
-const COMMUNITY_KEYWORDS = ['event', 'events', 'gathering', 'community', 'festival', 'picnic'];
+export const COMMUNITY_KEYWORDS = ['event', 'events', 'gathering', 'community', 'festival', 'picnic'];
 
 /** Below this sample size a subscore is unreliable; we show a neutral baseline and flag it. */
 const MIN_SAMPLE = 5;

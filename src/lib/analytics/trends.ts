@@ -1,7 +1,7 @@
 import type { NLPAnalyzedReview } from '../nlpPlaceholders';
-import { average, sentimentScore, sentimentShare } from './shared';
+import { average, sentimentScore, sentimentShare, bucketByPeriod, type PeriodGranularity } from './shared';
 
-export type TrendGranularity = 'month' | 'quarter' | 'year';
+export type TrendGranularity = PeriodGranularity;
 export type TrendMetric = 'avgRating' | 'sentimentScore' | 'reviewVolume' | 'negativeSentimentPct';
 
 export const TREND_METRICS: { id: TrendMetric; label: string }[] = [
@@ -10,15 +10,6 @@ export const TREND_METRICS: { id: TrendMetric; label: string }[] = [
   { id: 'reviewVolume', label: 'Review Volume' },
   { id: 'negativeSentimentPct', label: 'Negative Sentiment %' }
 ];
-
-function periodKey(dateStr: string, granularity: TrendGranularity): string | null {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return null;
-  const year = d.getUTCFullYear();
-  if (granularity === 'year') return `${year}`;
-  if (granularity === 'quarter') return `${year}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
-  return `${year}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
 
 function metricValue(reviews: NLPAnalyzedReview[], metric: TrendMetric): number {
   if (reviews.length === 0) return NaN;
@@ -49,34 +40,24 @@ export function computeParkTimeSeries(
   granularity: TrendGranularity,
   metric: TrendMetric
 ): TrendPoint[] {
-  const periodMap = new Map<string, Record<string, NLPAnalyzedReview[]>>();
-
-  Object.entries(reviewsByPark).forEach(([placeId, reviews]) => {
-    reviews.forEach(r => {
-      if (!r.publishedAtDate) return;
-      const key = periodKey(r.publishedAtDate, granularity);
-      if (!key) return;
-      if (!periodMap.has(key)) periodMap.set(key, {});
-      const byPark = periodMap.get(key)!;
-      if (!byPark[placeId]) byPark[placeId] = [];
-      byPark[placeId].push(r);
-    });
-  });
-
-  const periods = [...periodMap.keys()].sort();
   const parkIds = Object.keys(reviewsByPark);
+  const allReviews = parkIds.flatMap(id => reviewsByPark[id]);
+  const periods = bucketByPeriod(allReviews, r => r.publishedAtDate, granularity);
 
-  return periods.map(period => {
-    const byPark = periodMap.get(period)!;
+  return periods.map(({ period, items }) => {
+    const byPark = new Map<string, NLPAnalyzedReview[]>();
+    items.forEach(r => {
+      if (!byPark.has(r.placeId)) byPark.set(r.placeId, []);
+      byPark.get(r.placeId)!.push(r);
+    });
+
     const valuesByPark: Record<string, number | null> = {};
     parkIds.forEach(placeId => {
-      const value = metricValue(byPark[placeId] || [], metric);
+      const value = metricValue(byPark.get(placeId) || [], metric);
       valuesByPark[placeId] = Number.isNaN(value) ? null : value;
     });
 
-    const allReviewsThisPeriod = Object.values(byPark).flat();
-    const dubaiValue = metricValue(allReviewsThisPeriod, metric);
-
+    const dubaiValue = metricValue(items, metric);
     return { period, valuesByPark, dubaiAverage: Number.isNaN(dubaiValue) ? null : dubaiValue };
   });
 }
@@ -88,22 +69,12 @@ export interface TopicEvolutionPoint {
 
 /** Per-period share of each issue category, combined across parks so the stacked chart stays legible. */
 export function computeTopicEvolution(reviews: NLPAnalyzedReview[], granularity: TrendGranularity): TopicEvolutionPoint[] {
-  const periodMap = new Map<string, NLPAnalyzedReview[]>();
-  reviews.forEach(r => {
-    if (!r.publishedAtDate) return;
-    const key = periodKey(r.publishedAtDate, granularity);
-    if (!key) return;
-    if (!periodMap.has(key)) periodMap.set(key, []);
-    periodMap.get(key)!.push(r);
-  });
+  const periods = bucketByPeriod(reviews, r => r.publishedAtDate, granularity);
 
-  const periods = [...periodMap.keys()].sort();
-
-  return periods.map(period => {
-    const periodReviews = periodMap.get(period)!;
-    const total = periodReviews.length;
+  return periods.map(({ period, items }) => {
+    const total = items.length;
     const counts = new Map<string, number>();
-    periodReviews.forEach(r => counts.set(r.issueCategory, (counts.get(r.issueCategory) || 0) + 1));
+    items.forEach(r => counts.set(r.issueCategory, (counts.get(r.issueCategory) || 0) + 1));
     const shares: Record<string, number> = {};
     counts.forEach((count, category) => { shares[category] = total === 0 ? 0 : count / total; });
     return { period, shares };

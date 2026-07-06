@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { LayoutDashboard, AlertTriangle, Map as MapIcon, Table2, TrendingUp, Scale, Network, Users, X } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Map as MapIcon, Table2, TrendingUp, Scale, Network, Users, X, Sun, Lightbulb, GitCompare, Type } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import type { ParkDetails } from '../../lib/googlePlaces';
@@ -13,14 +13,25 @@ import { TrendAnalysis } from './TrendAnalysis';
 import { BenchmarkDashboard } from './BenchmarkDashboard';
 import { TopicNetwork } from './TopicNetwork';
 import { PersonaAnalytics } from './PersonaAnalytics';
+import { SeasonalAnalytics } from './SeasonalAnalytics';
+import { OpportunityScore } from './OpportunityScore';
+import { RatingDriverAnalysis } from './RatingDriverAnalysis';
+import { WordAnalytics } from './WordAnalytics';
 
-type AnalyticsPage = 'overview' | 'trends' | 'benchmark' | 'issues' | 'network' | 'personas' | 'map' | 'explorer';
+type AnalyticsPage =
+  | 'overview' | 'trends' | 'benchmark' | 'seasonal' | 'issues'
+  | 'opportunities' | 'ratingDrivers' | 'wordAnalytics'
+  | 'network' | 'personas' | 'map' | 'explorer';
 
 const PAGES: { id: AnalyticsPage; label: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'trends', label: 'Trends', icon: TrendingUp },
   { id: 'benchmark', label: 'Benchmark', icon: Scale },
+  { id: 'seasonal', label: 'Seasonal', icon: Sun },
   { id: 'issues', label: 'Issues & Topics', icon: AlertTriangle },
+  { id: 'opportunities', label: 'Opportunities', icon: Lightbulb },
+  { id: 'ratingDrivers', label: 'Rating Drivers', icon: GitCompare },
+  { id: 'wordAnalytics', label: 'Word Analytics', icon: Type },
   { id: 'network', label: 'Network', icon: Network },
   { id: 'personas', label: 'Personas', icon: Users },
   { id: 'map', label: 'GIS Layers', icon: MapIcon },
@@ -48,11 +59,14 @@ export function AnalyticsDashboard({
 }) {
   const [page, setPage] = useState<AnalyticsPage>('overview');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null);
+  const [activeKeywordFilter, setActiveKeywordFilter] = useState<string | null>(null);
 
-  const filteredReviews = useMemo(
-    () => (activeCategoryFilter ? analyzedReviews.filter(r => r.issueCategory === activeCategoryFilter) : analyzedReviews),
-    [analyzedReviews, activeCategoryFilter]
-  );
+  const filteredReviews = useMemo(() => {
+    let result = analyzedReviews;
+    if (activeCategoryFilter) result = result.filter(r => r.issueCategory === activeCategoryFilter);
+    if (activeKeywordFilter) result = result.filter(r => r.reviewText.toLowerCase().includes(activeKeywordFilter.toLowerCase()));
+    return result;
+  }, [analyzedReviews, activeCategoryFilter, activeKeywordFilter]);
 
   const reviewsByPark = useMemo(() => groupByPark(filteredReviews, selectedParks), [filteredReviews, selectedParks]);
 
@@ -87,12 +101,20 @@ export function AnalyticsDashboard({
       </div>
 
       <div className="col-span-12 md:col-span-10 space-y-3">
-        {activeCategoryFilter && (
-          <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded px-2.5 py-1.5">
-            <span className="text-[10px] font-bold text-indigo-700">Filtered by issue: <span className="capitalize">{activeCategoryFilter}</span></span>
-            <button onClick={() => setActiveCategoryFilter(null)} className="ml-auto flex items-center gap-1 text-[9px] font-bold text-indigo-600 hover:text-indigo-800">
-              <X className="w-3 h-3" /> Clear
-            </button>
+        {(activeCategoryFilter || activeKeywordFilter) && (
+          <div className="flex items-center gap-2 flex-wrap bg-indigo-50 border border-indigo-200 rounded px-2.5 py-1.5">
+            {activeCategoryFilter && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-700">
+                Issue: <span className="capitalize">{activeCategoryFilter}</span>
+                <button onClick={() => setActiveCategoryFilter(null)} className="text-indigo-500 hover:text-indigo-800"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {activeKeywordFilter && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-700">
+                Keyword: "{activeKeywordFilter}"
+                <button onClick={() => setActiveKeywordFilter(null)} className="text-indigo-500 hover:text-indigo-800"><X className="w-3 h-3" /></button>
+              </span>
+            )}
           </div>
         )}
 
@@ -108,11 +130,17 @@ export function AnalyticsDashboard({
         {page === 'benchmark' && (
           <BenchmarkDashboard reviewsByPark={reviewsByPark} selectedParks={selectedParks} allParks={allParks} />
         )}
+        {page === 'seasonal' && <SeasonalAnalytics reviews={filteredReviews} />}
         {page === 'issues' && (
           <>
             <IssueImpactMatrix reviews={filteredReviews} />
             <TopicDistribution reviews={filteredReviews} />
           </>
+        )}
+        {page === 'opportunities' && <OpportunityScore reviews={filteredReviews} />}
+        {page === 'ratingDrivers' && <RatingDriverAnalysis reviews={filteredReviews} />}
+        {page === 'wordAnalytics' && (
+          <WordAnalytics reviews={filteredReviews} activeKeyword={activeKeywordFilter} onSelectKeyword={setActiveKeywordFilter} />
         )}
         {page === 'network' && (
           <TopicNetwork reviews={analyzedReviews} activeCategory={activeCategoryFilter} onSelectCategory={setActiveCategoryFilter} />

@@ -75,6 +75,37 @@ export function pickRepresentativeQuote(reviews: NLPAnalyzedReview[]): NLPAnalyz
   return ranked[0];
 }
 
+export type PeriodGranularity = 'month' | 'quarter' | 'year';
+
+/** Formats a date into a sortable period key: "2026", "2026-Q1", or "2026-03". */
+export function periodKey(dateStr: string, granularity: PeriodGranularity): string | null {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const year = d.getUTCFullYear();
+  if (granularity === 'year') return `${year}`;
+  if (granularity === 'quarter') return `${year}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
+  return `${year}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Groups arbitrary items into chronologically-sorted periods by a date field.
+ * Items without a parseable date are dropped rather than mis-bucketed --
+ * callers that need a real calendar axis (trends, keyword-over-time) should
+ * not fabricate a period for undated data.
+ */
+export function bucketByPeriod<T>(items: T[], dateAccessor: (item: T) => string | undefined, granularity: PeriodGranularity): { period: string; items: T[] }[] {
+  const periodMap = new Map<string, T[]>();
+  items.forEach(item => {
+    const dateStr = dateAccessor(item);
+    if (!dateStr) return;
+    const key = periodKey(dateStr, granularity);
+    if (!key) return;
+    if (!periodMap.has(key)) periodMap.set(key, []);
+    periodMap.get(key)!.push(item);
+  });
+  return [...periodMap.keys()].sort().map(period => ({ period, items: periodMap.get(period)! }));
+}
+
 /** Compares the mean of the earlier half of bucket values against the later half. */
 export function computeTrend(bucketValues: number[]): { trend: TrendDirection; trendPct: number } {
   if (bucketValues.length === 0) return { trend: 'flat', trendPct: 0 };
