@@ -21,6 +21,88 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// --- GIS static dataset loader (Playground tab) ---
+// Same 3-path fallback pattern as the Apify dataset loader above, applied to
+// the pre-converted GeoJSON files under dataset/gis/ (see scripts/convert_gis_data.py).
+const gisFileCache = new Map<string, any>();
+
+function resolveGisFile(filename: string): string | null {
+  const candidates = [
+    path.join(process.cwd(), 'dataset', 'gis', filename),
+    path.join(__dirname, '..', 'dataset', 'gis', filename),
+    path.join(__dirname, 'dataset', 'gis', filename)
+  ];
+  return candidates.find(p => fs.existsSync(p)) || null;
+}
+
+function loadGisJson(filename: string): any | null {
+  if (gisFileCache.has(filename)) return gisFileCache.get(filename);
+  const filePath = resolveGisFile(filename);
+  if (!filePath) return null;
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  gisFileCache.set(filename, data);
+  return data;
+}
+
+function geometryBBox(geometry: any): [number, number, number, number] {
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  const walk = (coords: any): void => {
+    if (typeof coords[0] === 'number') {
+      const [lng, lat] = coords;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    } else {
+      coords.forEach(walk);
+    }
+  };
+  walk(geometry.coordinates);
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+function bboxIntersects(a: [number, number, number, number], b: [number, number, number, number]): boolean {
+  return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+}
+
+// Buildings/roads are too large (~9MB/~15MB as GeoJSON) to ship whole -- gated by bbox.
+const BBOX_GATED_LAYERS = new Set(['buildings', 'roads']);
+const MAX_FEATURES_PER_RESPONSE = 4000;
+
+app.get('/api/gis/manifest', (req, res) => {
+  const manifest = loadGisJson('manifest.json');
+  if (!manifest) {
+    return res.status(404).json({ error: 'GIS manifest not found. Run scripts/convert_gis_data.py first.' });
+  }
+  const roadStats = loadGisJson('road_stats.json');
+  const spaceSyntaxStats = loadGisJson('space_syntax_stats.json');
+  res.json({ ...manifest, roadStats, spaceSyntaxStats });
+});
+
+app.get('/api/gis/layer/:name', (req, res) => {
+  const { name } = req.params;
+  const data = loadGisJson(`${name}.geojson`);
+  if (!data) {
+    return res.status(404).json({ error: `Layer '${name}' not found` });
+  }
+
+  if (!BBOX_GATED_LAYERS.has(name) || !req.query.bbox) {
+    return res.json(data);
+  }
+
+  const bboxParts = String(req.query.bbox).split(',').map(Number);
+  if (bboxParts.length !== 4 || bboxParts.some(n => isNaN(n))) {
+    return res.status(400).json({ error: 'bbox query param must be minLng,minLat,maxLng,maxLat' });
+  }
+  const queryBbox = bboxParts as [number, number, number, number];
+
+  const matched = data.features.filter((f: any) => bboxIntersects(geometryBBox(f.geometry), queryBbox));
+  const truncated = matched.length > MAX_FEATURES_PER_RESPONSE;
+  const features = truncated ? matched.slice(0, MAX_FEATURES_PER_RESPONSE) : matched;
+
+  res.json({ type: 'FeatureCollection', features, truncated, matchedCount: matched.length });
+});
+
   // API Route: Get Park Details and Reviews (Google Places API Proxy)
   app.get('/api/places/details', async (req, res) => {
     const { placeId } = req.query;
@@ -351,6 +433,118 @@ ${JSON.stringify(promptInput, null, 2)}`;
         analyzedReviews: localResults,
         engine: 'Local Offline NLP Engine (Fallback due to error)'
       });
+    }
+  });
+
+  // API Route: AI Design Assistant (Playground tab) -- synthesizes real computed
+  // GIS + review-NLP metrics into a design strategy. Same Gemini-with-template-
+  // fallback pattern as /api/nlp-analyze above; the metrics bundle is always
+  // real evidence computed client-side (population, coverage, road density,
+  // amenity counts, top review issues) -- Gemini is asked to reason over it,
+  // never to invent numbers of its own.
+  app.post('/api/design-strategy', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateStrategy() {
+      const {
+        population = 0, popDensityKm2 = 0, buildingCoveragePct = 0, greenCoveragePct = 0,
+        amenityTotal = 0, topIssues = []
+      } = metrics;
+
+      const keyProblems: string[] = [];
+      const designOpportunities: string[] = [];
+      const recommendedInterventions: string[] = [];
+      const supportingEvidence: string[] = [];
+
+      if (greenCoveragePct < 15) {
+        keyProblems.push(`Green coverage is low at ${greenCoveragePct.toFixed(1)}% of the analyzed area.`);
+        designOpportunities.push('Significant opportunity to expand tree canopy and planted area.');
+        recommendedInterventions.push('Introduce native xerophytic planting and shade tree corridors along primary pedestrian routes.');
+        supportingEvidence.push(`Green coverage: ${greenCoveragePct.toFixed(1)}% (H3 grid analysis)`);
+      }
+      if (buildingCoveragePct > 40) {
+        keyProblems.push(`Building coverage is high at ${buildingCoveragePct.toFixed(1)}%, limiting open/green space.`);
+        supportingEvidence.push(`Building coverage: ${buildingCoveragePct.toFixed(1)}% (OSM building footprints)`);
+      }
+      (topIssues as any[]).slice(0, 3).forEach(issue => {
+        keyProblems.push(`Reviewers frequently cite "${issue.category}" issues (${issue.mentions} mentions, ${issue.priority} priority).`);
+        recommendedInterventions.push(issue.designRequirement || `Address ${issue.category} concerns raised in park reviews.`);
+        supportingEvidence.push(`${issue.mentions} reviews mention ${issue.category} (priority index ${issue.priorityIndex})`);
+      });
+      if (popDensityKm2 > 5000) {
+        designOpportunities.push('High surrounding population density supports investment in higher-capacity park infrastructure.');
+        supportingEvidence.push(`Population density: ${Math.round(popDensityKm2)} per km² (H3 aggregation)`);
+      }
+      if (amenityTotal > 0) {
+        supportingEvidence.push(`${amenityTotal} community amenities counted within the analyzed grid.`);
+      }
+
+      const priorityScore = Math.max(0, Math.min(100, Math.round(
+        (100 - greenCoveragePct) * 0.3 +
+        (topIssues[0]?.priorityIndex || 0) * 0.4 +
+        Math.min(100, popDensityKm2 / 100) * 0.3
+      )));
+      const aiConfidenceScore = Math.min(95, 35 + supportingEvidence.length * 8);
+
+      return {
+        siteSummary: `Al Safa 2 Park sits in an area with an estimated ${Math.round(population)} residents (${Math.round(popDensityKm2)}/km²), ${buildingCoveragePct.toFixed(1)}% building coverage, and ${greenCoveragePct.toFixed(1)}% green coverage within the analyzed H3 grid.`,
+        keyProblems: keyProblems.length ? keyProblems : ['No significant problems detected in the available data.'],
+        designOpportunities: designOpportunities.length ? designOpportunities : ['Insufficient data to identify additional opportunities.'],
+        recommendedInterventions: recommendedInterventions.length ? recommendedInterventions : ['Insufficient data to recommend specific interventions.'],
+        priorityScore,
+        supportingEvidence,
+        aiConfidenceScore
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template design-strategy synthesis.');
+      return res.json({ ...buildTemplateStrategy(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert landscape architecture and urban planning consultant. You will be given real, pre-computed site evidence (population, building/green coverage, road density, amenity counts, and review-derived issue priorities) for a public park in Dubai. Synthesize this into a design strategy. Use ONLY the numbers provided -- do not invent statistics. Every item in supportingEvidence must reference a number that was actually given to you.`;
+
+      const contents = `Site evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a design strategy grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              siteSummary: { type: Type.STRING },
+              keyProblems: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designOpportunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              recommendedInterventions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityScore: { type: Type.INTEGER, description: '0-100' },
+              supportingEvidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+              aiConfidenceScore: { type: Type.INTEGER, description: '0-100' }
+            },
+            required: ['siteSummary', 'keyProblems', 'designOpportunities', 'recommendedInterventions', 'priorityScore', 'supportingEvidence', 'aiConfidenceScore']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Design Strategy Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateStrategy(), engine: 'Template Synthesis (Fallback due to error)' });
     }
   });
 

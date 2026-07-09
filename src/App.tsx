@@ -10,7 +10,6 @@ import {
   FileSpreadsheet,
   Cpu,
   Layers,
-  Settings,
   HelpCircle,
   TrendingUp,
   AlertTriangle,
@@ -30,10 +29,11 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
+import { PlaygroundTab } from './components/playground/PlaygroundTab';
 
 export default function App() {
   // --- STATE ---
-  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics'>('explorer');
+  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics' | 'playground'>('explorer');
   const [parks, setParks] = useState<ParkDetails[]>(PRESEEDED_PARKS);
   const [selectedParkIds, setSelectedParkIds] = useState<string[]>([
     'ChIJK5g4bKNoXz4RHm7pI_U_mHk', // Safa Park
@@ -50,7 +50,6 @@ export default function App() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
   const [nlpExecuted, setNlpExecuted] = useState(false);
-  const [engineUsed, setEngineUsed] = useState<string>('');
 
   // Filtering states
   const [filterRating, setFilterRating] = useState<number | 'all'>('all');
@@ -59,8 +58,7 @@ export default function App() {
   const [tableSearch, setTableSearch] = useState('');
 
   // Key configurations / Developer Tools
-  const [showSettings, setShowSettings] = useState(false);
-  const [customApiKey, setCustomApiKey] = useState('');
+  const [customApiKey] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   // Map state
@@ -113,7 +111,6 @@ export default function App() {
     const seeded = analyzeReviewsLocally(initialReviews);
     setAnalyzedReviews(seeded);
     setNlpExecuted(true);
-    setEngineUsed('Local Fast Semantic Engine (Pre-loaded)');
   }, [selectedParkIds, parks]);
 
   // --- DERIVED METRICS ---
@@ -262,7 +259,6 @@ export default function App() {
 
         await sleep(400);
         setAnalyzedReviews(results);
-        setEngineUsed('Local Fast Semantic Engine');
         setAnalysisProgress(100);
         setNlpExecuted(true);
         setAnalysisLogs(prev => [...prev, 'Analysis complete! 100% accurate structural tagging delivered.']);
@@ -287,7 +283,6 @@ export default function App() {
 
         await sleep(500);
         setAnalyzedReviews(data.analyzedReviews);
-        setEngineUsed(data.engine);
         setAnalysisProgress(100);
         setNlpExecuted(true);
         setAnalysisLogs(prev => [...prev, 'Advanced AI Analysis complete! Real-time generative recommendations populated.']);
@@ -302,7 +297,6 @@ export default function App() {
       });
       const localResults = analyzeReviewsLocally(reviewsToAnalyze);
       setAnalyzedReviews(localResults);
-      setEngineUsed('Local Rule-Based Fallback');
       setAnalysisProgress(100);
       setNlpExecuted(true);
       setAnalysisLogs(prev => [...prev, 'Fail-safe fallback complete. Structural parameters tagged successfully.']);
@@ -459,22 +453,13 @@ export default function App() {
             >
               Analytics
             </button>
+            <button
+              onClick={() => setCurrentTab('playground')}
+              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${currentTab === 'playground' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Playground
+            </button>
           </div>
-
-          {/* Engine Indicator */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded border border-slate-200 text-[10px] text-slate-600 font-mono">
-            <Cpu className="w-3 h-3 text-indigo-600" />
-            <span>Active NLP: <strong className="text-indigo-700 font-bold">{engineUsed || 'Local Rule-Based'}</strong></span>
-          </div>
-
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-bold transition-all ${showSettings ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Credentials</span>
-          </button>
         </div>
       </header>
 
@@ -499,7 +484,9 @@ export default function App() {
       {/* WORKSPACE CONTAINER */}
       <div className="flex-1 flex flex-col lg:flex-row">
 
-        {/* LEFT PANEL: PARK SELECTOR */}
+        {/* LEFT PANEL: PARK SELECTOR -- Playground is a self-contained single-site
+            workspace and doesn't use selectedParkIds/parks, so this doesn't apply there. */}
+        {currentTab !== 'playground' && (
         <aside className="w-full lg:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
 
           {/* SEARCH & SELECT CONTROLS */}
@@ -603,72 +590,13 @@ export default function App() {
             </div>
           </div>
         </aside>
+        )}
 
         {/* MAIN WORKSPACE */}
         <main className="flex-1 p-4 space-y-4 overflow-y-auto">
 
-          {/* SETTINGS DRAWER / CREDENTIALS PANEL */}
-          <AnimatePresence>
-            {showSettings && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden bg-slate-900 text-white rounded border border-slate-800 shadow-md mb-4"
-              >
-                <div className="p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-indigo-400" />
-                      <h3 className="font-bold text-xs uppercase tracking-wider">Google Maps & Places API Credentials</h3>
-                    </div>
-                    <button
-                      onClick={() => setShowSettings(false)}
-                      className="text-slate-400 hover:text-white text-[11px] font-bold"
-                    >
-                      Close ×
-                    </button>
-                  </div>
-
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
-                    Operates in **Pre-seeded Simulation Mode** with verified Dubai spatial catalogs. Add a valid Google API key below to enable real-time Places REST fetching.
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Maps API Key */}
-                    <div className="bg-slate-800/80 p-3 rounded border border-slate-700 space-y-2">
-                      <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Google Maps API Key (Server Proxied)</label>
-                      <input
-                        type="password"
-                        placeholder="AI Studio Secrets or Paste Key here..."
-                        className="w-full bg-slate-900 border border-slate-600 rounded px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-indigo-400 font-mono"
-                        value={customApiKey}
-                        onChange={e => setCustomApiKey(e.target.value)}
-                      />
-                      <p className="text-[8px] text-slate-400 leading-snug">
-                        CORS proxy protection standard. API keys remain safe server-side at `/api/places/*` proxies.
-                      </p>
-                    </div>
-
-                    {/* Security Standards */}
-                    <div className="bg-slate-800/80 p-3 rounded border border-slate-700 space-y-1.5 text-[9px] text-slate-300">
-                      <div className="font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-                        <Info className="w-3 h-3" />
-                        <span>Security & Sandbox Rules</span>
-                      </div>
-                      <ul className="space-y-1 list-disc list-inside">
-                        <li>Proxy isolates API credentials from browser inspection.</li>
-                        <li>Twin-fallback: automatically defaults to static simulation if keys are omitted.</li>
-                        <li>Compatible with modern Google Places API (New) field arrays.</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* KPI METRIC CARDS */}
+          {/* KPI METRIC CARDS -- driven by selectedParkIds/stats, which Playground doesn't use */}
+          {currentTab !== 'playground' && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 
             <div className="bg-white p-2.5 rounded border border-slate-200/80 shadow-sm flex flex-col justify-between">
@@ -728,6 +656,7 @@ export default function App() {
               <div className="text-[8px] text-slate-400 mt-1.5">Active Catalogue</div>
             </div>
           </div>
+          )}
 
           {currentTab === 'explorer' && (
             <>
@@ -1236,6 +1165,8 @@ export default function App() {
           {currentTab === 'analytics' && (
             <AnalyticsDashboard analyzedReviews={analyzedReviews} selectedParks={selectedParks} allParks={parks} />
           )}
+
+          {currentTab === 'playground' && <PlaygroundTab />}
 
         </main>
       </div>
