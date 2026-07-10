@@ -46,6 +46,24 @@ export interface H3HexProperties {
    * data and are kept only for schema compatibility. Use these two fields instead. */
   real_road_length_m: number;
   real_road_density_m_per_km2: number;
+  /** Accessibility fields (scripts/convert_gis_data.py compute_accessibility_analysis) -- real
+   * single-source Dijkstra network routing from the park center (snapped to its nearest
+   * drivable-circulation-graph node, since no entrance point data exists) to every H3 cell that
+   * contains a circulation-graph node. null when a cell has no such node (interior blocks only
+   * reached by service/pedestrian ways outside the routing graph) -- never backfilled with an
+   * estimate. See AccessibilityStats.methodology for the full disclosure. */
+  network_distance_to_park_m: number | null;
+  walking_time_to_park_minutes: number | null;
+  /** Straight-line distance to the park center -- always available, used as the numerator of route_directness_ratio. */
+  euclidean_distance_to_park_m: number;
+  /** euclidean / network, <=1 (1 = perfectly direct route); null wherever network_distance_to_park_m is null. */
+  route_directness_ratio: number | null;
+  /** Count of degree>=3 road-graph nodes (from ALL road segments, not just circulation) inside this hex. */
+  intersection_count_hex: number;
+  /** Weighted count of primary/secondary road segment midpoints inside this hex (primary=2, secondary=1) -- a barrier-exposure proxy, not a crossing-deficiency count (no crossing-point data exists). */
+  barrier_score_hex: number;
+  /** Straight-line distance to the nearest of the 162 bus stop points; null only if the bus stop layer is empty. */
+  nearest_bus_stop_distance_m: number | null;
 }
 
 export type H3Feature = GeoJsonFeature<H3HexProperties>;
@@ -94,6 +112,39 @@ export interface SpaceSyntaxStats {
   methodology: string;
 }
 
+export interface AccessibilityCatchmentBand {
+  minutes: number;
+  radiusApproxM: number;
+  population: number;
+  areaKm2: number;
+  densityPerKm2: number;
+  hexCount: number;
+  pctOfTotalPopulation: number;
+  schoolCount: number;
+  busStopCount: number;
+  clinicCount: number;
+  mosqueCount: number;
+  commercialAmenityCount: number;
+  avgRouteDirectness: number | null;
+}
+
+export interface AccessibilityEntranceNode {
+  nodeId: string;
+  lng: number;
+  lat: number;
+  snapDistanceM: number;
+}
+
+export interface AccessibilityStats {
+  entranceNode: AccessibilityEntranceNode;
+  walkingSpeedMPerMin: number;
+  catchments: AccessibilityCatchmentBand[];
+  reachableHexCount: number;
+  totalHexCount: number;
+  unreachableHexNote: string;
+  methodology: string;
+}
+
 export interface GisManifestLayer {
   source: string;
   table: string;
@@ -107,4 +158,5 @@ export interface GisManifest {
   layers: Record<string, GisManifestLayer>;
   roadStats: RoadStats | null;
   spaceSyntaxStats: SpaceSyntaxStats | null;
+  accessibilityStats: AccessibilityStats | null;
 }

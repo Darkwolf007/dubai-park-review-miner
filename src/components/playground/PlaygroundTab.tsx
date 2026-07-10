@@ -4,7 +4,10 @@ import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { fetchGisManifest, fetchGisLayer } from '../../lib/gis/gisEngine';
 import { downloadGeoJson } from '../../lib/gis/exportEngine';
-import { computeAccessibilityAnalysis } from '../../lib/gis/accessibilityEngine';
+import {
+  computePedestrianNetworkQuality, computeHexWalkabilityScore, computeHexParkAccessScore,
+  computeHexTransitAccessibilityScore, accessibilityStatusLabel
+} from '../../lib/gis/accessibilityEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
 import { computeHexDemandScore } from '../../lib/gis/populationEngine';
 import { computeHexUrbanScore } from '../../lib/gis/urbanEngine';
@@ -142,7 +145,7 @@ export function PlaygroundTab() {
   function handleRunComplete(entry: { name: string; layers: string[]; summary: string }) {
     setHistory(prev => [{ id: `${Date.now()}`, timestamp: new Date().toISOString(), ...entry }, ...prev].slice(0, 50));
     if (entry.name === 'Accessibility Analysis') {
-      const result = computeAccessibilityAnalysis(hexes, busStops, parkCenter, manifest?.roadStats || null);
+      const result = computePedestrianNetworkQuality(hexes, manifest?.roadStats || null);
       setWalkabilityScore(result.walkabilityScore);
     }
   }
@@ -219,9 +222,10 @@ export function PlaygroundTab() {
                   const demandScore = matchedHex ? computeHexDemandScore(matchedHex) : null;
                   const urbanScore = matchedHex ? computeHexUrbanScore(matchedHex) : null;
                   const landUseLabel = matchedHex ? classifyHexLandUse(matchedHex, hexes) : null;
-                  const cellAccessibility = matchedHex
-                    ? computeAccessibilityAnalysis([matchedHex], busStops, parkCenter, manifest?.roadStats || null).walkabilityScore
-                    : null;
+                  const cellWalkability = matchedHex ? computeHexWalkabilityScore(matchedHex) : null;
+                  const cellParkAccess = matchedHex ? computeHexParkAccessScore(matchedHex) : null;
+                  const cellTransitAccess = matchedHex ? computeHexTransitAccessibilityScore(matchedHex) : null;
+                  const cellAccessibilityStatus = cellParkAccess !== null ? accessibilityStatusLabel(cellParkAccess) : null;
                   const networkConnectivity = manifest?.roadStats && manifest.roadStats.totalGraphNodes > 0
                     ? Math.round((manifest.roadStats.intersectionCount / manifest.roadStats.totalGraphNodes) * 100)
                     : null;
@@ -239,7 +243,6 @@ export function PlaygroundTab() {
                         <InspectorRow label="Bus Stops" value={selectedFeature.bus_stop_count ?? 0} />
                         <InspectorRow label="Park Area" value={`${Math.round(selectedFeature.park_area_m2 || 0).toLocaleString()} m²`} />
                         <InspectorRow label="Demand Score" value={demandScore !== null ? `${demandScore}/100` : 'N/A'} />
-                        <InspectorRow label="Accessibility Score" value={cellAccessibility !== null ? `${cellAccessibility}/100` : 'N/A'} />
                         <InspectorRow label="Population Growth" value="No data" />
                       </div>
                       <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Urban</p>
@@ -254,6 +257,17 @@ export function PlaygroundTab() {
                         <InspectorRow label="Connectivity Score" value={networkConnectivity !== null ? `${networkConnectivity}/100*` : 'N/A'} />
                       </div>
                       <p className="text-[7px] text-slate-400">* Connectivity Score is a network-wide value (not yet computed per-cell).</p>
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Accessibility</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Walking Time to Park" value={selectedFeature.walking_time_to_park_minutes != null ? `${selectedFeature.walking_time_to_park_minutes} min` : 'No route'} />
+                        <InspectorRow label="Nearest Entrance" value={selectedFeature.network_distance_to_park_m != null ? `${Math.round(selectedFeature.network_distance_to_park_m).toLocaleString()} m` : 'No route'} />
+                        <InspectorRow label="Nearest Bus Stop" value={selectedFeature.nearest_bus_stop_distance_m != null ? `${Math.round(selectedFeature.nearest_bus_stop_distance_m).toLocaleString()} m` : 'N/A'} />
+                        <InspectorRow label="Barrier Count" value={selectedFeature.barrier_score_hex ?? 0} />
+                        <InspectorRow label="Walkability Score" value={cellWalkability !== null ? `${cellWalkability}/100` : 'N/A'} />
+                        <InspectorRow label="Transit Accessibility" value={cellTransitAccess !== null ? `${cellTransitAccess}/100` : 'N/A'} />
+                        <InspectorRow label="Park Access Score" value={cellParkAccess !== null ? `${cellParkAccess}/100` : 'N/A'} />
+                        <InspectorRow label="Accessibility Status" value={cellAccessibilityStatus || 'N/A'} />
+                      </div>
                       <div className="bg-indigo-50/60 border border-indigo-100 rounded p-1.5 text-[9px] text-indigo-900 leading-relaxed">
                         <span className="font-bold uppercase tracking-wider text-[7px] block mb-0.5">AI Recommendation</span>
                         {recommendation}
@@ -283,6 +297,7 @@ export function PlaygroundTab() {
               roadStats={manifest?.roadStats || null}
               poiCounts={poiCounts}
               spaceSyntaxStats={manifest?.spaceSyntaxStats || null}
+              accessibilityStats={manifest?.accessibilityStats || null}
               onRunComplete={handleRunComplete}
             />
           </div>

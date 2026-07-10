@@ -43,7 +43,7 @@ export const DATASET_CATEGORIES: DatasetCategory[] = [
       { id: 'building-density', label: 'Building Density', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'building_coverage_pct', color: '#eb6834' },
       { id: 'roads', label: 'Roads', dataStatus: 'real', layerKey: 'roads', renderMode: 'lines', color: '#334155' },
       { id: 'intersections', label: 'Intersections', dataStatus: 'statOnly', color: '#94a3b8', note: 'Available as a count in Urban Analysis -- individual intersection coordinates aren\'t in this OSM extract.' },
-      { id: 'walkability', label: 'Walkability', dataStatus: 'statOnly', color: '#94a3b8', note: 'Computed score -- see Accessibility Analysis.' }
+      { id: 'walkability', label: 'Walkability', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'walking_time_to_park_minutes', color: '#94a3b8', note: 'See Accessibility category for the full set of accessibility map modes.' }
     ]
   },
   {
@@ -55,6 +55,18 @@ export const DATASET_CATEGORIES: DatasetCategory[] = [
       { id: 'pedestrian-network', label: 'Pedestrian Network', dataStatus: 'real', layerKey: 'roads', renderMode: 'lines', highwayFilter: ['footway', 'path', 'pedestrian', 'steps', 'corridor', 'living_street'], color: '#2a78d6' },
       { id: 'cycling-routes', label: 'Cycling Routes', dataStatus: 'real', layerKey: 'roads', renderMode: 'lines', highwayFilter: ['cycleway'], color: '#10b981' },
       { id: 'metro-stations', label: 'Metro Stations', dataStatus: 'unavailable', color: '#94a3b8', note: 'Not captured in this OSM extract.' }
+    ]
+  },
+  {
+    id: 'accessibility',
+    label: 'Accessibility',
+    layers: [
+      { id: 'acc-walking-time', label: 'Walking Time to Park', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'walking_time_to_park_minutes', color: '#2a78d6', note: 'Network-routed minutes from the park entrance (single-source Dijkstra on the drivable circulation graph). Cells with no value have no routable node inside them.' },
+      { id: 'acc-park-access', label: 'Park Access Score', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'network_distance_to_park_m', color: '#4a3aa7', note: 'Colored by raw network distance (m) -- darker means closer. The 0-100 decayed score shown in the report is derived from this same field.' },
+      { id: 'acc-walkability', label: 'Walkability Score', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'real_road_density_m_per_km2', color: '#10b981', note: 'Colored by real road density as a proxy -- the full Walkability Score is a multi-factor composite (see Accessibility Analysis -- Pedestrian Network Quality) not stored as a single map-ready field.' },
+      { id: 'acc-transit', label: 'Transit Accessibility', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'nearest_bus_stop_distance_m', color: '#1baf7a', note: 'Straight-line distance (m) to the nearest of 162 bus stops -- lower is better.' },
+      { id: 'acc-barrier', label: 'Barrier Severity', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'barrier_score_hex', color: '#e34948', note: 'Weighted exposure to primary/secondary road segments (primary=2, secondary=1) inside each cell.' },
+      { id: 'acc-underserved', label: 'Underserved Population', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'population', color: '#eb6834', note: 'Colored by population -- cross-reference with Walking Time to spot high-population, long-walking-time cells. See Accessibility Analysis -- H3 Accessibility Analysis for the ranked composite deficit score.' }
     ]
   },
   {

@@ -76,7 +76,8 @@ app.get('/api/gis/manifest', (req, res) => {
   }
   const roadStats = loadGisJson('road_stats.json');
   const spaceSyntaxStats = loadGisJson('space_syntax_stats.json');
-  res.json({ ...manifest, roadStats, spaceSyntaxStats });
+  const accessibilityStats = loadGisJson('accessibility_stats.json');
+  res.json({ ...manifest, roadStats, spaceSyntaxStats, accessibilityStats });
 });
 
 app.get('/api/gis/layer/:name', (req, res) => {
@@ -796,6 +797,139 @@ ${JSON.stringify(promptInput, null, 2)}`;
       return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
     } catch (error: any) {
       console.error('Urban Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
+  // API Route: Accessibility Analysis AI Interpretation (Playground -> Accessibility module).
+  // Same Gemini-with-template-fallback pattern as /api/population-insights and /api/urban-insights --
+  // the metrics bundle is real evidence computed client-side from network-routed walking catchments,
+  // transit proximity, pedestrian network quality, and barrier-exposure fields.
+  app.post('/api/accessibility-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        overallAccessibilityScore = 0, walkabilityScore = 0, transitAccessibility = 'Moderate',
+        mostUnderservedZone = 'the surrounding area', pop15MinWalkPct = 0, avgWalkingTimeMinutes = 0,
+        deadEndCount = 0, barrierExposureLabel = 'Moderate', criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const criticalBarriers: string[] = [];
+      const underservedCommunities: string[] = [];
+      const pedestrianDesignDrivers: string[] = [];
+      const priorityInterventions: { intervention: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      if (walkabilityScore >= 60) {
+        strengths.push('Strong pedestrian network quality -- good street connectivity and intersection density support walking.');
+      } else {
+        weaknesses.push(`Walkability score is ${walkabilityScore}/100 -- pedestrian network quality is below a well-served benchmark.`);
+      }
+      if (transitAccessibility === 'High') {
+        strengths.push('Good transit proximity -- bus stops are well distributed near the site.');
+      } else {
+        weaknesses.push(`Transit accessibility is assessed as ${String(transitAccessibility).toLowerCase()} -- bus stop coverage is limited in parts of the catchment.`);
+      }
+      if (pop15MinWalkPct < 50) {
+        weaknesses.push(`Only ${Math.round(pop15MinWalkPct)}% of the surrounding population falls within a 15-minute network walk of the park.`);
+        underservedCommunities.push(`${mostUnderservedZone} shows the longest network walking times to the park.`);
+        priorityInterventions.push({
+          intervention: `Improve pedestrian connectivity toward the ${mostUnderservedZone}`,
+          evidence: [`${Math.round(pop15MinWalkPct)}% of population within 15-minute walk`, `Average network walking time: ${avgWalkingTimeMinutes} min`],
+          priority: 'High',
+          confidence: Math.min(95, 50 + criticalMetrics.length * 8)
+        });
+      } else {
+        strengths.push(`${Math.round(pop15MinWalkPct)}% of the surrounding population is within a 15-minute network walk of the park.`);
+      }
+      if (deadEndCount > 0) {
+        criticalBarriers.push(`${deadEndCount.toLocaleString()} dead-end street segments fragment the surrounding pedestrian grid.`);
+      }
+      if (barrierExposureLabel === 'High') {
+        criticalBarriers.push('High exposure to primary/secondary road barriers along likely walking routes to the park.');
+        pedestrianDesignDrivers.push('Prioritize signalized or raised crossings where major roads intersect the walking catchment.');
+      }
+      pedestrianDesignDrivers.push('Reinforce the drivable street grid used for routing with continuous, shaded pedestrian frontage.');
+
+      priorityInterventions.push({
+        intervention: 'Add a shaded, direct walking route from the highest-population underserved zone',
+        evidence: [`Overall accessibility score: ${overallAccessibilityScore}/100`, `Walkability score: ${walkabilityScore}/100`],
+        priority: overallAccessibilityScore < 50 ? 'High' : 'Medium',
+        confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+      });
+
+      return {
+        accessibilityProfile: `The park's network-based walking accessibility scores ${overallAccessibilityScore}/100 overall, with ${String(transitAccessibility).toLowerCase()} transit accessibility. ${Math.round(pop15MinWalkPct)}% of the surrounding population reaches the park within a 15-minute walk on the drivable street network; the ${mostUnderservedZone} lags furthest behind.`,
+        strengths: strengths.length ? strengths : ['No standout strengths identified from the available data.'],
+        weaknesses: weaknesses.length ? weaknesses : ['No significant weaknesses identified from the available data.'],
+        criticalBarriers: criticalBarriers.length ? criticalBarriers : ['No major barrier concentrations identified from the available data.'],
+        underservedCommunities: underservedCommunities.length ? underservedCommunities : ['No significantly underserved zone identified from the available data.'],
+        pedestrianDesignDrivers,
+        priorityInterventions
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template accessibility-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert pedestrian planner and accessibility consultant writing an Accessibility Analysis interpretation for a public park in Dubai. You will be given real, pre-computed evidence (network-routed walking catchments, transit proximity, pedestrian network quality, and barrier-exposure metrics). Use ONLY the numbers provided -- do not invent statistics. Every intervention's evidence array must reference a number that was actually given to you.`;
+
+      const contents = `Accessibility analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a planning interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              accessibilityProfile: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              criticalBarriers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              underservedCommunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              pedestrianDesignDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityInterventions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    intervention: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, or High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['intervention', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['accessibilityProfile', 'strengths', 'weaknesses', 'criticalBarriers', 'underservedCommunities', 'pedestrianDesignDrivers', 'priorityInterventions']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Accessibility Insights Gemini Error, falling back to template:', error);
       return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
     }
   });

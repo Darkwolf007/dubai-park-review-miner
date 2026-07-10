@@ -17,6 +17,7 @@ Run with: python scripts/convert_gis_data.py
 not something that runs per-request)
 """
 import json
+import math
 import os
 import struct
 import sqlite3
@@ -430,6 +431,306 @@ def compute_space_syntax(con):
     return {'type': 'FeatureCollection', 'features': features}, stats
 
 
+# Verified against src/lib/googlePlaces.ts's PRESEEDED_PARKS entry for
+# Al Safa 2 Park (placeId ChIJW2n2fB9tXz4R3Gqf-661oQE) -- kept in sync by hand
+# since this script has no dependency on the TS source.
+PARK_CENTER_LNG = 55.2289
+PARK_CENTER_LAT = 25.1706
+
+# 80 m/min (~4.8 km/h) is a standard pedestrian planning-speed assumption
+# (used e.g. by many isochrone-catchment planning tools) -- not a measured speed.
+WALKING_SPEED_M_PER_MIN = 80.0
+CATCHMENT_BANDS_MIN = [5, 10, 15, 20]
+
+
+def haversine_m(lng1, lat1, lng2, lat2):
+    R = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def build_circulation_graph(con):
+    """
+    Rebuilds the same drivable circulation graph used for space syntax
+    (residential/tertiary/secondary/primary/unclassified/link/living_street
+    highway types) for shortest-path routing. Reads the roads table again
+    rather than sharing state with compute_space_syntax -- the table read is
+    cheap (~56k rows) and keeps each computation step independently correct.
+    """
+    cur = con.cursor()
+    cur.execute('SELECT geom, u, v, highway, length FROM roads')
+    rows = cur.fetchall()
+    node_coords = {}
+    G = nx.Graph()
+    for geom_blob, u, v, highway, length in rows:
+        hw = highway or ''
+        if not any(h in hw for h in CIRCULATION_HIGHWAYS):
+            continue
+        geom = gpkg_blob_to_geojson(geom_blob)
+        if not geom or geom['type'] != 'LineString' or len(geom['coordinates']) < 2:
+            continue
+        start, end = geom['coordinates'][0], geom['coordinates'][-1]
+        if u is not None:
+            node_coords[u] = start
+        if v is not None:
+            node_coords[v] = end
+        if u is not None and v is not None and u != v:
+            w = length or 1.0
+            if G.has_edge(u, v):
+                if w < G[u][v]['length']:
+                    G[u][v]['length'] = w
+            else:
+                G.add_edge(u, v, length=w)
+    return G, node_coords
+
+
+def compute_accessibility_analysis(con, roads_fc, hex_lookup, h3_fc, bus_stops_fc):
+    """
+    Real network-based walking accessibility from the park to the surrounding
+    street grid, via single-source Dijkstra shortest-path routing (networkx)
+    on the drivable circulation graph -- prioritizing genuine network
+    distance over Euclidean buffers, per the accessibility brief's own
+    "network-based, not just circular buffers" guidance.
+
+    Two limitations are disclosed here rather than glossed over:
+    1. The routing graph only contains "circulation" highway tags (see
+       CIRCULATION_HIGHWAYS) -- dedicated pedestrian-only ways (footway/path/
+       steps/etc.) are a separate, disconnected set of OSM ways in this
+       extract with no shared node ids, so a true sidewalk-network isochrone
+       isn't buildable from this data. Since pedestrians in this area
+       overwhelmingly walk alongside the vehicle street grid, network
+       distance on the circulation graph is used as a walking-network proxy.
+    2. No park entrance point/gate data exists anywhere in the source
+       .gpkg files (confirmed: no entrance/gate table). The Google-Places-
+       verified park center is snapped to its nearest circulation-graph node
+       and used as a single-entrance proxy for all routing below.
+    """
+    if nx is None:
+        return None, None
+
+    G, node_coords = build_circulation_graph(con)
+    if not node_coords:
+        return None, None
+
+    entrance_node, entrance_snap_dist_m = None, float('inf')
+    for node_id, (lng, lat) in node_coords.items():
+        d = haversine_m(PARK_CENTER_LNG, PARK_CENTER_LAT, lng, lat)
+        if d < entrance_snap_dist_m:
+            entrance_snap_dist_m, entrance_node = d, node_id
+
+    t0 = time.time()
+    dist_from_entrance = nx.single_source_dijkstra_path_length(G, entrance_node, weight='length')
+    print(f'[accessibility] single-source Dijkstra from park entrance node: {time.time() - t0:.2f}s, {len(dist_from_entrance)} nodes reached')
+
+    # Per-hex network distance: minimum reachable distance among circulation nodes inside the hex.
+    # The winning node's own coordinates are kept alongside the distance (not just the hex
+    # centroid) so route directness can compare a straight line and a network path between the
+    # SAME two points -- using the centroid instead made directness exceed 1.0 for hexes whose
+    # nearest routable node sits near the hex edge closest to the entrance, since a network path
+    # can legitimately be shorter than a straight line to a *different* point (the centroid).
+    hex_network_dist = {}
+    hex_network_node_coords = {}
+    for node_id, d in dist_from_entrance.items():
+        lng, lat = node_coords[node_id]
+        for hex_entry in hex_lookup:
+            bx0, by0, bx1, by1 = hex_entry['bbox']
+            if lng < bx0 or lng > bx1 or lat < by0 or lat > by1:
+                continue
+            if point_in_ring(lng, lat, hex_entry['ring']):
+                h3_id = hex_entry['h3_id']
+                if h3_id not in hex_network_dist or d < hex_network_dist[h3_id]:
+                    hex_network_dist[h3_id] = d
+                    hex_network_node_coords[h3_id] = (lng, lat)
+                break
+
+    # Degree from ALL road segments (not just circulation) -- same node population as
+    # compute_road_intersections' network-wide count, joined per-hex here.
+    canonical_edges = set()
+    node_coords_all = {}
+    for feature in roads_fc['features']:
+        props = feature['properties']
+        u, v = props.get('u'), props.get('v')
+        coords = feature['geometry'].get('coordinates')
+        if coords and len(coords) >= 2:
+            if u is not None:
+                node_coords_all[u] = coords[0]
+            if v is not None:
+                node_coords_all[v] = coords[-1]
+        if u is not None and v is not None:
+            canonical_edges.add((min(u, v), max(u, v)))
+    degree = {}
+    for u, v in canonical_edges:
+        degree[u] = degree.get(u, 0) + 1
+        degree[v] = degree.get(v, 0) + 1
+
+    hex_intersection_count = {}
+    for node_id, deg in degree.items():
+        if deg < 3:
+            continue
+        coords = node_coords_all.get(node_id)
+        if not coords:
+            continue
+        lng, lat = coords
+        for hex_entry in hex_lookup:
+            bx0, by0, bx1, by1 = hex_entry['bbox']
+            if lng < bx0 or lng > bx1 or lat < by0 or lat > by1:
+                continue
+            if point_in_ring(lng, lat, hex_entry['ring']):
+                h3_id = hex_entry['h3_id']
+                hex_intersection_count[h3_id] = hex_intersection_count.get(h3_id, 0) + 1
+                break
+
+    # Barrier proxy: primary/secondary road segment midpoints per hex, weighted by tier.
+    # No dedicated pedestrian-crossing point layer exists in this dataset, so this counts
+    # the barriers themselves (major roads a pedestrian must cross), not crossing provision.
+    def classify_hw(hw):
+        for group, tags in ROAD_HIERARCHY_GROUPS.items():
+            if any(t in hw for t in tags):
+                return group
+        return 'other'
+
+    hex_barrier_score = {}
+    for feature in roads_fc['features']:
+        props = feature['properties']
+        hw = props.get('highway') or ''
+        group = classify_hw(hw)
+        if group not in ('primary', 'secondary'):
+            continue
+        coords = feature['geometry'].get('coordinates')
+        if not coords or len(coords) < 2:
+            continue
+        mid = coords[len(coords) // 2]
+        mlng, mlat = mid[0], mid[1]
+        for hex_entry in hex_lookup:
+            bx0, by0, bx1, by1 = hex_entry['bbox']
+            if mlng < bx0 or mlng > bx1 or mlat < by0 or mlat > by1:
+                continue
+            if point_in_ring(mlng, mlat, hex_entry['ring']):
+                h3_id = hex_entry['h3_id']
+                weight = 2 if group == 'primary' else 1
+                hex_barrier_score[h3_id] = hex_barrier_score.get(h3_id, 0) + weight
+                break
+
+    bus_coords = [f['geometry']['coordinates'] for f in bus_stops_fc['features'] if f['geometry']['type'] == 'Point']
+
+    catchment_bands = {
+        m: {'populationSum': 0.0, 'areaKm2': 0.0, 'hexCount': 0, 'schoolCount': 0, 'busStopCount': 0,
+            'clinicCount': 0, 'mosqueCount': 0, 'commercialCount': 0, 'sumDirectness': 0.0, 'directnessCount': 0}
+        for m in CATCHMENT_BANDS_MIN
+    }
+    total_population = sum(f['properties'].get('population') or 0 for f in h3_fc['features'])
+
+    hex_props_out = {}
+    for f in h3_fc['features']:
+        h3_id = f['properties']['h3_id']
+        ring = f['geometry']['coordinates'][0]
+        n = len(ring) - 1
+        clng = sum(p[0] for p in ring[:n]) / n
+        clat = sum(p[1] for p in ring[:n]) / n
+
+        euclidean_m = haversine_m(PARK_CENTER_LNG, PARK_CENTER_LAT, clng, clat)
+        network_m = hex_network_dist.get(h3_id)
+        walking_time_min = round(network_m / WALKING_SPEED_M_PER_MIN, 1) if network_m is not None else None
+
+        # Directness compares network path length against a straight line between the SAME two
+        # points -- the entrance node and the specific graph node inside this hex that achieved
+        # network_m (not the hex centroid, and not the raw park center). Using either of those
+        # substitute points let directness exceed 1.0 (verified: up to 1.3), since a network path
+        # can be legitimately shorter than a straight line to a *different* point than the one
+        # actually routed to. Comparing the same two points guarantees network_m >= euclidean_m.
+        directness = None
+        if network_m and network_m > 0 and h3_id in hex_network_node_coords:
+            entrance_lng, entrance_lat = node_coords[entrance_node]
+            node_lng, node_lat = hex_network_node_coords[h3_id]
+            euclidean_to_winning_node_m = haversine_m(entrance_lng, entrance_lat, node_lng, node_lat)
+            directness = round(euclidean_to_winning_node_m / network_m, 3)
+
+        nearest_bus_m = min((haversine_m(clng, clat, blng, blat) for blng, blat in bus_coords), default=None)
+
+        hex_props_out[h3_id] = {
+            'network_distance_to_park_m': round(network_m, 1) if network_m is not None else None,
+            'walking_time_to_park_minutes': walking_time_min,
+            'euclidean_distance_to_park_m': round(euclidean_m, 1),
+            'route_directness_ratio': directness,
+            'intersection_count_hex': hex_intersection_count.get(h3_id, 0),
+            'barrier_score_hex': hex_barrier_score.get(h3_id, 0),
+            'nearest_bus_stop_distance_m': round(nearest_bus_m, 1) if nearest_bus_m is not None else None
+        }
+
+        if walking_time_min is not None:
+            pop = f['properties'].get('population') or 0
+            area_km2 = f['properties'].get('hex_area_km2') or 0
+            for m in CATCHMENT_BANDS_MIN:
+                if walking_time_min <= m:
+                    band = catchment_bands[m]
+                    band['populationSum'] += pop
+                    band['areaKm2'] += area_km2
+                    band['hexCount'] += 1
+                    band['schoolCount'] += f['properties'].get('school_count') or 0
+                    band['busStopCount'] += f['properties'].get('bus_stop_count') or 0
+                    band['clinicCount'] += f['properties'].get('clinic_count') or 0
+                    band['mosqueCount'] += f['properties'].get('mosque_count') or 0
+                    band['commercialCount'] += (
+                        (f['properties'].get('restaurant_count') or 0)
+                        + (f['properties'].get('cafe_count') or 0)
+                        + (f['properties'].get('shop_count') or 0)
+                    )
+                    if directness is not None:
+                        band['sumDirectness'] += directness
+                        band['directnessCount'] += 1
+
+    catchments = []
+    for m in CATCHMENT_BANDS_MIN:
+        band = catchment_bands[m]
+        pop = band['populationSum']
+        catchments.append({
+            'minutes': m,
+            'radiusApproxM': round(m * WALKING_SPEED_M_PER_MIN),
+            'population': round(pop),
+            'areaKm2': round(band['areaKm2'], 3),
+            'densityPerKm2': round(pop / band['areaKm2']) if band['areaKm2'] > 0 else 0,
+            'hexCount': band['hexCount'],
+            'pctOfTotalPopulation': round((pop / total_population) * 1000) / 10 if total_population > 0 else 0,
+            'schoolCount': band['schoolCount'],
+            'busStopCount': band['busStopCount'],
+            'clinicCount': band['clinicCount'],
+            'mosqueCount': band['mosqueCount'],
+            'commercialAmenityCount': band['commercialCount'],
+            'avgRouteDirectness': round(band['sumDirectness'] / band['directnessCount'], 3) if band['directnessCount'] > 0 else None
+        })
+
+    reachable_hex_count = len(hex_network_dist)
+    total_hex_count = len(h3_fc['features'])
+    stats = {
+        'entranceNode': {
+            'nodeId': str(entrance_node),
+            'lng': round(node_coords[entrance_node][0], 6),
+            'lat': round(node_coords[entrance_node][1], 6),
+            'snapDistanceM': round(entrance_snap_dist_m, 1)
+        },
+        'walkingSpeedMPerMin': WALKING_SPEED_M_PER_MIN,
+        'catchments': catchments,
+        'reachableHexCount': reachable_hex_count,
+        'totalHexCount': total_hex_count,
+        'unreachableHexNote': f'{total_hex_count - reachable_hex_count} of {total_hex_count} H3 cells contain no circulation-graph node (interior blocks reached only by service/pedestrian ways outside the routing graph) and show a null network distance rather than a fabricated estimate.',
+        'methodology': (
+            f'Single-source Dijkstra shortest-path routing (networkx) from the park center '
+            f'(snapped to its nearest drivable-circulation-graph node, {round(entrance_snap_dist_m)}m away) to every '
+            f'reachable node on the same drivable street network used for Space Syntax. Walking time assumes an '
+            f'{WALKING_SPEED_M_PER_MIN:.0f} m/min ({WALKING_SPEED_M_PER_MIN * 60 / 1000:.1f} km/h) pedestrian planning speed. '
+            f'No park entrance point data exists in this dataset -- the verified park center is used as a single-'
+            f'entrance proxy, clearly labeled as approximate throughout. Dedicated pedestrian-only paths are not part '
+            f'of the routing graph, so this is a network-distance proxy along the drivable street grid, not a literal '
+            f'sidewalk-network isochrone.'
+        )
+    }
+
+    return hex_props_out, stats
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     manifest = {'generatedAt': datetime.now(timezone.utc).isoformat(), 'layers': {}}
@@ -478,14 +779,29 @@ def main():
         f['properties']['real_road_length_m'] = round(length_m, 1)
         f['properties']['real_road_density_m_per_km2'] = round(length_m / area_km2, 1) if area_km2 > 0 else 0
 
-    write_json(os.path.join(OUT_DIR, 'h3_grid.geojson'), h3_fc)
-    print(f"h3_grid: wrote {len(h3_fc['features'])} features (with real per-hex road length attached)")
-
+    bus_stops_fc = None
     for table_name, prop_map in POI_PROPS.items():
         fc, bbox = convert_table(con, table_name, prop_map)
         write_json(os.path.join(OUT_DIR, f'{table_name}.geojson'), fc)
         manifest['layers'][table_name] = {'source': 'AlSafa2_OSM_5km_AllLayers.gpkg', 'table': table_name, 'featureCount': len(fc['features']), 'bbox': bbox}
         print(f"{table_name}: {len(fc['features'])} features")
+        if table_name == 'bus_stops':
+            bus_stops_fc = fc
+
+    print('\n[accessibility] computing network-based walking accessibility (single-source Dijkstra from park entrance)...')
+    accessibility_hex_props, accessibility_stats = compute_accessibility_analysis(con, roads_fc, hex_lookup, h3_fc, bus_stops_fc or {'features': []})
+    if accessibility_hex_props:
+        for f in h3_fc['features']:
+            f['properties'].update(accessibility_hex_props.get(f['properties']['h3_id'], {}))
+        write_json(os.path.join(OUT_DIR, 'accessibility_stats.json'), accessibility_stats)
+        print(f"[accessibility] entrance node snapped {accessibility_stats['entranceNode']['snapDistanceM']}m from park center; "
+              f"{accessibility_stats['reachableHexCount']}/{accessibility_stats['totalHexCount']} hexes reachable")
+        print(f"[accessibility] catchments: {accessibility_stats['catchments']}")
+    else:
+        print('[accessibility] networkx unavailable or empty graph -- skipping (h3_grid will not have accessibility fields).')
+
+    write_json(os.path.join(OUT_DIR, 'h3_grid.geojson'), h3_fc)
+    print(f"h3_grid: wrote {len(h3_fc['features'])} features (with real per-hex road length + accessibility fields attached)")
 
     print('\n[space syntax] computing closeness/betweenness centrality (~3.5 min, one-time)...')
     space_syntax_fc, space_syntax_stats = compute_space_syntax(con)

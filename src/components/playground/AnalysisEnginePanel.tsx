@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Play, Loader2, Users2, Building2, Footprints, Leaf, Users, MapPinned, Route, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { H3Feature, GeoJsonFeature, RoadStats, SpaceSyntaxFeature, SpaceSyntaxStats } from '../../lib/gis/types';
+import type { H3Feature, GeoJsonFeature, RoadStats, SpaceSyntaxFeature, SpaceSyntaxStats, AccessibilityStats } from '../../lib/gis/types';
 import type { PoiCounts } from '../../lib/gis/communityEngine';
 import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { computePopulationAnalysisReport } from '../../lib/gis/populationEngine';
 import { computeUrbanAnalysisReport } from '../../lib/gis/urbanEngine';
-import { computeAccessibilityAnalysis } from '../../lib/gis/accessibilityEngine';
+import { computeAccessibilityAnalysisReport } from '../../lib/gis/accessibilityEngine';
 import { computeEnvironmentalAnalysis } from '../../lib/gis/environmentalEngine';
 import { computeCommunityAnalysis } from '../../lib/gis/communityEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
@@ -14,6 +14,7 @@ import { computeSpaceSyntaxAnalysis } from '../../lib/gis/spaceSyntaxEngine';
 import { generateDesignStrategy } from '../../lib/gis/aiRecommendationEngine';
 import { generatePopulationInsights, type PopulationInsightsResult } from '../../lib/gis/populationInsightsEngine';
 import { generateUrbanInsights, type UrbanInsightsResult } from '../../lib/gis/urbanInsightsEngine';
+import { generateAccessibilityInsights, type AccessibilityInsightsResult } from '../../lib/gis/accessibilityInsightsEngine';
 import { sortIssueImpact, computeIssueImpact } from '../../lib/analytics/issueMatrix';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { SectionCard } from '../ui/SectionCard';
@@ -21,6 +22,7 @@ import { Pill } from '../ui/Pill';
 import { MetricTile } from './MetricTile';
 import { PopulationAnalysisReport } from './PopulationAnalysisReport';
 import { UrbanAnalysisReport } from './UrbanAnalysisReport';
+import { AccessibilityAnalysisReport } from './AccessibilityAnalysisReport';
 
 export interface HistoryEntry {
   id: string;
@@ -51,6 +53,7 @@ export function AnalysisEnginePanel({
   roadStats,
   poiCounts,
   spaceSyntaxStats,
+  accessibilityStats,
   onRunComplete
 }: {
   hexes: H3Feature[];
@@ -60,6 +63,7 @@ export function AnalysisEnginePanel({
   roadStats: RoadStats | null;
   poiCounts: PoiCounts;
   spaceSyntaxStats: SpaceSyntaxStats | null;
+  accessibilityStats: AccessibilityStats | null;
   onRunComplete: (entry: { name: string; layers: string[]; summary: string }) => void;
 }) {
   const [selected, setSelected] = useState<AnalysisType>('population');
@@ -67,6 +71,8 @@ export function AnalysisEnginePanel({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spaceSyntaxNodes, setSpaceSyntaxNodes] = useState<SpaceSyntaxFeature[] | null>(null);
+  const [parkingFeatures, setParkingFeatures] = useState<GeoJsonFeature[] | null>(null);
+  const [schoolFeatures, setSchoolFeatures] = useState<GeoJsonFeature[] | null>(null);
 
   const option = ANALYSIS_OPTIONS.find(o => o.id === selected)!;
 
@@ -135,9 +141,43 @@ export function AnalysisEnginePanel({
           break;
         }
         case 'accessibility': {
-          r = computeAccessibilityAnalysis(hexes, busStops, parkCenter, roadStats);
-          layers = ['h3_grid', 'bus_stops', 'roads'];
-          summary = `Walkability score ${r.walkabilityScore}/100, ${r.transitAccessibility.busStopsWithin500m} bus stops within 500m`;
+          let parking = parkingFeatures;
+          let schools = schoolFeatures;
+          if (!parking) {
+            const fc = await fetchGisLayer<GeoJsonFeature['properties']>('parking');
+            parking = (fc?.features || []) as GeoJsonFeature[];
+            setParkingFeatures(parking);
+          }
+          if (!schools) {
+            const fc = await fetchGisLayer<GeoJsonFeature['properties']>('schools');
+            schools = (fc?.features || []) as GeoJsonFeature[];
+            setSchoolFeatures(schools);
+          }
+
+          const accessibilityReport = computeAccessibilityAnalysisReport(hexes, busStops, parkCenter, roadStats, accessibilityStats, parking, schools);
+          const criticalMetrics = accessibilityReport.barriers.barriers.filter(b => b.severity === 'High' && b.count > 0).map(b => b.type);
+
+          let aiInsights: AccessibilityInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generateAccessibilityInsights({
+              overallAccessibilityScore: accessibilityReport.executiveSummary.overallAccessibilityScore,
+              walkabilityScore: accessibilityReport.pedestrianQuality.walkabilityScore,
+              transitAccessibility: accessibilityReport.transit.transitAccessibilityLabel,
+              mostUnderservedZone: accessibilityReport.executiveSummary.mostUnderservedZone,
+              pop15MinWalkPct: accessibilityReport.catchments.find(c => c.minutes === 15)?.pctOfTotalPopulation ?? 0,
+              avgWalkingTimeMinutes: accessibilityReport.kpis.avgWalkingDistanceM ? Math.round((accessibilityReport.kpis.avgWalkingDistanceM / 80) * 10) / 10 : 0,
+              deadEndCount: accessibilityReport.kpis.deadEndStreetCount,
+              barrierExposureLabel: accessibilityReport.barriers.barrierExposureLabel,
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: accessibilityReport, aiInsights, aiInsightsError };
+          layers = ['h3_grid', 'bus_stops', 'roads', 'parking', 'schools'];
+          summary = `${accessibilityReport.executiveSummary.overallAccessibilityScore}/100 accessibility (${accessibilityReport.executiveSummary.overallAccessibilityStatus}), ${accessibilityReport.kpis.pop15MinWalk.toLocaleString()} residents within 15-min walk`;
           break;
         }
         case 'environmental': {
@@ -241,12 +281,12 @@ export function AnalysisEnginePanel({
       )}
 
       {result && selected === 'accessibility' && (
-        <div className="grid grid-cols-2 gap-1.5">
-          <MetricTile label="Walkability Score" value={`${result.walkabilityScore}/100`} note={result.walkabilityMethodology} />
-          <MetricTile label="Network Distance" unavailable note={result.networkDistanceNote} />
-          <MetricTile label="Transit Accessibility" value={result.transitAccessibility.busStopsWithin500m} unit="bus stops within 500m" />
-          <MetricTile label="Park Service Area" value="800m radius" note="Straight-line buffer, rendered on the map when Buffer tool is used." />
-        </div>
+        <AccessibilityAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+        />
       )}
 
       {result && selected === 'environmental' && (

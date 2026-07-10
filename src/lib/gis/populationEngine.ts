@@ -2,7 +2,7 @@ import { distance as turfDistance, bearing as turfBearing } from '@turf/turf';
 import type { H3Feature, GeoJsonFeature, RoadStats } from './types';
 import type { NLPAnalyzedReview } from '../nlpPlaceholders';
 import { hexCentroid } from './h3Engine';
-import { computeAccessibilityAnalysis } from './accessibilityEngine';
+import { computePedestrianNetworkQuality } from './accessibilityEngine';
 import { computePersonaAnalytics } from '../analytics/personas';
 
 // ---------------------------------------------------------------------------
@@ -171,7 +171,7 @@ export function computeDemandAssessment(
 
   const parkDemandIndex = hexes.length === 0 ? 0 : Math.round(hexes.reduce((s, h) => s + computeHexDemandScore(h), 0) / hexes.length);
 
-  const accessibility = computeAccessibilityAnalysis(hexes, busStops, parkCenter, roadStats);
+  const pedestrianQuality = computePedestrianNetworkQuality(hexes, roadStats);
 
   const greenM2PerCapita = totalPopulation === 0 ? 0 : totalGreenM2 / totalPopulation;
   const greenDeficitPct = Math.max(0, ((GREEN_SPACE_BENCHMARK_M2_PER_CAPITA - greenM2PerCapita) / GREEN_SPACE_BENCHMARK_M2_PER_CAPITA) * 100);
@@ -236,9 +236,9 @@ export function computeDemandAssessment(
   });
 
   metrics.push({
-    key: 'accessibilityScore', label: 'Population Accessibility Score', value: accessibility.walkabilityScore, displayValue: `${accessibility.walkabilityScore}/100`,
-    status: statusFor(accessibility.walkabilityScore, true), priority: priorityFor(statusFor(accessibility.walkabilityScore, true)),
-    note: 'Reuses the Accessibility Analysis walkability composite (road density + amenity density + intersection ratio).'
+    key: 'accessibilityScore', label: 'Population Accessibility Score', value: pedestrianQuality.walkabilityScore, displayValue: `${pedestrianQuality.walkabilityScore}/100`,
+    status: statusFor(pedestrianQuality.walkabilityScore, true), priority: priorityFor(statusFor(pedestrianQuality.walkabilityScore, true)),
+    note: 'Reuses the Accessibility Analysis walkability composite (connectivity + intersection density + route directness + transit access + amenity access + sidewalk coverage).'
   });
 
   const pressureScore = Math.round(normalize(avgDensityKm2, 20000));
