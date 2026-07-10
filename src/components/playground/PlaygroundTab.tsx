@@ -6,6 +6,9 @@ import { fetchGisManifest, fetchGisLayer } from '../../lib/gis/gisEngine';
 import { downloadGeoJson } from '../../lib/gis/exportEngine';
 import { computeAccessibilityAnalysis } from '../../lib/gis/accessibilityEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
+import { computeHexDemandScore } from '../../lib/gis/populationEngine';
+import { computeHexUrbanScore } from '../../lib/gis/urbanEngine';
+import { classifyHexLandUse } from '../../lib/gis/landUseEngine';
 import type { GisManifest, H3Feature, GeoJsonFeature } from '../../lib/gis/types';
 import type { DatasetLayerConfig } from './layerConfig';
 import { DatasetExplorerPanel } from './DatasetExplorerPanel';
@@ -27,6 +30,36 @@ const SECTIONS: { id: PlaygroundSection; label: string; icon: any }[] = [
   { id: 'charts', label: 'Charts', icon: BarChart3 },
   { id: 'history', label: 'History', icon: HistoryIcon }
 ];
+
+function InspectorRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex justify-between gap-2 border-b border-slate-50 py-0.5">
+      <span className="text-slate-400 font-semibold">{label}</span>
+      <span className="text-slate-700 font-bold">{value}</span>
+    </div>
+  );
+}
+
+/** A short, deterministic, per-cell insight derived from that cell's own real metrics -- not a live AI call per click (too slow/costly to fire on every map click). */
+function buildHexRecommendation(props: H3Feature['properties']): string {
+  const notes: string[] = [];
+  if ((props.green_coverage_pct || 0) < 10 && (props.building_coverage_pct || 0) > 25) {
+    notes.push('Low green coverage relative to built density -- candidate for planting/shade intervention.');
+  }
+  if ((props.pop_density_km2 || 0) > 10000 && (props.playground_count || 0) === 0) {
+    notes.push('High population density with no playground counted nearby -- candidate for play equipment.');
+  }
+  if ((props.amenity_total || 0) < 3 && (props.population || 0) > 200) {
+    notes.push('Populated cell with low amenity density -- candidate for community facility investment.');
+  }
+  if ((props.building_coverage_pct || 0) > 25 && (props.real_road_density_m_per_km2 || 0) < 5000) {
+    notes.push('High building coverage with low measured road access in this cell -- verify pedestrian/vehicle access before intervention.');
+  }
+  if (notes.length === 0) {
+    notes.push('No standout deficits detected for this cell against the metrics available.');
+  }
+  return notes.join(' ');
+}
 
 function loadHistory(): HistoryEntry[] {
   try {
@@ -175,17 +208,68 @@ export function PlaygroundTab() {
             {selectedFeature && (
               <div className="bg-white rounded border border-slate-200 shadow-sm p-2.5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Feature Inspector</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                    {selectedFeature.h3_id ? 'H3 Cell Inspector' : 'Feature Inspector'}
+                  </span>
                   <button onClick={() => setSelectedFeature(null)} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>
                 </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
-                  {Object.entries(selectedFeature).map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-2 border-b border-slate-50 py-0.5">
-                      <span className="text-slate-400 font-mono truncate">{k}</span>
-                      <span className="text-slate-700 font-semibold truncate">{String(v)}</span>
+
+                {selectedFeature.h3_id ? (() => {
+                  const matchedHex = hexes.find(h => h.properties.h3_id === selectedFeature.h3_id);
+                  const demandScore = matchedHex ? computeHexDemandScore(matchedHex) : null;
+                  const urbanScore = matchedHex ? computeHexUrbanScore(matchedHex) : null;
+                  const landUseLabel = matchedHex ? classifyHexLandUse(matchedHex, hexes) : null;
+                  const cellAccessibility = matchedHex
+                    ? computeAccessibilityAnalysis([matchedHex], busStops, parkCenter, manifest?.roadStats || null).walkabilityScore
+                    : null;
+                  const networkConnectivity = manifest?.roadStats && manifest.roadStats.totalGraphNodes > 0
+                    ? Math.round((manifest.roadStats.intersectionCount / manifest.roadStats.totalGraphNodes) * 100)
+                    : null;
+                  const avgBuildingSizeM2 = (selectedFeature.building_count || 0) > 0
+                    ? Math.round((selectedFeature.building_area_m2 || 0) / selectedFeature.building_count)
+                    : 0;
+                  const recommendation = buildHexRecommendation(selectedFeature as H3Feature['properties']);
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Population</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Population" value={Math.round(selectedFeature.population || 0).toLocaleString()} />
+                        <InspectorRow label="Density" value={`${Math.round(selectedFeature.pop_density_km2 || 0).toLocaleString()}/km²`} />
+                        <InspectorRow label="Schools" value={selectedFeature.school_count ?? 0} />
+                        <InspectorRow label="Bus Stops" value={selectedFeature.bus_stop_count ?? 0} />
+                        <InspectorRow label="Park Area" value={`${Math.round(selectedFeature.park_area_m2 || 0).toLocaleString()} m²`} />
+                        <InspectorRow label="Demand Score" value={demandScore !== null ? `${demandScore}/100` : 'N/A'} />
+                        <InspectorRow label="Accessibility Score" value={cellAccessibility !== null ? `${cellAccessibility}/100` : 'N/A'} />
+                        <InspectorRow label="Population Growth" value="No data" />
+                      </div>
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Urban</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Buildings" value={selectedFeature.building_count ?? 0} />
+                        <InspectorRow label="Building Coverage" value={`${(selectedFeature.building_coverage_pct || 0).toFixed(1)}%`} />
+                        <InspectorRow label="Avg Building Size" value={`${avgBuildingSizeM2.toLocaleString()} m²`} />
+                        <InspectorRow label="Road Length" value={`${Math.round(selectedFeature.real_road_length_m || 0).toLocaleString()} m`} />
+                        <InspectorRow label="Road Density" value={`${Math.round(selectedFeature.real_road_density_m_per_km2 || 0).toLocaleString()}/km²`} />
+                        <InspectorRow label="Dominant Land Use" value={landUseLabel || 'N/A'} />
+                        <InspectorRow label="Urban Compactness" value={urbanScore !== null ? `${urbanScore}/100` : 'N/A'} />
+                        <InspectorRow label="Connectivity Score" value={networkConnectivity !== null ? `${networkConnectivity}/100*` : 'N/A'} />
+                      </div>
+                      <p className="text-[7px] text-slate-400">* Connectivity Score is a network-wide value (not yet computed per-cell).</p>
+                      <div className="bg-indigo-50/60 border border-indigo-100 rounded p-1.5 text-[9px] text-indigo-900 leading-relaxed">
+                        <span className="font-bold uppercase tracking-wider text-[7px] block mb-0.5">AI Recommendation</span>
+                        {recommendation}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })() : (
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+                    {Object.entries(selectedFeature).map(([k, v]) => (
+                      <div key={k} className="flex justify-between gap-2 border-b border-slate-50 py-0.5">
+                        <span className="text-slate-400 font-mono truncate">{k}</span>
+                        <span className="text-slate-700 font-semibold truncate">{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

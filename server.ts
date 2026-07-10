@@ -548,6 +548,258 @@ ${JSON.stringify(promptInput, null, 2)}`;
     }
   });
 
+  // API Route: Population Analysis AI Interpretation (Playground -> Population module).
+  // Same Gemini-with-template-fallback pattern as /api/design-strategy -- the
+  // metrics bundle is always real evidence computed client-side from the H3
+  // grid, catchment rings, and demand metrics; Gemini reasons over it, never
+  // invents numbers of its own.
+  app.post('/api/population-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        primaryCommunity = 'a mixed community', overallDemandLevel = 'MEDIUM', highestDemandZone = 'the surrounding area',
+        aggregateDensityKm2 = 0, greenSpaceDeficitPct = 0, accessibilityScore = 0, pressureScore = 0, criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const opportunities: string[] = [];
+      const priorityRecommendations: { recommendation: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      if (accessibilityScore >= 60) {
+        strengths.push('Strong accessibility -- good road and amenity connectivity around the site.');
+      } else {
+        weaknesses.push('Limited accessibility -- road/amenity connectivity is below a well-served urban benchmark.');
+      }
+      if (aggregateDensityKm2 >= 5000) {
+        strengths.push('High surrounding population density supports strong potential park usage.');
+      }
+      if (greenSpaceDeficitPct > 30) {
+        weaknesses.push(`Green space deficit of ~${Math.round(greenSpaceDeficitPct)}% against the WHO/UN-Habitat per-capita benchmark.`);
+        opportunities.push('Expand green/planted area to close the per-capita green space gap.');
+        priorityRecommendations.push({
+          recommendation: 'Increase green and shaded open space',
+          evidence: [`Green space deficit: ${Math.round(greenSpaceDeficitPct)}%`, `Population pressure score: ${pressureScore}/100`],
+          priority: 'High',
+          confidence: Math.min(95, 50 + criticalMetrics.length * 8)
+        });
+      }
+      if (pressureScore >= 60) {
+        weaknesses.push('High population pressure relative to available park capacity.');
+        opportunities.push('Increase seating and gathering capacity to absorb peak demand.');
+      }
+      opportunities.push(`Prioritize improvements toward the ${highestDemandZone}, the highest-demand zone identified in this analysis.`);
+
+      priorityRecommendations.push({
+        recommendation: `Target design investment toward the ${highestDemandZone}`,
+        evidence: [`Overall demand level: ${overallDemandLevel}`, `Primary community: ${primaryCommunity}`],
+        priority: overallDemandLevel === 'HIGH' || overallDemandLevel === 'VERY HIGH' ? 'High' : 'Medium',
+        confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+      });
+
+      return {
+        communityProfile: `The park primarily serves ${primaryCommunity.toLowerCase()}, with demand concentrated toward the ${highestDemandZone}. Overall demand is assessed as ${overallDemandLevel}.`,
+        strengths: strengths.length ? strengths : ['No standout strengths identified from the available data.'],
+        weaknesses: weaknesses.length ? weaknesses : ['No significant weaknesses identified from the available data.'],
+        keyFindings: [
+          `Aggregate surrounding population density: ${Math.round(aggregateDensityKm2).toLocaleString()} people/km².`,
+          `${criticalMetrics.length} demand metric(s) flagged as critical priority.`
+        ],
+        designDrivers: opportunities.slice(0, 2),
+        constraints: weaknesses.slice(0, 2),
+        opportunities: opportunities.length ? opportunities : ['Insufficient data to identify additional opportunities.'],
+        priorityRecommendations
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template population-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert urban planner and landscape architect writing a Population Analysis interpretation for a public park in Dubai. You will be given real, pre-computed evidence (population, density, catchment, and demand metrics). Use ONLY the numbers provided -- do not invent statistics. Every recommendation's evidence array must reference a number that was actually given to you.`;
+
+      const contents = `Population analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a planning interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              communityProfile: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              keyFindings: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              constraints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              opportunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityRecommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    recommendation: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, or High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['recommendation', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['communityProfile', 'strengths', 'weaknesses', 'keyFindings', 'designDrivers', 'constraints', 'opportunities', 'priorityRecommendations']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Population Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
+  // API Route: Urban Analysis AI Interpretation (Playground -> Urban module).
+  // Same Gemini-with-template-fallback pattern as /api/population-insights --
+  // the metrics bundle is real evidence computed client-side from the H3 grid,
+  // road network, land use, and morphology engines.
+  app.post('/api/urban-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        urbanCharacter = 'a mixed urban fabric', roadConnectivity = 'Medium', dominantLandUse = 'Residential',
+        developmentPressure = 'Medium', buildingCoveragePct = 0, connectivityScore = 0, landUseDiversityIndex = 0,
+        criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const developmentOpportunities: string[] = [];
+      const priorityInterventions: { intervention: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      if (roadConnectivity === 'High') {
+        strengths.push('Strong road network connectivity supports good site access.');
+      } else {
+        weaknesses.push(`Road connectivity is ${String(roadConnectivity).toLowerCase()} -- access may be constrained in parts of the study area.`);
+      }
+      if (buildingCoveragePct > 35) {
+        weaknesses.push(`High building coverage (${Math.round(buildingCoveragePct)}%) leaves limited unbuilt/green area.`);
+        developmentOpportunities.push('Prioritize green/open space interventions where building coverage is highest.');
+        priorityInterventions.push({
+          intervention: 'Introduce green infrastructure in high-coverage zones',
+          evidence: [`Building coverage: ${Math.round(buildingCoveragePct)}%`, `Development pressure: ${developmentPressure}`],
+          priority: 'High',
+          confidence: Math.min(95, 50 + criticalMetrics.length * 8)
+        });
+      }
+      if (landUseDiversityIndex < 40) {
+        weaknesses.push('Low land-use diversity -- the surrounding fabric leans toward a single dominant use.');
+        developmentOpportunities.push('Introduce mixed-use or complementary program to diversify the immediate context.');
+      } else {
+        strengths.push('Reasonably diverse surrounding land use supports varied park users.');
+      }
+      developmentOpportunities.push(`Align design entrances/frontage with the ${String(dominantLandUse).toLowerCase()} fabric that dominates this catchment.`);
+
+      priorityInterventions.push({
+        intervention: `Strengthen park integration with the surrounding ${String(dominantLandUse).toLowerCase()} fabric`,
+        evidence: [`Urban character: ${urbanCharacter}`, `Connectivity score: ${connectivityScore}/100`],
+        priority: developmentPressure === 'High' ? 'High' : 'Medium',
+        confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+      });
+
+      return {
+        urbanCharacter: `The site sits within ${urbanCharacter.toLowerCase ? urbanCharacter.toLowerCase() : urbanCharacter} fabric, with ${String(roadConnectivity).toLowerCase()} road connectivity and a dominant ${String(dominantLandUse).toLowerCase()} land use.`,
+        strengths: strengths.length ? strengths : ['No standout strengths identified from the available data.'],
+        weaknesses: weaknesses.length ? weaknesses : ['No significant weaknesses identified from the available data.'],
+        constraints: weaknesses.slice(0, 2),
+        developmentOpportunities: developmentOpportunities.length ? developmentOpportunities : ['Insufficient data to identify additional opportunities.'],
+        designDrivers: developmentOpportunities.slice(0, 2),
+        priorityInterventions
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template urban-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert urban planner and urban designer writing an Urban Analysis interpretation for a public park in Dubai. You will be given real, pre-computed evidence (building, road network, land use, and morphology metrics). Use ONLY the numbers provided -- do not invent statistics. Every intervention's evidence array must reference a number that was actually given to you.`;
+
+      const contents = `Urban analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a planning interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              urbanCharacter: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              constraints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              developmentOpportunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityInterventions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    intervention: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, or High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['intervention', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['urbanCharacter', 'strengths', 'weaknesses', 'constraints', 'developmentOpportunities', 'designDrivers', 'priorityInterventions']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Urban Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
 async function initServer() {
   // Serve static assets or use Vite dev server
   if (process.env.NODE_ENV !== 'production') {

@@ -41,17 +41,41 @@ export interface H3HexProperties {
   green_coverage_pct: number;
   road_density_m_per_km2: number;
   amenity_total: number;
+  /** Real per-hex road length from a point-in-polygon spatial join (scripts/convert_gis_data.py) --
+   * the original road_length_m/road_density_m_per_km2 fields above are 0 for every hex in the source
+   * data and are kept only for schema compatibility. Use these two fields instead. */
+  real_road_length_m: number;
+  real_road_density_m_per_km2: number;
 }
 
 export type H3Feature = GeoJsonFeature<H3HexProperties>;
+
+export interface RoadHierarchyBucket {
+  count: number;
+  lengthM: number;
+}
+
+export interface RoadHierarchyStats {
+  primary: RoadHierarchyBucket;
+  secondary: RoadHierarchyBucket;
+  local: RoadHierarchyBucket;
+  service: RoadHierarchyBucket;
+  pedestrianCycling: RoadHierarchyBucket;
+  other: RoadHierarchyBucket;
+}
 
 export interface RoadStats {
   totalGraphNodes: number;
   physicalEdgeCount: number;
   intersectionCount: number;
+  deadEndCount: number;
   methodology: string;
   totalRoadLengthM: number;
   roadDensityMPerKm2: number;
+  hierarchy: RoadHierarchyStats;
+  blockCountEstimate?: number;
+  avgBlockSizeKm2?: number;
+  blockEstimateMethodology?: string;
 }
 
 export interface SpaceSyntaxNodeProperties {

@@ -4,19 +4,23 @@ import type { LucideIcon } from 'lucide-react';
 import type { H3Feature, GeoJsonFeature, RoadStats, SpaceSyntaxFeature, SpaceSyntaxStats } from '../../lib/gis/types';
 import type { PoiCounts } from '../../lib/gis/communityEngine';
 import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
-import { computePopulationAnalysis } from '../../lib/gis/populationEngine';
-import { computeUrbanAnalysis } from '../../lib/gis/urbanEngine';
+import { computePopulationAnalysisReport } from '../../lib/gis/populationEngine';
+import { computeUrbanAnalysisReport } from '../../lib/gis/urbanEngine';
 import { computeAccessibilityAnalysis } from '../../lib/gis/accessibilityEngine';
 import { computeEnvironmentalAnalysis } from '../../lib/gis/environmentalEngine';
 import { computeCommunityAnalysis } from '../../lib/gis/communityEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
 import { computeSpaceSyntaxAnalysis } from '../../lib/gis/spaceSyntaxEngine';
 import { generateDesignStrategy } from '../../lib/gis/aiRecommendationEngine';
+import { generatePopulationInsights, type PopulationInsightsResult } from '../../lib/gis/populationInsightsEngine';
+import { generateUrbanInsights, type UrbanInsightsResult } from '../../lib/gis/urbanInsightsEngine';
 import { sortIssueImpact, computeIssueImpact } from '../../lib/analytics/issueMatrix';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { SectionCard } from '../ui/SectionCard';
 import { Pill } from '../ui/Pill';
 import { MetricTile } from './MetricTile';
+import { PopulationAnalysisReport } from './PopulationAnalysisReport';
+import { UrbanAnalysisReport } from './UrbanAnalysisReport';
 
 export interface HistoryEntry {
   id: string;
@@ -76,15 +80,58 @@ export function AnalysisEnginePanel({
 
       switch (selected) {
         case 'population': {
-          r = computePopulationAnalysis(hexes, parkCenter);
-          layers = ['h3_grid'];
-          summary = `${r.totalPopulation.toLocaleString()} total population, ${r.avgPopDensityKm2.toLocaleString()}/km² avg density`;
+          const populationReport = computePopulationAnalysisReport(hexes, busStops, reviews, parkCenter, roadStats);
+          const criticalMetrics = populationReport.demand.metrics.filter(m => m.status === 'critical').map(m => m.label);
+          const greenDeficitMetric = populationReport.demand.metrics.find(m => m.key === 'greenSpaceDeficit');
+          const accessibilityMetric = populationReport.demand.metrics.find(m => m.key === 'accessibilityScore');
+          const pressureMetric = populationReport.demand.metrics.find(m => m.key === 'pressureScore');
+
+          let aiInsights: PopulationInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generatePopulationInsights({
+              primaryCommunity: populationReport.executiveSummary.primaryCommunity,
+              overallDemandLevel: populationReport.executiveSummary.overallDemandLevel,
+              highestDemandZone: populationReport.executiveSummary.highestDemandZone,
+              aggregateDensityKm2: populationReport.kpis.aggregateDensityKm2,
+              greenSpaceDeficitPct: greenDeficitMetric?.value ?? 0,
+              accessibilityScore: accessibilityMetric?.value ?? 0,
+              pressureScore: pressureMetric?.value ?? 0,
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: populationReport, aiInsights, aiInsightsError };
+          layers = ['h3_grid', 'roads', 'bus_stops', 'reviews'];
+          summary = `${populationReport.executiveSummary.populationServed.toLocaleString()} population served, ${populationReport.executiveSummary.overallDemandLevel} demand, primary community: ${populationReport.executiveSummary.primaryCommunity}`;
           break;
         }
         case 'urban': {
-          r = computeUrbanAnalysis(hexes, roadStats);
+          const urbanReport = computeUrbanAnalysisReport(hexes, roadStats);
+          const criticalMetrics = urbanReport.morphology.metrics.filter(m => m.status === 'critical').map(m => m.label);
+
+          let aiInsights: UrbanInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generateUrbanInsights({
+              urbanCharacter: urbanReport.executiveSummary.urbanCharacter,
+              roadConnectivity: urbanReport.executiveSummary.roadConnectivity,
+              dominantLandUse: urbanReport.executiveSummary.dominantLandUse,
+              developmentPressure: urbanReport.executiveSummary.developmentPressure,
+              buildingCoveragePct: urbanReport.kpis.buildingCoveragePct,
+              connectivityScore: urbanReport.kpis.connectivityScore,
+              landUseDiversityIndex: urbanReport.kpis.landUseDiversityIndex,
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: urbanReport, aiInsights, aiInsightsError };
           layers = ['h3_grid', 'roads'];
-          summary = `${r.buildingCount.toLocaleString()} buildings, ${r.buildingCoveragePct}% coverage, ${r.roadDensityMPerKm2.toLocaleString()} m/km² road density`;
+          summary = `${urbanReport.kpis.buildingCount.toLocaleString()} buildings, ${urbanReport.kpis.buildingCoveragePct}% coverage, ${urbanReport.executiveSummary.overallUrbanScore}/100 urban score`;
           break;
         }
         case 'accessibility': {
@@ -124,17 +171,17 @@ export function AnalysisEnginePanel({
           break;
         }
         case 'aiDesign': {
-          const pop = computePopulationAnalysis(hexes, parkCenter);
-          const urban = computeUrbanAnalysis(hexes, roadStats);
+          const populationReport = computePopulationAnalysisReport(hexes, busStops, reviews, parkCenter, roadStats);
+          const urban = computeUrbanAnalysisReport(hexes, roadStats);
           const env = computeEnvironmentalAnalysis(hexes, reviews);
           const community = computeCommunityAnalysis(hexes, reviews, poiCounts);
           const issueRows = sortIssueImpact(computeIssueImpact(reviews), 'priority').slice(0, 5);
           r = await generateDesignStrategy({
-            population: pop.totalPopulation,
-            popDensityKm2: pop.avgPopDensityKm2,
-            buildingCoveragePct: urban.buildingCoveragePct,
+            population: populationReport.kpis.totalPopulation,
+            popDensityKm2: populationReport.kpis.aggregateDensityKm2,
+            buildingCoveragePct: urban.kpis.buildingCoveragePct,
             greenCoveragePct: env.greenCoveragePct,
-            roadDensityMPerKm2: urban.roadDensityMPerKm2,
+            roadDensityMPerKm2: urban.kpis.streetDensityMPerKm2,
             amenityTotal: community.schoolCount + community.hospitalCount + community.mosqueCount + community.clinicCount,
             topIssues: issueRows.map(row => ({ category: row.category, mentions: row.mentions, priorityIndex: row.priorityIndex, priority: row.priority }))
           });
@@ -176,28 +223,21 @@ export function AnalysisEnginePanel({
       {error && <p className="text-[10px] font-semibold text-rose-600 mb-2">{error}</p>}
 
       {result && selected === 'population' && (
-        <div className="grid grid-cols-2 gap-1.5">
-          <MetricTile label="Total Population" value={result.totalPopulation.toLocaleString()} />
-          <MetricTile label="Population Density" value={result.avgPopDensityKm2.toLocaleString()} unit="/km²" />
-          <MetricTile label="Population Served" value={result.populationServedWithin800m.toLocaleString()} note="Within an 800m straight-line buffer of the park (not routed distance)." />
-          <MetricTile label="Population Heatmap" value={`${result.heatmapPoints.length} points`} note="See Charts tab for the population histogram." />
-          <MetricTile label="Population Growth" unavailable note="No time-series data -- only a single snapshot exists." />
-        </div>
+        <PopulationAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+        />
       )}
 
       {result && selected === 'urban' && (
-        <div className="grid grid-cols-2 gap-1.5">
-          <MetricTile label="Building Count" value={result.buildingCount.toLocaleString()} />
-          <MetricTile label="Building Density" value={result.buildingDensityPerKm2.toLocaleString()} unit="/km²" />
-          <MetricTile label="Building Coverage" value={result.buildingCoveragePct} unit="%" />
-          <MetricTile label="Floor Area Ratio" unavailable note={result.floorAreaRatioNote} />
-          <MetricTile label="Road Density" value={result.roadDensityMPerKm2.toLocaleString()} unit="m/km²" />
-          {result.connectivity ? (
-            <MetricTile label="Connectivity" value={result.connectivity.intersectionCount.toLocaleString()} unit="intersections" note={result.connectivity.methodology} />
-          ) : (
-            <MetricTile label="Connectivity" unavailable />
-          )}
-        </div>
+        <UrbanAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+        />
       )}
 
       {result && selected === 'accessibility' && (

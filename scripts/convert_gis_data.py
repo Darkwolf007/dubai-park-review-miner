@@ -223,11 +223,13 @@ def compute_road_intersections(roads_fc):
         degree[v] = degree.get(v, 0) + 1
 
     intersection_count = sum(1 for d in degree.values() if d >= 3)
+    dead_end_count = sum(1 for d in degree.values() if d == 1)
     return {
         'totalGraphNodes': len(degree),
         'physicalEdgeCount': len(canonical_edges),
         'intersectionCount': intersection_count,
-        'methodology': 'Undirected graph-node degree >=3 from OSM u/v node ids, deduped for bidirectional edges. Not simplified to named-street junctions -- dense service/parking-aisle segments inflate this relative to a true traffic-intersection count.'
+        'deadEndCount': dead_end_count,
+        'methodology': 'Undirected graph-node degree >=3 from OSM u/v node ids, deduped for bidirectional edges. Not simplified to named-street junctions -- dense service/parking-aisle segments inflate this relative to a true traffic-intersection count. Dead ends are degree-1 nodes on the same graph.'
     }
 
 
@@ -239,6 +241,91 @@ CIRCULATION_HIGHWAYS = {
     'motorway', 'motorway_link', 'primary_link', 'secondary_link', 'tertiary_link',
     'living_street'
 }
+
+# Road hierarchy buckets for Urban Analysis -- Road Network Analysis section.
+ROAD_HIERARCHY_GROUPS = {
+    'primary': {'motorway', 'motorway_link', 'primary', 'primary_link', 'trunk', 'trunk_link'},
+    'secondary': {'secondary', 'secondary_link', 'tertiary', 'tertiary_link'},
+    'local': {'residential', 'living_street', 'unclassified'},
+    'service': {'service', 'track'},
+    'pedestrianCycling': {'footway', 'path', 'steps', 'pedestrian', 'corridor', 'cycleway'}
+}
+
+
+def compute_road_hierarchy_stats(roads_fc):
+    """Groups road segments into a standard hierarchy (Primary/Secondary/Local/Service/Pedestrian) by highway tag, with real segment-length totals per tier."""
+    buckets = {k: {'count': 0, 'lengthM': 0.0} for k in ROAD_HIERARCHY_GROUPS}
+    buckets['other'] = {'count': 0, 'lengthM': 0.0}
+
+    def classify(hw):
+        for group, tags in ROAD_HIERARCHY_GROUPS.items():
+            if any(t in hw for t in tags):
+                return group
+        return 'other'
+
+    for feature in roads_fc['features']:
+        props = feature['properties']
+        hw = props.get('highway') or ''
+        group = classify(hw)
+        buckets[group]['count'] += 1
+        buckets[group]['lengthM'] += props.get('length') or 0
+
+    return buckets
+
+
+def build_hex_lookup(h3_fc):
+    """Prepares hex polygons + bboxes for fast point-in-polygon lookup."""
+    hexes = []
+    for f in h3_fc['features']:
+        ring = f['geometry']['coordinates'][0]
+        lngs = [p[0] for p in ring]
+        lats = [p[1] for p in ring]
+        hexes.append({
+            'h3_id': f['properties']['h3_id'],
+            'ring': ring,
+            'bbox': (min(lngs), min(lats), max(lngs), max(lats))
+        })
+    return hexes
+
+
+def point_in_ring(lng, lat, ring):
+    """Standard ray-casting point-in-polygon test."""
+    inside = False
+    n = len(ring)
+    j = n - 1
+    for i in range(n):
+        xi, yi = ring[i]
+        xj, yj = ring[j]
+        if ((yi > lat) != (yj > lat)) and (lng < (xj - xi) * (lat - yi) / (yj - yi + 1e-15) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def compute_per_hex_road_length(roads_fc, hex_lookup):
+    """
+    Real spatial join: attributes each road segment's length to whichever H3
+    hex contains its midpoint (bbox pre-filter, then exact ray-casting
+    point-in-polygon for candidates -- straightforward given ~860 hexes).
+    This is the genuine per-cell equivalent of the aggregate road density fix
+    above; the source h3_master.gpkg has no usable per-hex road figure at all.
+    """
+    per_hex_length = {}
+    for feature in roads_fc['features']:
+        coords = feature['geometry'].get('coordinates')
+        if not coords or len(coords) < 2:
+            continue
+        mid = coords[len(coords) // 2]
+        mlng, mlat = mid[0], mid[1]
+        length = feature['properties'].get('length') or 0
+        for hex_entry in hex_lookup:
+            bx0, by0, bx1, by1 = hex_entry['bbox']
+            if mlng < bx0 or mlng > bx1 or mlat < by0 or mlat > by1:
+                continue
+            if point_in_ring(mlng, mlat, hex_entry['ring']):
+                per_hex_length[hex_entry['h3_id']] = per_hex_length.get(hex_entry['h3_id'], 0) + length
+                break
+    return per_hex_length
 
 
 def minmax_normalize(values_by_key):
@@ -347,17 +434,17 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     manifest = {'generatedAt': datetime.now(timezone.utc).isoformat(), 'layers': {}}
 
-    # H3 grid
+    # H3 grid -- writing is deferred until after the per-hex road-length join below,
+    # so h3_fc is kept around instead of being written immediately.
     con = sqlite3.connect(H3_GPKG)
     cur = con.cursor()
     cur.execute('PRAGMA table_info(h3_master)')
     h3_cols = [r[1] for r in cur.fetchall() if r[1] != 'geom']
     h3_prop_map = {c: c for c in h3_cols}
-    fc, bbox = convert_table(con, 'h3_master', h3_prop_map)
-    write_json(os.path.join(OUT_DIR, 'h3_grid.geojson'), fc)
-    manifest['layers']['h3_grid'] = {'source': 'AlSafa2_H3_Master_Analysis.gpkg', 'table': 'h3_master', 'featureCount': len(fc['features']), 'bbox': bbox, 'h3Resolution': 9}
-    print(f"h3_grid: {len(fc['features'])} features")
-    total_hex_area_km2 = sum(f['properties'].get('hex_area_km2') or 0 for f in fc['features'])
+    h3_fc, h3_bbox = convert_table(con, 'h3_master', h3_prop_map)
+    manifest['layers']['h3_grid'] = {'source': 'AlSafa2_H3_Master_Analysis.gpkg', 'table': 'h3_master', 'featureCount': len(h3_fc['features']), 'bbox': h3_bbox, 'h3Resolution': 9}
+    print(f"h3_grid: {len(h3_fc['features'])} features")
+    total_hex_area_km2 = sum(f['properties'].get('hex_area_km2') or 0 for f in h3_fc['features'])
     con.close()
 
     # OSM layers
@@ -368,15 +455,31 @@ def main():
     manifest['layers']['buildings'] = {'source': 'AlSafa2_OSM_5km_AllLayers.gpkg', 'table': 'buildings', 'featureCount': len(fc['features']), 'bbox': bbox}
     print(f"buildings: {len(fc['features'])} features")
 
-    fc, bbox = convert_table(con, 'roads', ROAD_PROPS)
-    write_json(os.path.join(OUT_DIR, 'roads.geojson'), fc)
-    manifest['layers']['roads'] = {'source': 'AlSafa2_OSM_5km_AllLayers.gpkg', 'table': 'roads', 'featureCount': len(fc['features']), 'bbox': bbox}
-    print(f"roads: {len(fc['features'])} features")
+    roads_fc, bbox = convert_table(con, 'roads', ROAD_PROPS)
+    write_json(os.path.join(OUT_DIR, 'roads.geojson'), roads_fc)
+    manifest['layers']['roads'] = {'source': 'AlSafa2_OSM_5km_AllLayers.gpkg', 'table': 'roads', 'featureCount': len(roads_fc['features']), 'bbox': bbox}
+    print(f"roads: {len(roads_fc['features'])} features")
 
-    road_stats = compute_road_intersections(fc)
-    road_stats.update(compute_road_length_stats(fc, total_hex_area_km2))
-    write_json(os.path.join(OUT_DIR, 'road_stats.json'), road_stats)
-    print(f"road_stats: {road_stats}")
+    road_stats = compute_road_intersections(roads_fc)
+    road_stats.update(compute_road_length_stats(roads_fc, total_hex_area_km2))
+    road_stats['hierarchy'] = compute_road_hierarchy_stats(roads_fc)
+    print(f"road hierarchy: {road_stats['hierarchy']}")
+
+    print('\n[urban morphology] joining road segments to H3 hexes (real point-in-polygon spatial join, one-time)...')
+    t_join = time.time()
+    hex_lookup = build_hex_lookup(h3_fc)
+    per_hex_road_length = compute_per_hex_road_length(roads_fc, hex_lookup)
+    print(f'[urban morphology] road-to-hex join: {time.time() - t_join:.1f}s, {len(per_hex_road_length)} hexes matched')
+
+    for f in h3_fc['features']:
+        h3_id = f['properties']['h3_id']
+        length_m = per_hex_road_length.get(h3_id, 0)
+        area_km2 = f['properties'].get('hex_area_km2') or 0
+        f['properties']['real_road_length_m'] = round(length_m, 1)
+        f['properties']['real_road_density_m_per_km2'] = round(length_m / area_km2, 1) if area_km2 > 0 else 0
+
+    write_json(os.path.join(OUT_DIR, 'h3_grid.geojson'), h3_fc)
+    print(f"h3_grid: wrote {len(h3_fc['features'])} features (with real per-hex road length attached)")
 
     for table_name, prop_map in POI_PROPS.items():
         fc, bbox = convert_table(con, table_name, prop_map)
@@ -395,7 +498,19 @@ def main():
         manifest['layers']['space_syntax'] = {'source': 'AlSafa2_OSM_5km_AllLayers.gpkg', 'table': 'roads (derived graph)', 'featureCount': len(space_syntax_fc['features']), 'bbox': ss_bbox}
         print(f"space_syntax: {len(space_syntax_fc['features'])} nodes")
 
+        # Block count estimate via Euler's formula for planar graphs (faces = edges - nodes + 2)
+        # on the drivable circulation network -- a real graph-theoretic estimate, not a
+        # true block-polygon extraction (which would need building-parcel boundaries).
+        euler_faces = space_syntax_stats['edgeCount'] - space_syntax_stats['nodeCount'] + 2
+        block_count_estimate = max(1, euler_faces - 1)  # subtract the graph's single unbounded outer face
+        road_stats['blockCountEstimate'] = block_count_estimate
+        road_stats['avgBlockSizeKm2'] = round(total_hex_area_km2 / block_count_estimate, 4)
+        road_stats['blockEstimateMethodology'] = "Euler's formula for planar graphs (faces = edges - nodes + 2) on the drivable circulation network -- a graph-theoretic estimate, not a true block-polygon extraction from parcel boundaries."
+
     con.close()
+
+    write_json(os.path.join(OUT_DIR, 'road_stats.json'), road_stats)
+    print(f"\nroad_stats (final): {road_stats}")
 
     write_json(os.path.join(OUT_DIR, 'manifest.json'), manifest)
     print('\nWrote manifest.json')
