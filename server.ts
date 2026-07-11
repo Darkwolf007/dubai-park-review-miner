@@ -934,6 +934,146 @@ ${JSON.stringify(promptInput, null, 2)}`;
     }
   });
 
+  // API Route: Environmental Analysis AI Interpretation (Playground -> Environmental module).
+  // Same Gemini-with-template-fallback pattern as the other three insights endpoints -- the
+  // metrics bundle is real evidence from surface-composition proxies (this dataset has no
+  // satellite/thermal/wind data) plus review-sentiment thermal-comfort/biodiversity scores.
+  app.post('/api/environmental-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        overallEnvironmentalScore = 0, greenCoveragePct = 0, imperviousSurfacePct = 0,
+        thermalComfortScore = 0, biodiversityScore = 0, hotspotAreaPct = 0, peakHeatZone = 'the site',
+        coolingOpportunityScore = 0, waterFeatureConcernScore = 0, criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const constraints: string[] = [];
+      const ecologicalOpportunities: string[] = [];
+      const designDrivers: string[] = [];
+      const priorityInterventions: { intervention: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      if (greenCoveragePct >= 25) {
+        strengths.push(`Green coverage of ${Math.round(greenCoveragePct)}% is comparatively strong for this study area.`);
+      } else {
+        weaknesses.push(`Green coverage is only ${Math.round(greenCoveragePct)}% -- limited vegetated area to draw on for shade and cooling.`);
+      }
+      if (imperviousSurfacePct > 40) {
+        weaknesses.push(`Estimated impervious surface is high (${Math.round(imperviousSurfacePct)}%), driving heat retention across much of the study area.`);
+        constraints.push('High estimated impervious coverage limits where new hardscape can be added without worsening heat exposure.');
+      }
+      if (thermalComfortScore < 45) {
+        weaknesses.push(`Thermal comfort (from visitor sentiment) is low at ${thermalComfortScore}/100 -- shade and heat comfort are recurring visitor complaints.`);
+        priorityInterventions.push({
+          intervention: `Create a shaded pedestrian corridor toward the ${peakHeatZone}`,
+          evidence: [`Hotspot area: ${Math.round(hotspotAreaPct)}% of the study area`, `Thermal comfort score: ${thermalComfortScore}/100`],
+          priority: 'High',
+          confidence: Math.min(95, 50 + criticalMetrics.length * 8)
+        });
+      } else {
+        strengths.push('Visitor sentiment on shade/heat comfort is comparatively favorable.');
+      }
+      if (biodiversityScore >= 65) {
+        strengths.push('Visitor sentiment reflects positive wildlife/nature presence.');
+        ecologicalOpportunities.push('Reinforce existing habitat value with native/pollinator planting.');
+      } else {
+        ecologicalOpportunities.push('Introduce native and pollinator-friendly planting to build ecological value from a currently low baseline.');
+      }
+      if (waterFeatureConcernScore >= 50) {
+        weaknesses.push('Visitor sentiment shows above-average concern with existing water features.');
+      }
+      designDrivers.push(`Target cooling interventions toward the ${peakHeatZone}, the highest estimated heat-exposure zone identified.`);
+      if (coolingOpportunityScore >= 60) {
+        priorityInterventions.push({
+          intervention: 'Introduce tree planting and permeable surface in the highest cooling-opportunity zones',
+          evidence: [`Cooling opportunity score: ${coolingOpportunityScore}/100`, `Estimated impervious surface: ${Math.round(imperviousSurfacePct)}%`],
+          priority: coolingOpportunityScore >= 75 ? 'High' : 'Medium',
+          confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+        });
+      }
+      constraints.push('No wind/CFD, NDVI, thermal-raster, or tree-survey data exists for this site -- all heat/shade/canopy figures are documented surface-composition proxies, not measurements.');
+
+      return {
+        environmentalProfile: `The study area scores ${overallEnvironmentalScore}/100 overall on the composite Environmental Score, with an estimated ${Math.round(hotspotAreaPct)}% of the area in a heat-exposure hotspot concentrated toward the ${peakHeatZone}. Green coverage sits at ${Math.round(greenCoveragePct)}%.`,
+        strengths: strengths.length ? strengths : ['No standout strengths identified from the available data.'],
+        weaknesses: weaknesses.length ? weaknesses : ['No significant weaknesses identified from the available data.'],
+        constraints,
+        ecologicalOpportunities: ecologicalOpportunities.length ? ecologicalOpportunities : ['Insufficient data to identify additional ecological opportunities.'],
+        designDrivers,
+        priorityInterventions: priorityInterventions.length ? priorityInterventions : [{
+          intervention: 'Maintain current green coverage and monitor as the site develops',
+          evidence: [`Overall environmental score: ${overallEnvironmentalScore}/100`],
+          priority: 'Low',
+          confidence: 40
+        }]
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template environmental-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert landscape architect and environmental planner writing an Environmental Analysis interpretation for a public park in Dubai. You will be given real, pre-computed evidence. IMPORTANT: this dataset has NO satellite, thermal, NDVI, or wind data -- heat/shade/canopy figures are documented surface-composition proxies, not measurements. Do not describe them as measured temperatures or satellite-derived values. Use ONLY the numbers provided -- do not invent statistics. Every intervention's evidence array must reference a number that was actually given to you.`;
+
+      const contents = `Environmental analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a planning interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              environmentalProfile: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              constraints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              ecologicalOpportunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityInterventions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    intervention: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, or High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['intervention', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['environmentalProfile', 'strengths', 'weaknesses', 'constraints', 'ecologicalOpportunities', 'designDrivers', 'priorityInterventions']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Environmental Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
 async function initServer() {
   // Serve static assets or use Vite dev server
   if (process.env.NODE_ENV !== 'production') {

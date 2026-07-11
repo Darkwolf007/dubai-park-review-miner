@@ -7,7 +7,7 @@ import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { computePopulationAnalysisReport } from '../../lib/gis/populationEngine';
 import { computeUrbanAnalysisReport } from '../../lib/gis/urbanEngine';
 import { computeAccessibilityAnalysisReport } from '../../lib/gis/accessibilityEngine';
-import { computeEnvironmentalAnalysis } from '../../lib/gis/environmentalEngine';
+import { computeEnvironmentalAnalysisReport } from '../../lib/gis/environmentalEngine';
 import { computeCommunityAnalysis } from '../../lib/gis/communityEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
 import { computeSpaceSyntaxAnalysis } from '../../lib/gis/spaceSyntaxEngine';
@@ -15,6 +15,7 @@ import { generateDesignStrategy } from '../../lib/gis/aiRecommendationEngine';
 import { generatePopulationInsights, type PopulationInsightsResult } from '../../lib/gis/populationInsightsEngine';
 import { generateUrbanInsights, type UrbanInsightsResult } from '../../lib/gis/urbanInsightsEngine';
 import { generateAccessibilityInsights, type AccessibilityInsightsResult } from '../../lib/gis/accessibilityInsightsEngine';
+import { generateEnvironmentalInsights, type EnvironmentalInsightsResult } from '../../lib/gis/environmentalInsightsEngine';
 import { sortIssueImpact, computeIssueImpact } from '../../lib/analytics/issueMatrix';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { SectionCard } from '../ui/SectionCard';
@@ -23,6 +24,7 @@ import { MetricTile } from './MetricTile';
 import { PopulationAnalysisReport } from './PopulationAnalysisReport';
 import { UrbanAnalysisReport } from './UrbanAnalysisReport';
 import { AccessibilityAnalysisReport } from './AccessibilityAnalysisReport';
+import { EnvironmentalAnalysisReport } from './EnvironmentalAnalysisReport';
 
 export interface HistoryEntry {
   id: string;
@@ -181,9 +183,32 @@ export function AnalysisEnginePanel({
           break;
         }
         case 'environmental': {
-          r = computeEnvironmentalAnalysis(hexes, reviews);
+          const environmentalReport = computeEnvironmentalAnalysisReport(hexes, reviews, roadStats, parkCenter);
+          const criticalMetrics = environmentalReport.kpis.metrics.filter(m => m.status === 'critical').map(m => m.label);
+          const waterMetric = environmentalReport.kpis.metrics.find(m => m.key === 'waterFeatureSatisfaction');
+
+          let aiInsights: EnvironmentalInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generateEnvironmentalInsights({
+              overallEnvironmentalScore: environmentalReport.executiveSummary.overallEnvironmentalScore,
+              greenCoveragePct: environmentalReport.kpis.greenCoveragePct,
+              imperviousSurfacePct: environmentalReport.kpis.imperviousSurfacePct,
+              thermalComfortScore: environmentalReport.kpis.thermalComfortScore,
+              biodiversityScore: environmentalReport.kpis.biodiversityScore,
+              hotspotAreaPct: environmentalReport.kpis.hotspotAreaPct,
+              peakHeatZone: environmentalReport.executiveSummary.peakHeatZone,
+              coolingOpportunityScore: environmentalReport.kpis.avgCoolingOpportunityScore,
+              waterFeatureConcernScore: waterMetric?.value ?? 0,
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: environmentalReport, aiInsights, aiInsightsError };
           layers = ['h3_grid', 'reviews'];
-          summary = `${r.greenCoveragePct}% green coverage, shade opportunity ${r.shadeOpportunityScore ?? 'N/A'}`;
+          summary = `${environmentalReport.executiveSummary.overallEnvironmentalScore}/100 environmental score (${environmentalReport.executiveSummary.overallStatusBadge}), ${environmentalReport.kpis.greenCoveragePct}% green coverage`;
           break;
         }
         case 'community': {
@@ -213,14 +238,14 @@ export function AnalysisEnginePanel({
         case 'aiDesign': {
           const populationReport = computePopulationAnalysisReport(hexes, busStops, reviews, parkCenter, roadStats);
           const urban = computeUrbanAnalysisReport(hexes, roadStats);
-          const env = computeEnvironmentalAnalysis(hexes, reviews);
+          const env = computeEnvironmentalAnalysisReport(hexes, reviews, roadStats, parkCenter);
           const community = computeCommunityAnalysis(hexes, reviews, poiCounts);
           const issueRows = sortIssueImpact(computeIssueImpact(reviews), 'priority').slice(0, 5);
           r = await generateDesignStrategy({
             population: populationReport.kpis.totalPopulation,
             popDensityKm2: populationReport.kpis.aggregateDensityKm2,
             buildingCoveragePct: urban.kpis.buildingCoveragePct,
-            greenCoveragePct: env.greenCoveragePct,
+            greenCoveragePct: env.kpis.greenCoveragePct,
             roadDensityMPerKm2: urban.kpis.streetDensityMPerKm2,
             amenityTotal: community.schoolCount + community.hospitalCount + community.mosqueCount + community.clinicCount,
             topIssues: issueRows.map(row => ({ category: row.category, mentions: row.mentions, priorityIndex: row.priorityIndex, priority: row.priority }))
@@ -290,18 +315,13 @@ export function AnalysisEnginePanel({
       )}
 
       {result && selected === 'environmental' && (
-        <div className="grid grid-cols-2 gap-1.5">
-          <MetricTile label="Green Ratio" value={result.greenCoveragePct} unit="%" note="Real H3-aggregated coverage." />
-          <MetricTile label="Tree Canopy" unavailable note="No remote-sensing canopy raster in this dataset." />
-          <MetricTile label="Surface Temperature" unavailable />
-          <MetricTile label="Urban Heat" unavailable />
-          <MetricTile
-            label="Shade Opportunity"
-            value={result.shadeOpportunityScore !== null ? `${result.shadeOpportunityScore}/100` : undefined}
-            unavailable={result.shadeOpportunityScore === null}
-            note={result.shadeOpportunityNote}
-          />
-        </div>
+        <EnvironmentalAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+          roadStats={roadStats}
+        />
       )}
 
       {result && selected === 'community' && (

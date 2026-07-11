@@ -8,6 +8,10 @@ import {
   computePedestrianNetworkQuality, computeHexWalkabilityScore, computeHexParkAccessScore,
   computeHexTransitAccessibilityScore, accessibilityStatusLabel
 } from '../../lib/gis/accessibilityEngine';
+import {
+  hexHeatExposureProxy, hexCoolingOpportunityScore, hexBiodiversityProxy, hexTreePlantingSuitability,
+  computeAvgRoadWidthM
+} from '../../lib/gis/environmentalEngine';
 import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
 import { computeHexDemandScore } from '../../lib/gis/populationEngine';
 import { computeHexUrbanScore } from '../../lib/gis/urbanEngine';
@@ -232,6 +236,11 @@ export function PlaygroundTab() {
                   const avgBuildingSizeM2 = (selectedFeature.building_count || 0) > 0
                     ? Math.round((selectedFeature.building_area_m2 || 0) / selectedFeature.building_count)
                     : 0;
+                  const avgRoadWidthM = computeAvgRoadWidthM(manifest?.roadStats || null);
+                  const cellHeatProxy = matchedHex ? hexHeatExposureProxy(matchedHex, avgRoadWidthM) : null;
+                  const cellCoolingOpportunity = matchedHex ? hexCoolingOpportunityScore(matchedHex, avgRoadWidthM) : null;
+                  const cellBiodiversityProxy = matchedHex ? hexBiodiversityProxy(matchedHex) : null;
+                  const cellTreePlantingSuitability = matchedHex ? hexTreePlantingSuitability(matchedHex, avgRoadWidthM) : null;
                   const recommendation = buildHexRecommendation(selectedFeature as H3Feature['properties']);
                   return (
                     <div className="space-y-2">
@@ -268,6 +277,16 @@ export function PlaygroundTab() {
                         <InspectorRow label="Park Access Score" value={cellParkAccess !== null ? `${cellParkAccess}/100` : 'N/A'} />
                         <InspectorRow label="Accessibility Status" value={cellAccessibilityStatus || 'N/A'} />
                       </div>
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Environmental</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Green Coverage" value={`${(selectedFeature.green_coverage_pct || 0).toFixed(1)}%`} />
+                        <InspectorRow label="Heat Exposure Proxy" value={cellHeatProxy !== null ? `${cellHeatProxy}/100` : 'N/A'} />
+                        <InspectorRow label="Cooling Opportunity" value={cellCoolingOpportunity !== null ? `${cellCoolingOpportunity}/100` : 'N/A'} />
+                        <InspectorRow label="Biodiversity Proxy" value={cellBiodiversityProxy !== null ? `${cellBiodiversityProxy}/100` : 'N/A'} />
+                        <InspectorRow label="Tree Planting Suitability" value={cellTreePlantingSuitability !== null ? `${cellTreePlantingSuitability}/100` : 'N/A'} />
+                        <InspectorRow label="Surface Temperature" value="No dataset" />
+                      </div>
+                      <p className="text-[7px] text-slate-400">Heat/Cooling/Biodiversity/Tree Planting are documented surface-composition proxies (no satellite/thermal data exists in this dataset) -- see Environmental Analysis for full methodology.</p>
                       <div className="bg-indigo-50/60 border border-indigo-100 rounded p-1.5 text-[9px] text-indigo-900 leading-relaxed">
                         <span className="font-bold uppercase tracking-wider text-[7px] block mb-0.5">AI Recommendation</span>
                         {recommendation}

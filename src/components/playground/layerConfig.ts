@@ -86,9 +86,11 @@ export const DATASET_CATEGORIES: DatasetCategory[] = [
     label: 'Environment',
     layers: [
       { id: 'parks', label: 'Parks', dataStatus: 'real', layerKey: 'parks', renderMode: 'polygons', color: '#008300' },
+      { id: 'env-green-coverage', label: 'Green Coverage', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'green_coverage_pct', color: '#008300', note: 'Real H3-aggregated OSM landuse tagging -- sparse (site-wide average under 1%), not a canopy/NDVI measurement.' },
+      { id: 'env-heat-proxy', label: 'Heat Exposure Proxy', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'building_coverage_pct', color: '#e34948', note: 'Colored by building coverage as the dominant proxy component -- the full Heat Exposure Proxy also factors in estimated road area and green deficit (see Environmental Analysis -- Heat and Thermal Comfort). Not a measured temperature.' },
       { id: 'tree-canopy', label: 'Tree Canopy', dataStatus: 'unavailable', color: '#94a3b8', note: 'No remote-sensing canopy raster in this dataset.' },
-      { id: 'water-bodies', label: 'Water Bodies', dataStatus: 'unavailable', color: '#94a3b8' },
-      { id: 'land-cover', label: 'Land Cover', dataStatus: 'unavailable', color: '#94a3b8' },
+      { id: 'water-bodies', label: 'Water Bodies', dataStatus: 'unavailable', color: '#94a3b8', note: 'Confirmed zero natural=water features in this OSM extract.' },
+      { id: 'land-cover', label: 'Land Cover', dataStatus: 'statOnly', color: '#94a3b8', note: 'Buildings/Paved/Green/Void breakdown -- see Environmental Analysis -- Land Cover and Surface Materials for the chart.' },
       { id: 'surface-temperature', label: 'Surface Temperature', dataStatus: 'unavailable', color: '#94a3b8', note: 'No thermal raster in this dataset.' },
       { id: 'urban-heat-island', label: 'Urban Heat Island', dataStatus: 'unavailable', color: '#94a3b8' }
     ]
