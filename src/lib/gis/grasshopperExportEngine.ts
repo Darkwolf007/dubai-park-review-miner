@@ -4,6 +4,7 @@ import {
   hexHeatExposureProxy, hexCoolingOpportunityScore, hexBiodiversityProxy, hexWaterSensitiveSuitability,
   hexTreePlantingSuitability, hexVoidRatioPct, computeAvgRoadWidthM
 } from './environmentalEngine';
+import { PROGRAM_DEFS } from './communityEngine';
 
 // ---------------------------------------------------------------------------
 // UTM Zone 40N (EPSG:32640) forward projection
@@ -166,6 +167,334 @@ export function computeGrasshopperExport(hexes: H3Feature[], roadStats: RoadStat
 export function grasshopperExportToCsv(exportData: GrasshopperExport): string {
   if (exportData.cells.length === 0) return '';
   const cols = Object.keys(exportData.cells[0]) as (keyof GrasshopperCell)[];
+  const header = cols.join(',');
+  const rows = exportData.cells.map(c => cols.map(col => String(c[col] ?? '')).join(','));
+  return [header, ...rows].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Community program inputs (Grasshopper Program Export)
+// ---------------------------------------------------------------------------
+
+export interface CommunityGrasshopperCell {
+  h3_id: string;
+  centroid_x: number;
+  centroid_y: number;
+  family_demand: number;
+  child_demand: number;
+  youth_demand: number;
+  older_adult_demand: number;
+  community_activity: number;
+  facility_access: number;
+  playground_deficit: number;
+  sports_deficit: number;
+  green_space_deficit: number;
+  community_vulnerability: number;
+  community_opportunity: number;
+  social_interaction_potential: number;
+  quiet_space_demand: number;
+  event_space_demand: number;
+}
+
+export interface CommunityGrasshopperProgram {
+  name: string;
+  target_area_m2: number;
+  minimum_area_m2: number;
+  maximum_area_m2: number;
+  priority: number;
+  minimum_count: number;
+  maximum_count: number;
+  primary_users: string[];
+  shade_requirement: number;
+  noise_tolerance: number;
+  accessibility_requirement: number;
+  visibility_requirement: number;
+  preferred_adjacencies: string[];
+  avoid_adjacencies: string[];
+  community_demand_score: number;
+}
+
+export interface CommunityGrasshopperExport {
+  site: string;
+  analysis_crs: string;
+  h3_resolution: number;
+  generated_at: string;
+  methodology: Record<string, string>;
+  cells: CommunityGrasshopperCell[];
+  programs: CommunityGrasshopperProgram[];
+}
+
+/**
+ * Builds the community-program Grasshopper export. Takes the already-computed per-hex community
+ * functions and program-demand list as arguments (rather than importing communityEngine.ts's full
+ * report bundle) to keep this a pure formatting/projection step -- callers pass in what
+ * computeCommunityAnalysisReport already produced.
+ */
+export function computeCommunityGrasshopperExport(
+  hexes: H3Feature[],
+  hexScores: {
+    familyDemand: (h: H3Feature) => number;
+    youthDemand: (h: H3Feature) => number;
+    olderAdultDemand: (h: H3Feature) => number;
+    facilityAccess: (h: H3Feature) => number;
+    playgroundDeficit: (h: H3Feature) => number;
+    sportsDeficit: (h: H3Feature) => number;
+    greenSpaceDeficit: (h: H3Feature) => number;
+    vulnerability: (h: H3Feature) => number;
+    opportunity: (h: H3Feature) => number;
+    diversity: (h: H3Feature) => number;
+  },
+  programDemand: { key: string; name: string; demandScore: number; primaryUsers: string[] }[],
+  programDefs: { key: string; name: string; primaryUsers: string[]; shadeRequirement: number; noiseTolerance: number; accessibilityRequirement: number; visibilityRequirement: number; targetAreaM2: number; minAreaM2: number; maxAreaM2: number; minCount: number; maxCount: number; preferredAdjacencies: string[]; avoidAdjacencies: string[] }[],
+  siteName = 'Al Safa 2 Park'
+): CommunityGrasshopperExport {
+  const cells: CommunityGrasshopperCell[] = hexes.map(h => {
+    const [lng, lat] = hexCentroid(h);
+    const { x, y } = toUtm40N(lng, lat);
+    const familyDemand = hexScores.familyDemand(h);
+    const facilityAccess = hexScores.facilityAccess(h);
+    const diversity = hexScores.diversity(h);
+    // Child demand reuses the family-demand composite (school/playground presence + density) --
+    // this dataset has no age-band split, so child and family demand share the same real inputs.
+    const childDemand = familyDemand;
+    // Social-interaction potential and quiet-space/event-space demand are directional composites
+    // built only from real fields already computed elsewhere (diversity, vulnerability, facility
+    // access) -- not independently measured signals.
+    const socialInteractionPotential = Math.round((diversity + facilityAccess) / 2);
+    const quietSpaceDemand = Math.max(0, 100 - socialInteractionPotential);
+    const eventSpaceDemand = Math.round((diversity * 0.5 + familyDemand * 0.5));
+
+    return {
+      h3_id: h.properties.h3_id,
+      centroid_x: x,
+      centroid_y: y,
+      family_demand: Math.round((familyDemand / 100) * 1000) / 1000,
+      child_demand: Math.round((childDemand / 100) * 1000) / 1000,
+      youth_demand: Math.round((hexScores.youthDemand(h) / 100) * 1000) / 1000,
+      older_adult_demand: Math.round((hexScores.olderAdultDemand(h) / 100) * 1000) / 1000,
+      community_activity: Math.round((diversity / 100) * 1000) / 1000,
+      facility_access: Math.round((facilityAccess / 100) * 1000) / 1000,
+      playground_deficit: Math.round((hexScores.playgroundDeficit(h) / 100) * 1000) / 1000,
+      sports_deficit: Math.round((hexScores.sportsDeficit(h) / 100) * 1000) / 1000,
+      green_space_deficit: Math.round((hexScores.greenSpaceDeficit(h) / 100) * 1000) / 1000,
+      community_vulnerability: Math.round((hexScores.vulnerability(h) / 100) * 1000) / 1000,
+      community_opportunity: Math.round((hexScores.opportunity(h) / 100) * 1000) / 1000,
+      social_interaction_potential: Math.round((socialInteractionPotential / 100) * 1000) / 1000,
+      quiet_space_demand: Math.round((quietSpaceDemand / 100) * 1000) / 1000,
+      event_space_demand: Math.round((eventSpaceDemand / 100) * 1000) / 1000
+    };
+  });
+
+  const programs: CommunityGrasshopperProgram[] = programDefs.map(def => {
+    const demand = programDemand.find(p => p.key === def.key);
+    return {
+      name: def.name,
+      target_area_m2: def.targetAreaM2,
+      minimum_area_m2: def.minAreaM2,
+      maximum_area_m2: def.maxAreaM2,
+      priority: Math.round(((demand?.demandScore ?? 50) / 100) * 100) / 100,
+      minimum_count: def.minCount,
+      maximum_count: def.maxCount,
+      primary_users: def.primaryUsers,
+      shade_requirement: def.shadeRequirement,
+      noise_tolerance: def.noiseTolerance,
+      accessibility_requirement: def.accessibilityRequirement,
+      visibility_requirement: def.visibilityRequirement,
+      preferred_adjacencies: def.preferredAdjacencies,
+      avoid_adjacencies: def.avoidAdjacencies,
+      community_demand_score: Math.round(((demand?.demandScore ?? 50) / 100) * 1000) / 1000
+    };
+  });
+
+  return {
+    site: siteName,
+    analysis_crs: 'EPSG:32640',
+    h3_resolution: 9,
+    generated_at: new Date().toISOString(),
+    methodology: {
+      coordinates: 'centroid_x/centroid_y are real WGS84->UTM Zone 40N (EPSG:32640) forward-projected coordinates in meters (same projection used by the Environmental Analysis Grasshopper export).',
+      demand_scores: 'family/child/youth/older_adult demand are per-hex composites of real school/mosque/clinic/sports/playground presence signals and population density -- this dataset has no age-band population split, so child_demand reuses the family_demand composite rather than fabricating an independent age curve.',
+      facility_access_and_diversity: 'facility_access is normalized H3 amenity-presence density; community_activity reuses the same facility-type-diversity composite (share of 9 facility types present per cell).',
+      deficits: 'playground_deficit/sports_deficit are high where population is dense AND no playground/sports presence signal exists in the cell (not a literal distance-to-nearest-facility calculation). green_space_deficit is 100 - green_coverage_pct.',
+      vulnerability_and_opportunity: 'community_vulnerability blends population pressure, green deficit, real network walking-time-to-park (where routable), and facility deficit. community_opportunity is vulnerability weighted by available land (void ratio) -- where an intervention would have the most impact and the most room to work with.',
+      social_and_program_demand: 'social_interaction_potential, quiet_space_demand, and event_space_demand are directional composites built only from the real fields above (diversity, facility access, family demand) -- not independently measured indices.',
+      programs: 'target/minimum/maximum area ranges and shade/noise/accessibility/visibility requirement scores are standard public-park landscape-architecture planning benchmarks (not measurements of this specific site). priority and community_demand_score come from the real per-program demand formula: 55% relevant-persona review-mention share + 45% gap in the relevant Park Health Score sentiment subscore(s) -- see the Community Analysis -- Program Demand Analysis section for the full per-program breakdown.'
+    },
+    cells,
+    programs
+  };
+}
+
+export function communityGrasshopperExportToCsv(exportData: CommunityGrasshopperExport): string {
+  if (exportData.cells.length === 0) return '';
+  const cols = Object.keys(exportData.cells[0]) as (keyof CommunityGrasshopperCell)[];
+  const header = cols.join(',');
+  const rows = exportData.cells.map(c => cols.map(col => String(c[col] ?? '')).join(','));
+  return [header, ...rows].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// NLP design inputs (Grasshopper Design Inputs -- NLP Spatial Analysis)
+// ---------------------------------------------------------------------------
+
+export interface NlpGrasshopperCell {
+  h3_id: string;
+  centroid_x: number;
+  centroid_y: number;
+  shade_demand: number;
+  playground_demand: number;
+  seating_demand: number;
+  toilet_demand: number;
+  water_demand: number;
+  sports_demand: number;
+  quiet_space_demand: number;
+  event_space_demand: number;
+  accessibility_demand: number;
+  family_demand: number;
+  youth_demand: number;
+  older_adult_demand: number;
+  maintenance_priority: number;
+  safety_priority: number;
+  positive_identity_value: number;
+  community_satisfaction: number;
+}
+
+export interface NlpGrasshopperProgram {
+  name: string;
+  demand_score: number;
+  primary_users: string[];
+  evidence_count: number;
+  shade_requirement: number;
+  accessibility_requirement: number;
+  visibility_requirement: number;
+  recommended_area_m2: { minimum: number; target: number; maximum: number };
+  priority: 'very_high' | 'high' | 'medium' | 'low';
+  confidence: number;
+}
+
+export interface NlpGrasshopperExport {
+  site: string;
+  analysis_crs: string;
+  h3_resolution: number;
+  generated_at: string;
+  review_analysis: { total_reviews: number; overall_sentiment: number };
+  methodology: Record<string, string>;
+  cells: NlpGrasshopperCell[];
+  programs: NlpGrasshopperProgram[];
+}
+
+/** Maps community program keys onto the NLP topic category whose real mention/sentiment data should drive that program's demand -- undefined where no direct topic mapping exists (a neutral baseline is used instead, disclosed in methodology). */
+const PROGRAM_KEY_TO_TOPIC: Partial<Record<string, string>> = {
+  inclusivePlayground: 'playground', naturePlay: 'landscape / greenery', waterPlay: 'water features',
+  sportsCourt: 'sports facilities', outdoorFitness: 'sports facilities', joggingLoop: 'sports facilities',
+  walkingCircuit: 'accessibility', picnicArea: 'seating', familySeating: 'seating',
+  sensoryGarden: 'accessibility', cafe: 'food / cafe', retailKiosk: 'food / cafe',
+  toilets: 'toilets', drinkingFountains: 'water features', dogArea: 'pets'
+};
+
+export interface NlpTopicRate {
+  category: string;
+  mentionShare: number; // 0-1
+  positiveSharePct: number; // 0-100
+  negativeSharePct: number; // 0-100
+  mentions: number;
+}
+
+/**
+ * Reviews have no per-review location (confirmed: every raw review shares the single park-level
+ * coordinate) -- every per-cell field here is a population-weighted REDISTRIBUTION of the one real
+ * park-level topic rate, not measured per-cell review activity. Same disclosed-proxy pattern as
+ * the Environmental and Community Grasshopper exports' own composite fields.
+ */
+export function computeNlpGrasshopperExport(
+  hexes: H3Feature[],
+  totalReviews: number,
+  overallSentimentScore0to100: number,
+  topicRates: NlpTopicRate[],
+  siteName = 'Al Safa 2 Park'
+): NlpGrasshopperExport {
+  const totalPopulation = hexes.reduce((s, h) => s + (h.properties.population || 0), 0) || 1;
+  const findRate = (category: string) => topicRates.find(t => t.category === category);
+
+  const rateFor = (category: string): number => {
+    const r = findRate(category);
+    if (!r) return 0;
+    return Math.min(1, r.mentionShare * 0.5 + (r.negativeSharePct / 100) * 0.5);
+  };
+
+  const cells: NlpGrasshopperCell[] = hexes.map(h => {
+    const [lng, lat] = hexCentroid(h);
+    const { x, y } = toUtm40N(lng, lat);
+    const popShare = (h.properties.population || 0) / totalPopulation;
+    const weight = Math.min(1, popShare * hexes.length);
+
+    const scoreFor = (category: string) => Math.round(rateFor(category) * weight * 1000) / 1000;
+
+    return {
+      h3_id: h.properties.h3_id,
+      centroid_x: x,
+      centroid_y: y,
+      shade_demand: scoreFor('shade / heat comfort'),
+      playground_demand: scoreFor('playground'),
+      seating_demand: scoreFor('seating'),
+      toilet_demand: scoreFor('toilets'),
+      water_demand: scoreFor('water features'),
+      sports_demand: scoreFor('sports facilities'),
+      quiet_space_demand: scoreFor('crowding'),
+      event_space_demand: Math.round(((findRate('crowding')?.mentionShare || 0) * weight) * 1000) / 1000,
+      accessibility_demand: scoreFor('accessibility'),
+      family_demand: scoreFor('playground'),
+      youth_demand: scoreFor('sports facilities'),
+      older_adult_demand: scoreFor('safety'),
+      maintenance_priority: scoreFor('maintenance'),
+      safety_priority: scoreFor('safety'),
+      positive_identity_value: Math.round(weight * ((findRate('landscape / greenery')?.positiveSharePct || 0) / 100) * 1000) / 1000,
+      community_satisfaction: Math.round((overallSentimentScore0to100 / 100) * weight * 1000) / 1000
+    };
+  });
+
+  const programs: NlpGrasshopperProgram[] = PROGRAM_DEFS.map(def => {
+    const topicKey = PROGRAM_KEY_TO_TOPIC[def.key];
+    const rate = topicKey ? findRate(topicKey) : undefined;
+    const demandScore = rate ? Math.min(100, Math.round(Math.min(1, rate.mentionShare * 3) * 50 + rate.negativeSharePct * 0.5)) : 30;
+    const priority: NlpGrasshopperProgram['priority'] = demandScore >= 75 ? 'very_high' : demandScore >= 50 ? 'high' : demandScore >= 25 ? 'medium' : 'low';
+
+    return {
+      name: def.name,
+      demand_score: Math.round((demandScore / 100) * 1000) / 1000,
+      primary_users: def.primaryUsers,
+      evidence_count: rate?.mentions || 0,
+      shade_requirement: def.shadeRequirement,
+      accessibility_requirement: def.accessibilityRequirement,
+      visibility_requirement: def.visibilityRequirement,
+      recommended_area_m2: { minimum: def.minAreaM2, target: def.targetAreaM2, maximum: def.maxAreaM2 },
+      priority,
+      confidence: Math.round(Math.min(95, 35 + (rate?.mentions || 0) * 3)) / 100
+    };
+  });
+
+  return {
+    site: siteName,
+    analysis_crs: 'EPSG:32640',
+    h3_resolution: 9,
+    generated_at: new Date().toISOString(),
+    review_analysis: { total_reviews: totalReviews, overall_sentiment: Math.round((overallSentimentScore0to100 / 100) * 1000) / 1000 },
+    methodology: {
+      coordinates: 'centroid_x/centroid_y are real WGS84->UTM Zone 40N (EPSG:32640) forward-projected coordinates in meters.',
+      spatial_disclosure: 'Reviews carry NO per-review location -- every raw review shares the identical single park-level coordinate. Every per-cell demand field is a population-weighted REDISTRIBUTION of the one real park-level topic rate (mention share blended with negative-sentiment share for that topic), not measured per-cell review activity.',
+      demand_fields: 'Each *_demand/*_priority field maps to a specific real review topic (see PROGRAM_KEY_TO_TOPIC-style mapping): shade->"shade / heat comfort", playground/family->"playground", seating->"seating", toilet->"toilets", water->"water features", sports/youth->"sports facilities", quiet/event->"crowding", accessibility->"accessibility", maintenance/safety/older_adult->"maintenance"/"safety". Cells with no population get 0, not an estimate.',
+      positive_identity_value: 'Population-weighted allocation of the site-wide positive sentiment share for the "landscape / greenery" topic -- a proxy for which areas might carry the park\'s identity-defining qualities, not a measured landmark/character survey.',
+      community_satisfaction: 'Population-weighted allocation of the single site-wide Overall Sentiment Score -- identical methodology figure redistributed by population share, not independently measured per cell.',
+      programs: 'Program list and area ranges reuse Community Analysis\'s PROGRAM_DEFS (standard landscape-architecture planning benchmarks, not site measurements). demand_score/priority here are computed from real NLP review-topic evidence (mention share + negative sentiment share) specifically, not persona review counts -- programs with no direct topic mapping receive a neutral baseline demand_score of 0.3 rather than a fabricated figure.'
+    },
+    cells,
+    programs
+  };
+}
+
+export function nlpGrasshopperExportToCsv(exportData: NlpGrasshopperExport): string {
+  if (exportData.cells.length === 0) return '';
+  const cols = Object.keys(exportData.cells[0]) as (keyof NlpGrasshopperCell)[];
   const header = cols.join(',');
   const rows = exportData.cells.map(c => cols.map(col => String(c[col] ?? '')).join(','));
   return [header, ...rows].join('\n');

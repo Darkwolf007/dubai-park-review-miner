@@ -100,8 +100,32 @@ const ISSUE_KEYWORDS: { category: string; keywords: string[]; designRec: string 
     category: 'landscape / greenery',
     keywords: ['green', 'tree', 'plant', 'flower', 'grass', 'lawn', 'landscape', 'garden', 'nature', 'flora', 'palm'],
     designRec: 'Specify drought-tolerant, native xerophytic plant species (e.g., Ghaf tree, Pennisetum) integrated with smart, sensor-driven drip irrigation.'
+  },
+  {
+    category: 'pests / mosquitoes',
+    keywords: ['mosquito', 'mosquitoes', 'insect', 'insects', 'pest', 'pests', 'gnat', 'gnats'],
+    designRec: 'Address standing-water sources (irrigation runoff, water features) and introduce planting that supports natural mosquito predators rather than broad pesticide use.'
+  },
+  {
+    category: 'wayfinding / signage',
+    keywords: ['signage', 'wayfinding', 'confusing layout', 'hard to find', 'no map', 'lost my way'],
+    designRec: 'Install a coherent wayfinding system with entrance maps, directional signage at path junctions, and facility-identification markers.'
+  },
+  {
+    category: 'noise',
+    keywords: ['noisy', 'too loud', 'blasting music', 'honking', 'traffic noise'],
+    designRec: 'Introduce vegetated noise buffers (berms, dense planting belts) along road-facing edges and separate quiet zones from high-activity/traffic-adjacent areas.'
+  },
+  {
+    category: 'opening hours / operations',
+    keywords: ['opening hours', 'closing time', 'closed early', 'not open', 'operating hours'],
+    designRec: 'Review and clearly publish operating hours at entrances and online listings; align staffing with observed peak-demand periods.'
   }
 ];
+
+/** Shared with sentence-level sentiment analysis so both stay in sync with the review-level classifier. */
+export const POSITIVE_SENTIMENT_WORDS = ['love', 'beautiful', 'great', 'excellent', 'amazing', 'good', 'wonderful', 'nice', 'pleasant', 'best', 'clean', 'perfect'];
+export const NEGATIVE_SENTIMENT_WORDS = ['hot', 'shade', 'crowded', 'dirty', 'toilet', 'poor', 'uncomfortable', 'broken', 'disappointed', 'bad', 'expensive', 'smell', 'no shade'];
 
 // Helper to analyze a single review locally using rules
 export function analyzeReviewLocally(review: Review): NLPAnalyzedReview {
@@ -109,14 +133,12 @@ export function analyzeReviewLocally(review: Review): NLPAnalyzedReview {
   
   // 1. Sentiment analysis
   let sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' = 'NEUTRAL';
-  const posWords = ['love', 'beautiful', 'great', 'excellent', 'amazing', 'good', 'wonderful', 'nice', 'pleasant', 'best', 'clean', 'perfect'];
-  const negWords = ['hot', 'shade', 'crowded', 'dirty', 'toilet', 'poor', 'uncomfortable', 'broken', 'disappointed', 'bad', 'expensive', 'smell', 'no shade'];
-  
+
   let posCount = 0;
   let negCount = 0;
-  
-  posWords.forEach(w => { if (text.includes(w)) posCount++; });
-  negWords.forEach(w => { if (text.includes(w)) negCount++; });
+
+  POSITIVE_SENTIMENT_WORDS.forEach(w => { if (text.includes(w)) posCount++; });
+  NEGATIVE_SENTIMENT_WORDS.forEach(w => { if (text.includes(w)) negCount++; });
 
   if (review.rating >= 4) {
     sentiment = negCount > posCount + 1 ? 'NEUTRAL' : 'POSITIVE';

@@ -1074,6 +1074,277 @@ ${JSON.stringify(promptInput, null, 2)}`;
     }
   });
 
+  // API Route: Community Analysis AI Interpretation (Playground -> Community module).
+  // Same Gemini-with-template-fallback pattern as the other four insights endpoints -- the
+  // metrics bundle is real evidence from facility counts, review-sentiment personas/Health Score
+  // subscores, and per-hex community composites.
+  app.post('/api/community-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        overallCommunityScore = 0, dominantCommunityType = 'a mixed community', primaryUserGroups = [],
+        facilityAccessScore = 0, familyDemandScore = 0, youthDemandScore = 0, olderAdultSupportScore = 0,
+        socialInfrastructureDeficitScore = 0, underservedZone = 'the surrounding area', topProgramName = 'a flexible community space',
+        criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const equityConcerns: string[] = [];
+      const designDrivers: string[] = [];
+      const programPriorities: string[] = [];
+      const priorityInterventions: { intervention: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      if (facilityAccessScore >= 60) {
+        strengths.push('Good surrounding community-facility access supports strong park integration.');
+      } else {
+        weaknesses.push(`Facility-access score is ${facilityAccessScore}/100 -- surrounding community-facility density is limited.`);
+      }
+      if (familyDemandScore >= 60) {
+        strengths.push('Strong family-oriented demand signal from nearby schools/playgrounds and population density.');
+        programPriorities.push('Prioritize family-oriented programs (inclusive playground, family seating, picnic areas).');
+      }
+      if (youthDemandScore >= 60) {
+        designDrivers.push('Provide a dedicated youth/teen activity zone given elevated youth-demand signal.');
+      }
+      if (olderAdultSupportScore < 40) {
+        weaknesses.push('Older-adult support score is low -- limited nearby mosque/clinic presence and quiet-space provision.');
+        equityConcerns.push('Older adults and People of Determination may be underserved relative to family/youth-oriented provision.');
+      }
+      if (socialInfrastructureDeficitScore >= 50) {
+        equityConcerns.push(`Social-infrastructure deficit score of ${socialInfrastructureDeficitScore}/100 indicates a meaningful facility gap in parts of the study area.`);
+        priorityInterventions.push({
+          intervention: `Improve community-facility provision toward the ${underservedZone}`,
+          evidence: [`Social-infrastructure deficit score: ${socialInfrastructureDeficitScore}/100`, `Overall community score: ${overallCommunityScore}/100`],
+          priority: 'High',
+          confidence: Math.min(95, 50 + criticalMetrics.length * 8)
+        });
+      }
+      priorityInterventions.push({
+        intervention: `Prioritize ${topProgramName} based on the highest program-demand score`,
+        evidence: [`Dominant community type: ${dominantCommunityType}`, `Primary user groups: ${primaryUserGroups.slice(0, 3).join(', ')}`],
+        priority: overallCommunityScore < 50 ? 'High' : 'Medium',
+        confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+      });
+
+      return {
+        communityProfile: `The park serves a predominantly ${String(dominantCommunityType).toLowerCase()}, with primary user groups including ${primaryUserGroups.slice(0, 3).join(', ') || 'a mixed population'}. Overall community score is ${overallCommunityScore}/100.`,
+        primaryUserGroups: primaryUserGroups.length ? primaryUserGroups : ['Insufficient review data'],
+        socialInfrastructure: [`Facility-access score: ${facilityAccessScore}/100`],
+        strengths: strengths.length ? strengths : ['No standout strengths identified from the available data.'],
+        weaknesses: weaknesses.length ? weaknesses : ['No significant weaknesses identified from the available data.'],
+        equityConcerns: equityConcerns.length ? equityConcerns : ['No significant equity concerns identified from the available data.'],
+        designDrivers: designDrivers.length ? designDrivers : ['Insufficient data to identify additional design drivers.'],
+        programPriorities: programPriorities.length ? programPriorities : [`Prioritize ${topProgramName}, the highest-demand program identified.`],
+        priorityInterventions
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template community-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert community/social-infrastructure planner writing a Community Analysis interpretation for a public park in Dubai. You will be given real, pre-computed evidence (facility counts, review-sentiment personas, demand scores). This dataset has NO official age/household/income census data -- demand scores are proxy composites from facility presence and review sentiment, not measured demographics. Use ONLY the numbers provided -- do not invent statistics. Every intervention's evidence array must reference a number that was actually given to you.`;
+
+      const contents = `Community analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a planning interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              communityProfile: { type: Type.STRING },
+              primaryUserGroups: { type: Type.ARRAY, items: { type: Type.STRING } },
+              socialInfrastructure: { type: Type.ARRAY, items: { type: Type.STRING } },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              equityConcerns: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              programPriorities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityInterventions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    intervention: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, or High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['intervention', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['communityProfile', 'primaryUserGroups', 'socialInfrastructure', 'strengths', 'weaknesses', 'equityConcerns', 'designDrivers', 'programPriorities', 'priorityInterventions']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Community Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
+  // API Route: NLP Spatial Analysis AI Interpretation (Playground -> NLP Spatial module).
+  // Same Gemini-with-template-fallback pattern as the other five insights endpoints. Distinct from
+  // /api/nlp-analyze above, which classifies individual reviews -- this endpoint interprets the
+  // already-aggregated review-intelligence evidence (topics, complaints, personas, temporal trends).
+  app.post('/api/nlp-spatial-insights', async (req, res) => {
+    const { metrics } = req.body;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return res.status(400).json({ error: 'metrics object is required' });
+    }
+
+    function buildTemplateInsights() {
+      const {
+        overallSentimentScore = 0, topPositiveTopic = 'the landscape', topNegativeTopic = 'shade and heat comfort',
+        mostRequestedImprovement = 'more shade', mostMentionedUserGroup = 'families', criticalIssueCluster = 'none identified',
+        avgHeatExposureProxy = null, avgGreenCoveragePct = null, criticalMetrics = []
+      } = metrics;
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      const emergingIssues: string[] = [];
+      const spatialHotspots: string[] = [];
+      const retainAndProtect: string[] = [];
+      const improveAndExpand: string[] = [];
+      const designDrivers: string[] = [];
+      const priorityRecommendations: { intervention: string; evidence: string[]; priority: string; confidence: number }[] = [];
+
+      strengths.push(`${topPositiveTopic} is the most positively discussed topic in visitor reviews.`);
+      retainAndProtect.push(`Protect and reinforce ${String(topPositiveTopic).toLowerCase()}, the park's strongest identified quality.`);
+
+      if (overallSentimentScore < 60) {
+        weaknesses.push(`Overall sentiment score is ${overallSentimentScore}/100 -- below a well-performing benchmark.`);
+      } else {
+        strengths.push(`Overall sentiment score of ${overallSentimentScore}/100 reflects generally positive visitor experience.`);
+      }
+
+      weaknesses.push(`${topNegativeTopic} is the most frequently and negatively discussed topic.`);
+      improveAndExpand.push(`Address ${String(topNegativeTopic).toLowerCase()} -- the most requested improvement is: ${mostRequestedImprovement}.`);
+
+      if (avgHeatExposureProxy !== null && avgGreenCoveragePct !== null && topNegativeTopic === 'shade / heat comfort') {
+        spatialHotspots.push(`Environmental Analysis cross-reference: average Heat Exposure Proxy is ${avgHeatExposureProxy}/100 with only ${avgGreenCoveragePct}% green coverage -- reinforces the shade complaint pattern with independent GIS evidence.`);
+        priorityRecommendations.push({
+          intervention: 'Increase shade and canopy near high-activity zones',
+          evidence: [`Topic: ${topNegativeTopic}`, `Heat Exposure Proxy: ${avgHeatExposureProxy}/100`, `Green Coverage: ${avgGreenCoveragePct}%`],
+          priority: 'Very High',
+          confidence: Math.min(95, 55 + criticalMetrics.length * 8)
+        });
+      } else {
+        priorityRecommendations.push({
+          intervention: `Address ${String(topNegativeTopic).toLowerCase()}`,
+          evidence: [`Most requested improvement: ${mostRequestedImprovement}`, `Overall sentiment: ${overallSentimentScore}/100`],
+          priority: 'High',
+          confidence: Math.min(90, 45 + criticalMetrics.length * 7)
+        });
+      }
+
+      designDrivers.push(`Design primarily for ${String(mostMentionedUserGroup).toLowerCase()}, the most-mentioned user group in reviews.`);
+      if (criticalIssueCluster && criticalIssueCluster !== 'None identified') {
+        emergingIssues.push(`${criticalIssueCluster} is flagged as a critical issue cluster requiring priority attention.`);
+      }
+
+      return {
+        overallCommunityPerception: `Visitors describe the park primarily in terms of ${String(topPositiveTopic).toLowerCase()}, while ${String(topNegativeTopic).toLowerCase()} is the most consistent complaint. Overall sentiment scores ${overallSentimentScore}/100.`,
+        mostValuedFeatures: [topPositiveTopic],
+        mostCriticalProblems: [topNegativeTopic, mostRequestedImprovement],
+        emergingIssues: emergingIssues.length ? emergingIssues : ['No clear emerging issue trend identified from the available data.'],
+        userGroupNeeds: [`${mostMentionedUserGroup}: primary evidence driver in this run.`],
+        spatialHotspots: spatialHotspots.length ? spatialHotspots : ['No cross-referenced GIS spatial hotspot identified for this run -- reviews are park-level only.'],
+        retainAndProtect,
+        improveAndExpand,
+        removeOrRedesign: [],
+        designDrivers,
+        priorityRecommendations
+      };
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template nlp-spatial-insights synthesis.');
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert landscape architect writing a community-perception interpretation for a public park in Dubai, based on aggregated review-intelligence evidence (topics, complaints, personas, sentiment, temporal trends, and cross-referenced GIS signals where present). Reviews have NO per-review location -- never claim precise spatial accuracy. Use ONLY the numbers/topics provided -- do not invent statistics or quotes. Every recommendation's evidence array must reference something actually given to you.`;
+
+      const contents = `NLP spatial analysis evidence:\n${JSON.stringify(metrics, null, 2)}\n\nGenerate a community-perception interpretation grounded strictly in this evidence.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              overallCommunityPerception: { type: Type.STRING },
+              mostValuedFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
+              mostCriticalProblems: { type: Type.ARRAY, items: { type: Type.STRING } },
+              emergingIssues: { type: Type.ARRAY, items: { type: Type.STRING } },
+              userGroupNeeds: { type: Type.ARRAY, items: { type: Type.STRING } },
+              spatialHotspots: { type: Type.ARRAY, items: { type: Type.STRING } },
+              retainAndProtect: { type: Type.ARRAY, items: { type: Type.STRING } },
+              improveAndExpand: { type: Type.ARRAY, items: { type: Type.STRING } },
+              removeOrRedesign: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designDrivers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              priorityRecommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    intervention: { type: Type.STRING },
+                    evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    priority: { type: Type.STRING, description: 'Low, Medium, High, or Very High' },
+                    confidence: { type: Type.INTEGER, description: '0-100' }
+                  },
+                  required: ['intervention', 'evidence', 'priority', 'confidence']
+                }
+              }
+            },
+            required: ['overallCommunityPerception', 'mostValuedFeatures', 'mostCriticalProblems', 'emergingIssues', 'userGroupNeeds', 'spatialHotspots', 'retainAndProtect', 'improveAndExpand', 'removeOrRedesign', 'designDrivers', 'priorityRecommendations']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...parsed, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('NLP Spatial Insights Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateInsights(), engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
 async function initServer() {
   // Serve static assets or use Vite dev server
   if (process.env.NODE_ENV !== 'production') {

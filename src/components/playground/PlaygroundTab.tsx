@@ -16,6 +16,10 @@ import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine'
 import { computeHexDemandScore } from '../../lib/gis/populationEngine';
 import { computeHexUrbanScore } from '../../lib/gis/urbanEngine';
 import { classifyHexLandUse } from '../../lib/gis/landUseEngine';
+import {
+  hexFamilyDemandScore, hexYouthDemandScore, hexOlderAdultDemandScore, hexFacilityAccessScore,
+  hexCommunityDiversityScore, hexCommunityVulnerabilityScore, hexCommunityOpportunityScore
+} from '../../lib/gis/communityEngine';
 import type { GisManifest, H3Feature, GeoJsonFeature } from '../../lib/gis/types';
 import type { DatasetLayerConfig } from './layerConfig';
 import { DatasetExplorerPanel } from './DatasetExplorerPanel';
@@ -139,13 +143,6 @@ export function PlaygroundTab() {
     if (fc) downloadGeoJson(fc, `${layer.layerKey}.geojson`);
   }
 
-  const poiCounts = useMemo(() => ({
-    schoolCount: manifest?.layers.schools?.featureCount || 0,
-    hospitalCount: manifest?.layers.hospitals?.featureCount || 0,
-    mosqueCount: manifest?.layers.mosques?.featureCount || 0,
-    clinicCount: manifest?.layers.clinics?.featureCount || 0
-  }), [manifest]);
-
   function handleRunComplete(entry: { name: string; layers: string[]; summary: string }) {
     setHistory(prev => [{ id: `${Date.now()}`, timestamp: new Date().toISOString(), ...entry }, ...prev].slice(0, 50));
     if (entry.name === 'Accessibility Analysis') {
@@ -241,6 +238,13 @@ export function PlaygroundTab() {
                   const cellCoolingOpportunity = matchedHex ? hexCoolingOpportunityScore(matchedHex, avgRoadWidthM) : null;
                   const cellBiodiversityProxy = matchedHex ? hexBiodiversityProxy(matchedHex) : null;
                   const cellTreePlantingSuitability = matchedHex ? hexTreePlantingSuitability(matchedHex, avgRoadWidthM) : null;
+                  const cellFamilyDemand = matchedHex ? hexFamilyDemandScore(matchedHex) : null;
+                  const cellYouthDemand = matchedHex ? hexYouthDemandScore(matchedHex) : null;
+                  const cellOlderAdultDemand = matchedHex ? hexOlderAdultDemandScore(matchedHex) : null;
+                  const cellFacilityAccess = matchedHex ? hexFacilityAccessScore(matchedHex) : null;
+                  const cellCommunityDiversity = matchedHex ? hexCommunityDiversityScore(matchedHex) : null;
+                  const cellCommunityVulnerability = matchedHex ? hexCommunityVulnerabilityScore(matchedHex) : null;
+                  const cellCommunityOpportunity = matchedHex ? hexCommunityOpportunityScore(matchedHex) : null;
                   const recommendation = buildHexRecommendation(selectedFeature as H3Feature['properties']);
                   return (
                     <div className="space-y-2">
@@ -287,6 +291,23 @@ export function PlaygroundTab() {
                         <InspectorRow label="Surface Temperature" value="No dataset" />
                       </div>
                       <p className="text-[7px] text-slate-400">Heat/Cooling/Biodiversity/Tree Planting are documented surface-composition proxies (no satellite/thermal data exists in this dataset) -- see Environmental Analysis for full methodology.</p>
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Community</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Family Demand" value={cellFamilyDemand !== null ? `${cellFamilyDemand}/100` : 'N/A'} />
+                        <InspectorRow label="Youth Demand" value={cellYouthDemand !== null ? `${cellYouthDemand}/100` : 'N/A'} />
+                        <InspectorRow label="Older-Adult Demand" value={cellOlderAdultDemand !== null ? `${cellOlderAdultDemand}/100` : 'N/A'} />
+                        <InspectorRow label="Facility Access" value={cellFacilityAccess !== null ? `${cellFacilityAccess}/100` : 'N/A'} />
+                        <InspectorRow label="Community Diversity" value={cellCommunityDiversity !== null ? `${cellCommunityDiversity}/100` : 'N/A'} />
+                        <InspectorRow label="Community Vulnerability" value={cellCommunityVulnerability !== null ? `${cellCommunityVulnerability}/100` : 'N/A'} />
+                        <InspectorRow label="Community Opportunity" value={cellCommunityOpportunity !== null ? `${cellCommunityOpportunity}/100` : 'N/A'} />
+                      </div>
+                      <p className="text-[7px] text-slate-400">Demand/diversity scores use per-hex facility-presence signals (0 vs any nearby), not literal distinct counts -- see Community Analysis for the full methodology and real study-area-wide facility counts.</p>
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 pt-1">Review Intelligence</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                        <InspectorRow label="Top Complaint (Park-Wide)" value={nlpSpatial?.topComplaintCategories[0]?.category || 'N/A'} />
+                        <InspectorRow label="Review Sentiment (Park-Wide)" value={nlpSpatial ? `${nlpSpatial.overallSentimentScore}/100` : 'N/A'} />
+                      </div>
+                      <p className="text-[7px] text-slate-400">Reviews have no per-cell location (confirmed: every review shares one park-level coordinate) -- these values are park-wide, not specific to this hex. See NLP Spatial Analysis for the full review-intelligence report.</p>
                       <div className="bg-indigo-50/60 border border-indigo-100 rounded p-1.5 text-[9px] text-indigo-900 leading-relaxed">
                         <span className="font-bold uppercase tracking-wider text-[7px] block mb-0.5">AI Recommendation</span>
                         {recommendation}
@@ -314,7 +335,6 @@ export function PlaygroundTab() {
               reviews={reviews}
               parkCenter={parkCenter}
               roadStats={manifest?.roadStats || null}
-              poiCounts={poiCounts}
               spaceSyntaxStats={manifest?.spaceSyntaxStats || null}
               accessibilityStats={manifest?.accessibilityStats || null}
               onRunComplete={handleRunComplete}

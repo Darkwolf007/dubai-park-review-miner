@@ -78,7 +78,10 @@ export const DATASET_CATEGORIES: DatasetCategory[] = [
       { id: 'hospitals', label: 'Hospitals', dataStatus: 'real', layerKey: 'hospitals', renderMode: 'points', color: '#e34948' },
       { id: 'clinics', label: 'Clinics', dataStatus: 'real', layerKey: 'clinics', renderMode: 'points', color: '#e87ba4' },
       { id: 'universities', label: 'Universities', dataStatus: 'unavailable', color: '#94a3b8', note: 'Not distinguished from Schools in this OSM extract.' },
-      { id: 'community-centers', label: 'Community Centers', dataStatus: 'unavailable', color: '#94a3b8', note: 'Not captured in this OSM extract.' }
+      { id: 'community-centers', label: 'Community Centers', dataStatus: 'unavailable', color: '#94a3b8', note: 'Not captured in this OSM extract.' },
+      { id: 'comm-facility-access', label: 'Facility Access', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'amenity_total', color: '#4a3aa7', note: 'Colored by real H3 amenity-presence density -- the basis of the Facility-Access Score in Community Analysis.' },
+      { id: 'comm-family-demand', label: 'Family Demand', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'pop_density_km2', color: '#eb6834', note: 'Colored by population density, the dominant real component of the Family Demand composite (see Community Analysis -- H3 Community Analysis for the full school/playground/density formula).' },
+      { id: 'comm-vulnerability', label: 'Community Vulnerability', dataStatus: 'statOnly', color: '#e34948', note: 'Computed composite score -- see Community Analysis -- Equity and Underserved Areas.' }
     ]
   },
   {

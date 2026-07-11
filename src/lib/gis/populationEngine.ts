@@ -284,7 +284,11 @@ const PERSONA_COMMUNITY_LABELS: Record<string, string> = {
   seniors: 'Senior & Long-Term Resident Community',
   petOwners: 'Pet-Owning Residential Community',
   tourists: 'Visitor & Tourist Community',
-  residents: 'Local Residential Community'
+  residents: 'Local Residential Community',
+  teenagers: 'Youth-Oriented Community',
+  caregivers: 'Caregiver & Family-Support Community',
+  peopleOfDetermination: 'Inclusive-Access Community',
+  weekendSocial: 'Social / Gathering-Oriented Community'
 };
 
 const COMPASS_LABELS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];

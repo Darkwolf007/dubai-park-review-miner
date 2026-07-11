@@ -2,20 +2,21 @@ import { useState } from 'react';
 import { Play, Loader2, Users2, Building2, Footprints, Leaf, Users, MapPinned, Route, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { H3Feature, GeoJsonFeature, RoadStats, SpaceSyntaxFeature, SpaceSyntaxStats, AccessibilityStats } from '../../lib/gis/types';
-import type { PoiCounts } from '../../lib/gis/communityEngine';
 import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { computePopulationAnalysisReport } from '../../lib/gis/populationEngine';
 import { computeUrbanAnalysisReport } from '../../lib/gis/urbanEngine';
 import { computeAccessibilityAnalysisReport } from '../../lib/gis/accessibilityEngine';
 import { computeEnvironmentalAnalysisReport } from '../../lib/gis/environmentalEngine';
-import { computeCommunityAnalysis } from '../../lib/gis/communityEngine';
-import { computeNlpSpatialAnalysis } from '../../lib/gis/reviewNlpSpatialEngine';
+import { computeCommunityAnalysisReport, EMPTY_FACILITY_LAYERS, type CommunityFacilityLayers } from '../../lib/gis/communityEngine';
+import { computeNlpSpatialAnalysisReport } from '../../lib/gis/reviewNlpSpatialEngine';
 import { computeSpaceSyntaxAnalysis } from '../../lib/gis/spaceSyntaxEngine';
 import { generateDesignStrategy } from '../../lib/gis/aiRecommendationEngine';
 import { generatePopulationInsights, type PopulationInsightsResult } from '../../lib/gis/populationInsightsEngine';
 import { generateUrbanInsights, type UrbanInsightsResult } from '../../lib/gis/urbanInsightsEngine';
 import { generateAccessibilityInsights, type AccessibilityInsightsResult } from '../../lib/gis/accessibilityInsightsEngine';
 import { generateEnvironmentalInsights, type EnvironmentalInsightsResult } from '../../lib/gis/environmentalInsightsEngine';
+import { generateCommunityInsights, type CommunityInsightsResult } from '../../lib/gis/communityInsightsEngine';
+import { generateNlpSpatialInsights, type NlpSpatialInsightsResult } from '../../lib/gis/nlpSpatialInsightsEngine';
 import { sortIssueImpact, computeIssueImpact } from '../../lib/analytics/issueMatrix';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { SectionCard } from '../ui/SectionCard';
@@ -25,6 +26,8 @@ import { PopulationAnalysisReport } from './PopulationAnalysisReport';
 import { UrbanAnalysisReport } from './UrbanAnalysisReport';
 import { AccessibilityAnalysisReport } from './AccessibilityAnalysisReport';
 import { EnvironmentalAnalysisReport } from './EnvironmentalAnalysisReport';
+import { CommunityAnalysisReport } from './CommunityAnalysisReport';
+import { NlpSpatialAnalysisReport } from './NlpSpatialAnalysisReport';
 
 export interface HistoryEntry {
   id: string;
@@ -53,7 +56,6 @@ export function AnalysisEnginePanel({
   reviews,
   parkCenter,
   roadStats,
-  poiCounts,
   spaceSyntaxStats,
   accessibilityStats,
   onRunComplete
@@ -63,7 +65,6 @@ export function AnalysisEnginePanel({
   reviews: NLPAnalyzedReview[];
   parkCenter: { lat: number; lng: number };
   roadStats: RoadStats | null;
-  poiCounts: PoiCounts;
   spaceSyntaxStats: SpaceSyntaxStats | null;
   accessibilityStats: AccessibilityStats | null;
   onRunComplete: (entry: { name: string; layers: string[]; summary: string }) => void;
@@ -75,6 +76,7 @@ export function AnalysisEnginePanel({
   const [spaceSyntaxNodes, setSpaceSyntaxNodes] = useState<SpaceSyntaxFeature[] | null>(null);
   const [parkingFeatures, setParkingFeatures] = useState<GeoJsonFeature[] | null>(null);
   const [schoolFeatures, setSchoolFeatures] = useState<GeoJsonFeature[] | null>(null);
+  const [communityFacilities, setCommunityFacilities] = useState<CommunityFacilityLayers | null>(null);
 
   const option = ANALYSIS_OPTIONS.find(o => o.id === selected)!;
 
@@ -212,15 +214,95 @@ export function AnalysisEnginePanel({
           break;
         }
         case 'community': {
-          r = computeCommunityAnalysis(hexes, reviews, poiCounts);
-          layers = ['h3_grid', 'reviews'];
-          summary = `${r.schoolCount} schools, ${r.hospitalCount} hospitals, ${r.mosqueCount} mosques, family priority ${r.familyPriorityIndex}/100`;
+          let facilities = communityFacilities;
+          if (!facilities) {
+            const [schools, mosques, clinics, hospitals, playgrounds, sports, restaurants, cafes, shops, toilets, drinkingWater, parks] = await Promise.all([
+              fetchGisLayer<GeoJsonFeature['properties']>('schools'),
+              fetchGisLayer<GeoJsonFeature['properties']>('mosques'),
+              fetchGisLayer<GeoJsonFeature['properties']>('clinics'),
+              fetchGisLayer<GeoJsonFeature['properties']>('hospitals'),
+              fetchGisLayer<GeoJsonFeature['properties']>('playgrounds'),
+              fetchGisLayer<GeoJsonFeature['properties']>('sports'),
+              fetchGisLayer<GeoJsonFeature['properties']>('restaurants'),
+              fetchGisLayer<GeoJsonFeature['properties']>('cafes'),
+              fetchGisLayer<GeoJsonFeature['properties']>('shops'),
+              fetchGisLayer<GeoJsonFeature['properties']>('toilets'),
+              fetchGisLayer<GeoJsonFeature['properties']>('drinking_water'),
+              fetchGisLayer<GeoJsonFeature['properties']>('parks')
+            ]);
+            facilities = {
+              schools: (schools?.features || []) as GeoJsonFeature[],
+              mosques: (mosques?.features || []) as GeoJsonFeature[],
+              clinics: (clinics?.features || []) as GeoJsonFeature[],
+              hospitals: (hospitals?.features || []) as GeoJsonFeature[],
+              playgrounds: (playgrounds?.features || []) as GeoJsonFeature[],
+              sports: (sports?.features || []) as GeoJsonFeature[],
+              restaurants: (restaurants?.features || []) as GeoJsonFeature[],
+              cafes: (cafes?.features || []) as GeoJsonFeature[],
+              shops: (shops?.features || []) as GeoJsonFeature[],
+              toilets: (toilets?.features || []) as GeoJsonFeature[],
+              drinkingWater: (drinkingWater?.features || []) as GeoJsonFeature[],
+              parks: (parks?.features || []) as GeoJsonFeature[]
+            };
+            setCommunityFacilities(facilities);
+            if (!schoolFeatures) setSchoolFeatures(facilities.schools);
+          }
+
+          const communityReport = computeCommunityAnalysisReport(hexes, reviews, facilities, busStops, parkCenter, roadStats);
+          const criticalMetrics = communityReport.kpis.metrics.filter(m => m.status === 'critical').map(m => m.label);
+          const topProgram = communityReport.programDemand[0];
+          const underserved = communityReport.underservedZones[0];
+
+          let aiInsights: CommunityInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generateCommunityInsights({
+              overallCommunityScore: communityReport.executiveSummary.overallCommunityScore,
+              dominantCommunityType: communityReport.executiveSummary.dominantCommunityType,
+              primaryUserGroups: communityReport.executiveSummary.primaryUserGroups,
+              facilityAccessScore: communityReport.kpis.facilityAccessScore,
+              familyDemandScore: communityReport.kpis.familyDemandScore,
+              youthDemandScore: communityReport.kpis.youthDemandScore,
+              olderAdultSupportScore: communityReport.kpis.olderAdultSupportScore,
+              socialInfrastructureDeficitScore: communityReport.kpis.socialInfrastructureDeficitScore,
+              underservedZone: underserved?.compassZone || 'the surrounding area',
+              topProgramName: topProgram?.name || 'a flexible community space',
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: communityReport, aiInsights, aiInsightsError };
+          layers = ['h3_grid', 'schools', 'mosques', 'clinics', 'hospitals', 'playgrounds', 'sports', 'reviews'];
+          summary = `${communityReport.executiveSummary.overallCommunityScore}/100 community score (${communityReport.executiveSummary.overallStatusBadge}), dominant type: ${communityReport.executiveSummary.dominantCommunityType}`;
           break;
         }
         case 'nlpSpatial': {
-          r = computeNlpSpatialAnalysis(reviews, parkCenter);
-          layers = ['reviews'];
-          summary = `Sentiment ${r.overallSentimentScore}/100, top issue: ${r.topComplaintCategories[0]?.category || 'none'}`;
+          const nlpReport = computeNlpSpatialAnalysisReport(reviews, hexes, parkCenter, roadStats);
+          const criticalMetrics = nlpReport.kpis.metrics.filter(m => m.status === 'critical').map(m => m.label);
+
+          let aiInsights: NlpSpatialInsightsResult | null = null;
+          let aiInsightsError: string | null = null;
+          try {
+            aiInsights = await generateNlpSpatialInsights({
+              overallSentimentScore: nlpReport.kpis.overallSentimentScore,
+              topPositiveTopic: nlpReport.executiveSummary.topPositiveTopic,
+              topNegativeTopic: nlpReport.executiveSummary.topNegativeTopic,
+              mostRequestedImprovement: nlpReport.executiveSummary.mostRequestedImprovement,
+              mostMentionedUserGroup: nlpReport.executiveSummary.mostMentionedUserGroup,
+              criticalIssueCluster: nlpReport.executiveSummary.criticalIssueCluster,
+              avgHeatExposureProxy: nlpReport.crossAnalysisContext.avgHeatExposureProxy,
+              avgGreenCoveragePct: nlpReport.crossAnalysisContext.avgGreenCoveragePct,
+              criticalMetrics
+            });
+          } catch (e: any) {
+            aiInsightsError = e?.message || 'AI interpretation failed';
+          }
+
+          r = { report: nlpReport, aiInsights, aiInsightsError };
+          layers = ['reviews', 'h3_grid'];
+          summary = `${nlpReport.executiveSummary.overallCommunitySatisfactionScore}/100 sentiment (${nlpReport.executiveSummary.overallSentiment}), top issue: ${nlpReport.executiveSummary.topNegativeTopic}`;
           break;
         }
         case 'spaceSyntax': {
@@ -239,15 +321,16 @@ export function AnalysisEnginePanel({
           const populationReport = computePopulationAnalysisReport(hexes, busStops, reviews, parkCenter, roadStats);
           const urban = computeUrbanAnalysisReport(hexes, roadStats);
           const env = computeEnvironmentalAnalysisReport(hexes, reviews, roadStats, parkCenter);
-          const community = computeCommunityAnalysis(hexes, reviews, poiCounts);
+          const community = computeCommunityAnalysisReport(hexes, reviews, communityFacilities || EMPTY_FACILITY_LAYERS, busStops, parkCenter, roadStats);
           const issueRows = sortIssueImpact(computeIssueImpact(reviews), 'priority').slice(0, 5);
+          const communityFacilitySum = ['schools', 'mosques', 'clinics', 'hospitals'].reduce((s, k) => s + (community.facilityStats.find(f => f.key === k)?.count || 0), 0);
           r = await generateDesignStrategy({
             population: populationReport.kpis.totalPopulation,
             popDensityKm2: populationReport.kpis.aggregateDensityKm2,
             buildingCoveragePct: urban.kpis.buildingCoveragePct,
             greenCoveragePct: env.kpis.greenCoveragePct,
             roadDensityMPerKm2: urban.kpis.streetDensityMPerKm2,
-            amenityTotal: community.schoolCount + community.hospitalCount + community.mosqueCount + community.clinicCount,
+            amenityTotal: communityFacilitySum,
             topIssues: issueRows.map(row => ({ category: row.category, mentions: row.mentions, priorityIndex: row.priorityIndex, priority: row.priority }))
           });
           layers = ['h3_grid', 'roads', 'reviews'];
@@ -325,36 +408,24 @@ export function AnalysisEnginePanel({
       )}
 
       {result && selected === 'community' && (
-        <div className="grid grid-cols-2 gap-1.5">
-          <MetricTile label="Schools" value={result.schoolCount} />
-          <MetricTile label="Hospitals" value={result.hospitalCount} />
-          <MetricTile label="Mosques" value={result.mosqueCount} />
-          <MetricTile label="Community Facility Access" value={`${result.communityFacilityAccessScore}/100`} />
-          <MetricTile label="Family Priority Index" value={`${result.familyPriorityIndex}/100`} note={result.familyPriorityNote} />
-        </div>
+        <CommunityAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+          roadStats={roadStats}
+        />
       )}
 
       {result && selected === 'nlpSpatial' && (
-        <div className="space-y-2">
-          <p className="text-[9px] text-amber-600 font-semibold">{result.note}</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <MetricTile label="Review Sentiment" value={`${result.overallSentimentScore}/100`} note="Single park marker, not a spatial heatmap." />
-            <MetricTile label="Shade Issue Mentions" value={result.shadeIssueMentions} />
-            <MetricTile label="Playground Demand" value={result.playgroundDemandMentions} />
-            <MetricTile label="Maintenance Issues" value={result.maintenanceIssueMentions} />
-          </div>
-          <div>
-            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mb-1">Complaint Hotspot Categories</p>
-            <div className="flex flex-wrap gap-1">
-              {result.topComplaintCategories.map((c: any) => (
-                <span key={c.category} className="flex items-center gap-1">
-                  <Pill variant="category" value={c.category} />
-                  <span className="text-[8px] text-slate-400">({c.mentions})</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
+        <NlpSpatialAnalysisReport
+          report={result.report}
+          aiInsights={result.aiInsights}
+          aiInsightsError={result.aiInsightsError}
+          hexes={hexes}
+          reviews={reviews}
+          roadStats={roadStats}
+        />
       )}
 
       {result && selected === 'spaceSyntax' && (

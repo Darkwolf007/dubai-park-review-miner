@@ -14,7 +14,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   'pets': 'bg-amber-50 border-amber-100 text-amber-800',
   'food / cafe': 'bg-orange-50 border-orange-100 text-orange-800',
   'water features': 'bg-cyan-50 border-cyan-200 text-cyan-700',
-  'landscape / greenery': 'bg-lime-50 border-lime-200 text-lime-700'
+  'landscape / greenery': 'bg-lime-50 border-lime-200 text-lime-700',
+  'pests / mosquitoes': 'bg-green-50 border-green-200 text-green-700',
+  'wayfinding / signage': 'bg-violet-50 border-violet-200 text-violet-700',
+  'noise': 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700',
+  'opening hours / operations': 'bg-sky-50 border-sky-200 text-sky-700'
 };
 const DEFAULT_CATEGORY_COLOR = 'bg-indigo-50 border-indigo-200 text-indigo-700';
 

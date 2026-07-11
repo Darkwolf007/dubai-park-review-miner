@@ -1,9 +1,11 @@
 import type { NLPAnalyzedReview } from '../nlpPlaceholders';
 import { sentimentShare, textMatchesAny, pickRepresentativeQuote } from './shared';
 
-export type PersonaId = 'parents' | 'children' | 'joggers' | 'cyclists' | 'seniors' | 'petOwners' | 'tourists' | 'residents';
+export type PersonaId =
+  | 'parents' | 'children' | 'joggers' | 'cyclists' | 'seniors' | 'petOwners' | 'tourists' | 'residents'
+  | 'teenagers' | 'caregivers' | 'peopleOfDetermination' | 'weekendSocial';
 
-const PERSONA_KEYWORDS: Record<PersonaId, { label: string; keywords: string[] }> = {
+export const PERSONA_KEYWORDS: Record<PersonaId, { label: string; keywords: string[] }> = {
   parents: { label: 'Parents', keywords: ['family', 'kids', 'kid', 'children', 'toddler', 'son', 'daughter'] },
   children: { label: 'Children', keywords: ['playground', 'slide', 'swing', 'fun for kids', 'loved playing', 'enjoyed playing', 'play area'] },
   joggers: { label: 'Joggers', keywords: ['jog', 'jogging', 'run', 'running', 'track', 'marathon'] },
@@ -11,7 +13,11 @@ const PERSONA_KEYWORDS: Record<PersonaId, { label: string; keywords: string[] }>
   seniors: { label: 'Senior Citizens', keywords: ['elderly', 'senior', 'grandparent', 'grandma', 'grandpa', 'retired'] },
   petOwners: { label: 'Pet Owners', keywords: ['dog', 'pet', 'cat', 'leash', 'puppy'] },
   tourists: { label: 'Tourists', keywords: ['visiting', 'tourist', 'vacation', 'holiday', 'trip', 'first time here', 'visited from'] },
-  residents: { label: 'Residents', keywords: ['every week', 'regularly', 'live nearby', 'my neighborhood', 'daily walk', 'come here often', 'local'] }
+  residents: { label: 'Residents', keywords: ['every week', 'regularly', 'live nearby', 'my neighborhood', 'daily walk', 'come here often', 'local'] },
+  teenagers: { label: 'Teenagers', keywords: ['teen', 'teens', 'teenager', 'teenagers', 'youth', 'high school', 'skate', 'skatepark'] },
+  caregivers: { label: 'Caregivers', keywords: ['caregiver', 'nanny', 'babysitter', 'carer', 'looking after'] },
+  peopleOfDetermination: { label: 'People of Determination', keywords: ['wheelchair', 'disability', 'disabled', 'special needs', 'accessible', 'people of determination'] },
+  weekendSocial: { label: 'Weekend Social Groups', keywords: ['friends', 'group', 'hangout', 'meetup', 'gathering', 'catch up'] }
 };
 
 export interface PersonaStat {
