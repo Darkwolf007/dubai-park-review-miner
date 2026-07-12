@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { distance as turfDistance, buffer as turfBuffer } from '@turf/turf';
 import { DATASET_CATEGORIES, type RenderMode } from './layerConfig';
+import { DEFAULT_LAYER_STYLE, getColorTheme, rampColorForValue, type LayerStyle } from './colorThemes';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { downloadGeoJson, downloadMapScreenshot } from '../../lib/gis/exportEngine';
 import type { GeoJsonFeatureCollection, GisManifest } from '../../lib/gis/types';
@@ -35,15 +36,6 @@ const BASEMAPS = [
   { id: 'voyager', label: 'Voyager', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' }
 ];
 
-const CHOROPLETH_STOPS = ['#e0e7ff', '#a5b4fc', '#818cf8', '#6366f1', '#4338ca'];
-
-function choroplethColor(value: number, min: number, max: number): string {
-  if (max === min) return CHOROPLETH_STOPS[2];
-  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const idx = Math.min(CHOROPLETH_STOPS.length - 1, Math.floor(t * CHOROPLETH_STOPS.length));
-  return CHOROPLETH_STOPS[idx];
-}
-
 const RI_CATEGORY_MAP: Record<string, string> = {
   'ri-shade': 'shade / heat comfort',
   'ri-playground': 'playground',
@@ -60,6 +52,8 @@ interface RenderLayer {
   layerKey: string;
   renderMode: RenderMode;
   color: string;
+  ramp: readonly [string, string, string, string, string];
+  gradient: boolean;
   opacity: number;
   highwayFilter?: string[];
   choroplethField?: string;
@@ -178,7 +172,7 @@ function DrawController({
 
 export function PlaygroundMap({
   activeLayers,
-  layerOpacity,
+  layerStyles,
   parkCenter,
   manifest,
   nlpSpatial,
@@ -190,7 +184,7 @@ export function PlaygroundMap({
   containerRef
 }: {
   activeLayers: Set<string>;
-  layerOpacity: Record<string, number>;
+  layerStyles: Record<string, LayerStyle>;
   parkCenter: { lat: number; lng: number };
   manifest: GisManifest | null;
   nlpSpatial: NlpSpatialAnalysisResult | null;
@@ -215,15 +209,17 @@ export function PlaygroundMap({
       if (!activeLayers.has(l.id)) return;
       const key = `${l.layerKey}-${l.renderMode}-${(l.highwayFilter || []).join('|')}-${l.choroplethField || ''}`;
       if (!map.has(key)) {
+        const style = layerStyles[l.id] ?? DEFAULT_LAYER_STYLE;
+        const theme = getColorTheme(style.colorThemeId);
         map.set(key, {
           key, layerKey: l.layerKey, renderMode: l.renderMode,
-          color: l.color, opacity: layerOpacity[l.id] ?? 0.8,
+          color: theme.solid, ramp: theme.ramp, gradient: style.gradient, opacity: style.opacity,
           highwayFilter: l.highwayFilter, choroplethField: l.choroplethField, label: l.label
         });
       }
     }));
     return [...map.values()];
-  }, [activeLayers, layerOpacity]);
+  }, [activeLayers, layerStyles]);
 
   const activeRiRows = useMemo(
     () => DATASET_CATEGORIES.find(c => c.id === 'review-intelligence')!.layers.filter(l => activeLayers.has(l.id)),
@@ -371,7 +367,7 @@ export function PlaygroundMap({
                   style={(feature: any) => ({
                     color: '#4338ca',
                     weight: 1,
-                    fillColor: choroplethColor(Number(feature.properties[layer.choroplethField!]) || 0, min, max),
+                    fillColor: rampColorForValue(layer.ramp, Number(feature.properties[layer.choroplethField!]) || 0, min, max, layer.gradient),
                     fillOpacity: layer.opacity
                   })}
                   onEachFeature={(feature, leafletLayer) => {
@@ -389,7 +385,7 @@ export function PlaygroundMap({
                     if (f.geometry.type !== 'Point') return null;
                     const coords = f.geometry.coordinates as [number, number];
                     const value = Number(f.properties[layer.choroplethField!]) || 0;
-                    const color = choroplethColor(value, min, max);
+                    const color = rampColorForValue(layer.ramp, value, min, max, layer.gradient);
                     return (
                       <CircleMarker
                         key={i}

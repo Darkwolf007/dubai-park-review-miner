@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutGrid, Hexagon, BarChart3, History as HistoryIcon, Info, X } from 'lucide-react';
+import { LayoutGrid, Hexagon, BarChart3, History as HistoryIcon, Sparkles, Info, X } from 'lucide-react';
 import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { fetchGisManifest, fetchGisLayer } from '../../lib/gis/gisEngine';
@@ -22,23 +22,26 @@ import {
 } from '../../lib/gis/communityEngine';
 import type { GisManifest, H3Feature, GeoJsonFeature } from '../../lib/gis/types';
 import type { DatasetLayerConfig } from './layerConfig';
+import { DEFAULT_LAYER_STYLE, type LayerStyle } from './colorThemes';
 import { DatasetExplorerPanel } from './DatasetExplorerPanel';
 import { PlaygroundMap, type PlaygroundTool } from './PlaygroundMap';
 import { AnalysisEnginePanel, type HistoryEntry } from './AnalysisEnginePanel';
 import { H3AnalysisPanel } from './H3AnalysisPanel';
 import { PlaygroundCharts } from './PlaygroundCharts';
 import { AnalysisHistoryPanel } from './AnalysisHistoryPanel';
+import { OpportunityLabPanel } from './OpportunityLabPanel';
 
 const AL_SAFA_2_PLACE_ID = 'ChIJW2n2fB9tXz4R3Gqf-661oQE';
 const HISTORY_STORAGE_KEY = 'dprm_playground_history';
 const DEFAULT_ACTIVE_LAYERS = ['buildings', 'roads', 'parks', 'schools'];
 
-type PlaygroundSection = 'workspace' | 'h3' | 'charts' | 'history';
+type PlaygroundSection = 'workspace' | 'h3' | 'charts' | 'opportunity' | 'history';
 
 const SECTIONS: { id: PlaygroundSection; label: string; icon: any }[] = [
   { id: 'workspace', label: 'Map Workspace', icon: LayoutGrid },
   { id: 'h3', label: 'H3 Analysis', icon: Hexagon },
   { id: 'charts', label: 'Charts', icon: BarChart3 },
+  { id: 'opportunity', label: 'Opportunity Lab', icon: Sparkles },
   { id: 'history', label: 'History', icon: HistoryIcon }
 ];
 
@@ -95,7 +98,7 @@ export function PlaygroundTab() {
   const [loading, setLoading] = useState(true);
 
   const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set(DEFAULT_ACTIVE_LAYERS));
-  const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>({});
+  const [layerStyles, setLayerStyles] = useState<Record<string, LayerStyle>>({});
   const [activeTool, setActiveTool] = useState<PlaygroundTool>('pan');
   const [drawnFeatures, setDrawnFeatures] = useState<GeoJSON.Feature[]>([]);
   const [selectedFeature, setSelectedFeature] = useState<Record<string, any> | null>(null);
@@ -188,8 +191,8 @@ export function PlaygroundTab() {
             <DatasetExplorerPanel
               activeLayers={activeLayers}
               onToggleLayer={toggleLayer}
-              layerOpacity={layerOpacity}
-              onOpacityChange={(id, v) => setLayerOpacity(prev => ({ ...prev, [id]: v }))}
+              layerStyles={layerStyles}
+              onStyleChange={(id, patch) => setLayerStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? DEFAULT_LAYER_STYLE), ...patch } }))}
               manifest={manifest}
               onDownload={handleDownloadLayer}
             />
@@ -198,7 +201,7 @@ export function PlaygroundTab() {
           <div className="col-span-12 xl:col-span-6 space-y-3">
             <PlaygroundMap
               activeLayers={activeLayers}
-              layerOpacity={layerOpacity}
+              layerStyles={layerStyles}
               parkCenter={parkCenter}
               manifest={manifest}
               nlpSpatial={nlpSpatial}
@@ -345,6 +348,7 @@ export function PlaygroundTab() {
 
       {section === 'h3' && <H3AnalysisPanel hexes={hexes} />}
       {section === 'charts' && <PlaygroundCharts hexes={hexes} reviews={reviews} walkabilityScore={walkabilityScore} />}
+      {section === 'opportunity' && <OpportunityLabPanel hexes={hexes} reviews={reviews} roadStats={manifest?.roadStats || null} />}
       {section === 'history' && <AnalysisHistoryPanel history={history} onClearAll={() => setHistory([])} />}
     </div>
   );
