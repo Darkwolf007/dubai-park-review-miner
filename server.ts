@@ -1,15 +1,14 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 
 import { PRESEEDED_PARKS } from './src/lib/googlePlaces.js';
 import { analyzeReviewLocally } from './src/lib/nlpPlaceholders.js';
 import fs from 'fs';
 
-// Load environment variables
-dotenv.config();
+// Environment variables are loaded via the --env-file=.env flag (see package.json scripts),
+// not a userland package.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
