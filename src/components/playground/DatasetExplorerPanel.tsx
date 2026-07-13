@@ -38,6 +38,14 @@ function StylePopover({
       <div>
         <p className="font-mono text-[9px] font-medium uppercase tracking-wider text-mux-tertiary mb-1.5">Color Theme</p>
         <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => onChange({ colorThemeId: null })}
+            title="Default"
+            className="w-6 h-6 rounded-full flex items-center justify-center border-2 border-dashed transition-transform hover:scale-110"
+            style={{ backgroundColor: layer.color, borderColor: style.colorThemeId === null ? '#000' : 'transparent' }}
+          >
+            {style.colorThemeId === null && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+          </button>
           {COLOR_THEMES.map(theme => (
             <button
               key={theme.id}
@@ -50,6 +58,7 @@ function StylePopover({
             </button>
           ))}
         </div>
+        <p className="text-[8px] text-mux-tertiary mt-1">Dashed swatch = layer default (e.g. parks green, roads blue, buildings red).</p>
       </div>
 
       <div>
@@ -143,7 +152,7 @@ export function DatasetExplorerPanel({
                     const isReal = layer.dataStatus === 'real';
                     const isOn = activeLayers.has(layer.id);
                     const style = layerStyles[layer.id] ?? DEFAULT_LAYER_STYLE;
-                    const theme = getColorTheme(style.colorThemeId);
+                    const swatchColor = style.colorThemeId ? getColorTheme(style.colorThemeId).solid : layer.color;
                     const manifestEntry = layer.layerKey ? manifest?.layers[layer.layerKey] : undefined;
                     return (
                       <div key={layer.id} className={`relative px-2 py-1.5 ${!isReal ? 'opacity-50' : ''}`}>
@@ -157,7 +166,7 @@ export function DatasetExplorerPanel({
                           />
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: isReal ? (isOn ? theme.solid : layer.color) : '#cbd5e1' }}
+                            style={{ backgroundColor: isReal ? swatchColor : '#cbd5e1' }}
                           />
                           <span className="text-[10px] font-semibold text-mux-secondary flex-1 truncate" style={{ fontFamily: 'var(--font-sans)' }}>{layer.label}</span>
                           {layer.dataStatus === 'statOnly' && (

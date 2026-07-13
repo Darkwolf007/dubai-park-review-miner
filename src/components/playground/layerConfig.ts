@@ -41,7 +41,7 @@ export const DATASET_CATEGORIES: DatasetCategory[] = [
       { id: 'buildings', label: 'Buildings', dataStatus: 'real', layerKey: 'buildings', renderMode: 'polygons', color: '#e34948' },
       { id: 'building-footprints', label: 'Building Footprints', dataStatus: 'real', layerKey: 'buildings', renderMode: 'polygons', color: '#e34948', note: 'Same source as the Buildings layer.' },
       { id: 'building-density', label: 'Building Density', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'building_coverage_pct', color: '#eb6834' },
-      { id: 'roads', label: 'Roads', dataStatus: 'real', layerKey: 'roads', renderMode: 'lines', color: '#334155' },
+      { id: 'roads', label: 'Roads', dataStatus: 'real', layerKey: 'roads', renderMode: 'lines', color: '#1e3a8a' },
       { id: 'intersections', label: 'Intersections', dataStatus: 'statOnly', color: '#94a3b8', note: 'Available as a count in Urban Analysis -- individual intersection coordinates aren\'t in this OSM extract.' },
       { id: 'walkability', label: 'Walkability', dataStatus: 'real', layerKey: 'h3_grid', renderMode: 'choropleth', choroplethField: 'walking_time_to_park_minutes', color: '#94a3b8', note: 'See Accessibility category for the full set of accessibility map modes.' }
     ]

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Feature, Polygon } from 'geojson';
+import { bbox as turfBbox } from '@turf/turf';
 import { LayoutGrid, Hexagon, BarChart3, History as HistoryIcon, Sparkles, Info, X } from 'lucide-react';
 import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
@@ -96,6 +98,9 @@ export function PlaygroundTab() {
   const [busStops, setBusStops] = useState<GeoJsonFeature[]>([]);
   const [reviews, setReviews] = useState<NLPAnalyzedReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [parkPolygon, setParkPolygon] = useState<Feature<Polygon> | null>(null);
+  const [oppBuildings, setOppBuildings] = useState<GeoJsonFeature[]>([]);
+  const [oppRoads, setOppRoads] = useState<GeoJsonFeature[]>([]);
 
   const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set(DEFAULT_ACTIVE_LAYERS));
   const [layerStyles, setLayerStyles] = useState<Record<string, LayerStyle>>({});
@@ -110,21 +115,45 @@ export function PlaygroundTab() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [manifestRes, h3Res, busRes, parkRes] = await Promise.all([
+      const [manifestRes, h3Res, busRes, parkRes, parksLayerRes] = await Promise.all([
         fetchGisManifest(),
         fetchGisLayer<H3Feature['properties']>('h3_grid'),
         fetchGisLayer('bus_stops'),
-        fetchParkDetails(AL_SAFA_2_PLACE_ID)
+        fetchParkDetails(AL_SAFA_2_PLACE_ID),
+        fetchGisLayer('parks')
       ]);
       if (cancelled) return;
       setManifest(manifestRes);
       if (h3Res) setHexes(h3Res.features as H3Feature[]);
       if (busRes) setBusStops(busRes.features);
       setReviews(analyzeReviewsLocally(parkRes.reviews));
+      const alSafa2 = parksLayerRes?.features.find(
+        f => f.geometry.type === 'Polygon' && (f.properties as any)?.name === 'حديقة الصفا 2'
+      );
+      if (alSafa2) setParkPolygon(alSafa2 as unknown as Feature<Polygon>);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Opportunity Lab's 10m site grid needs real building/road geometry scoped to the park's own
+  // small bbox -- decoupled from the main map's viewport-based buildings/roads fetch, which only
+  // covers whatever the user has currently panned/zoomed to.
+  useEffect(() => {
+    if (!parkPolygon) return;
+    let cancelled = false;
+    const bbox = turfBbox(parkPolygon) as [number, number, number, number];
+    (async () => {
+      const [buildingsRes, roadsRes] = await Promise.all([
+        fetchGisLayer('buildings', bbox),
+        fetchGisLayer('roads', bbox)
+      ]);
+      if (cancelled) return;
+      if (buildingsRes) setOppBuildings(buildingsRes.features);
+      if (roadsRes) setOppRoads(roadsRes.features);
+    })();
+    return () => { cancelled = true; };
+  }, [parkPolygon]);
 
   useEffect(() => {
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
@@ -348,7 +377,17 @@ export function PlaygroundTab() {
 
       {section === 'h3' && <H3AnalysisPanel hexes={hexes} />}
       {section === 'charts' && <PlaygroundCharts hexes={hexes} reviews={reviews} walkabilityScore={walkabilityScore} />}
-      {section === 'opportunity' && <OpportunityLabPanel hexes={hexes} reviews={reviews} roadStats={manifest?.roadStats || null} />}
+      {section === 'opportunity' && (
+        <OpportunityLabPanel
+          hexes={hexes}
+          reviews={reviews}
+          roadStats={manifest?.roadStats || null}
+          parkPolygon={parkPolygon}
+          parkCenter={parkCenter}
+          buildingFeatures={oppBuildings}
+          roadFeatures={oppRoads}
+        />
+      )}
       {section === 'history' && <AnalysisHistoryPanel history={history} onClearAll={() => setHistory([])} />}
     </div>
   );

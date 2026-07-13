@@ -10,7 +10,10 @@ import {
 } from 'lucide-react';
 import { distance as turfDistance, buffer as turfBuffer } from '@turf/turf';
 import { DATASET_CATEGORIES, type RenderMode } from './layerConfig';
-import { DEFAULT_LAYER_STYLE, getColorTheme, rampColorForValue, type LayerStyle } from './colorThemes';
+import {
+  DEFAULT_LAYER_STYLE, getColorTheme, buildQuantileClassifier, quantileColorForValue, quantileLegendLabels,
+  NO_DATA_COLOR, type LayerStyle, type QuantileClassifier
+} from './colorThemes';
 import { fetchGisLayer } from '../../lib/gis/gisEngine';
 import { downloadGeoJson, downloadMapScreenshot } from '../../lib/gis/exportEngine';
 import type { GeoJsonFeatureCollection, GisManifest } from '../../lib/gis/types';
@@ -52,7 +55,7 @@ interface RenderLayer {
   layerKey: string;
   renderMode: RenderMode;
   color: string;
-  ramp: readonly [string, string, string, string, string];
+  ramp: readonly string[];
   gradient: boolean;
   opacity: number;
   highwayFilter?: string[];
@@ -210,10 +213,15 @@ export function PlaygroundMap({
       const key = `${l.layerKey}-${l.renderMode}-${(l.highwayFilter || []).join('|')}-${l.choroplethField || ''}`;
       if (!map.has(key)) {
         const style = layerStyles[l.id] ?? DEFAULT_LAYER_STYLE;
-        const theme = getColorTheme(style.colorThemeId);
+        // No explicit theme chosen -> use the layer's own categorical default (parks green,
+        // roads dark blue, buildings red, etc. from layerConfig) for solid fills, and the
+        // Indigo ramp default for choropleth -- never force every layer to one color.
+        const theme = style.colorThemeId ? getColorTheme(style.colorThemeId) : null;
         map.set(key, {
           key, layerKey: l.layerKey, renderMode: l.renderMode,
-          color: theme.solid, ramp: theme.ramp, gradient: style.gradient, opacity: style.opacity,
+          color: theme ? theme.solid : l.color,
+          ramp: theme ? theme.ramp : getColorTheme('indigo').ramp,
+          gradient: style.gradient, opacity: style.opacity,
           highwayFilter: l.highwayFilter, choroplethField: l.choroplethField, label: l.label
         });
       }
@@ -260,12 +268,23 @@ export function PlaygroundMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewportBbox?.join(','), gatedKeys.join(',')]);
 
-  const choroplethRange = useCallback((layerKey: string, field: string): [number, number] => {
+  // Null/undefined values (e.g. H3 cells with no network route) are real "no data", never
+  // coerced to 0 -- doing so would misrepresent an unreachable cell as having the BEST value
+  // for distance/time fields, which is exactly what made the Accessibility choropleth wrong.
+  const choroplethClassifier = useCallback((layerKey: string, field: string): QuantileClassifier => {
     const fc = layerData[layerKey];
-    if (!fc || fc.features.length === 0) return [0, 1];
-    const values = fc.features.map(f => Number(f.properties[field]) || 0);
-    return [Math.min(...values), Math.max(...values)];
+    if (!fc || fc.features.length === 0) return { sorted: [], breaks: [] };
+    const values = fc.features.map(f => {
+      const raw = f.properties[field];
+      return typeof raw === 'number' && !Number.isNaN(raw) ? raw : null;
+    });
+    return buildQuantileClassifier(values);
   }, [layerData]);
+
+  function rawFieldValue(feature: any, field: string): number | null {
+    const raw = feature.properties[field];
+    return typeof raw === 'number' && !Number.isNaN(raw) ? raw : null;
+  }
 
   const handleFeatureCreated = useCallback((feature: GeoJSON.Feature) => {
     onDrawnFeaturesChange([...drawnFeatures, feature]);
@@ -359,17 +378,20 @@ export function PlaygroundMap({
             if (!fc) return null;
 
             if (layer.renderMode === 'choropleth' && layer.choroplethField) {
-              const [min, max] = choroplethRange(layer.layerKey, layer.choroplethField);
+              const classifier = choroplethClassifier(layer.layerKey, layer.choroplethField);
               return (
                 <LeafletGeoJSON
                   key={`${layer.key}-${fc.features.length}`}
                   data={fc as any}
-                  style={(feature: any) => ({
-                    color: '#4338ca',
-                    weight: 1,
-                    fillColor: rampColorForValue(layer.ramp, Number(feature.properties[layer.choroplethField!]) || 0, min, max, layer.gradient),
-                    fillOpacity: layer.opacity
-                  })}
+                  style={(feature: any) => {
+                    const value = rawFieldValue(feature, layer.choroplethField!);
+                    return {
+                      color: value === null ? '#a3a3a3' : '#4338ca',
+                      weight: 1,
+                      fillColor: quantileColorForValue(layer.ramp, value, classifier, layer.gradient),
+                      fillOpacity: value === null ? 0.35 : layer.opacity
+                    };
+                  }}
                   onEachFeature={(feature, leafletLayer) => {
                     leafletLayer.on('click', () => onFeatureSelect(feature.properties));
                   }}
@@ -378,20 +400,20 @@ export function PlaygroundMap({
             }
 
             if (layer.renderMode === 'pointChoropleth' && layer.choroplethField) {
-              const [min, max] = choroplethRange(layer.layerKey, layer.choroplethField);
+              const classifier = choroplethClassifier(layer.layerKey, layer.choroplethField);
               return (
                 <div key={layer.key}>
                   {fc.features.map((f, i) => {
                     if (f.geometry.type !== 'Point') return null;
                     const coords = f.geometry.coordinates as [number, number];
-                    const value = Number(f.properties[layer.choroplethField!]) || 0;
-                    const color = rampColorForValue(layer.ramp, value, min, max, layer.gradient);
+                    const value = rawFieldValue(f as any, layer.choroplethField!);
+                    const color = quantileColorForValue(layer.ramp, value, classifier, layer.gradient);
                     return (
                       <CircleMarker
                         key={i}
                         center={[coords[1], coords[0]]}
                         radius={3}
-                        pathOptions={{ color, fillColor: color, fillOpacity: layer.opacity, weight: 0.5 }}
+                        pathOptions={{ color, fillColor: color, fillOpacity: value === null ? 0.35 : layer.opacity, weight: 0.5 }}
                         eventHandlers={{ click: () => onFeatureSelect(f.properties) }}
                       />
                     );
@@ -474,15 +496,49 @@ export function PlaygroundMap({
         </MapContainer>
       </div>
 
-      {/* Legend */}
+      {/* Legend -- QGIS-style graduated legend (real class-break values) for choropleth layers,
+          a simple swatch for solid-color layers. */}
       {(renderLayers.length > 0 || activeRiRows.length > 0) && (
-        <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500">
-          {renderLayers.map(l => (
-            <span key={l.key} className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: l.color }} />
-              {l.label}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-3 mt-2 text-[9px] text-slate-500">
+          {renderLayers.map(l => {
+            const isChoropleth = (l.renderMode === 'choropleth' || l.renderMode === 'pointChoropleth') && !!l.choroplethField;
+            if (!isChoropleth) {
+              return (
+                <span key={l.key} className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: l.color }} />
+                  {l.label}
+                </span>
+              );
+            }
+            const fc = layerData[l.layerKey];
+            const classifier = choroplethClassifier(l.layerKey, l.choroplethField!);
+            const hasNull = fc ? fc.features.some(f => rawFieldValue(f as any, l.choroplethField!) === null) : false;
+            const magnitude = classifier.breaks.length > 0 ? Math.max(...classifier.breaks.map(Math.abs)) : 0;
+            const formatValue = (v: number) => (magnitude >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString());
+            const labels = quantileLegendLabels(classifier, formatValue);
+            const swatchStops = l.gradient
+              ? [l.ramp[0], l.ramp[Math.floor(l.ramp.length * 0.25)], l.ramp[Math.floor(l.ramp.length * 0.5)], l.ramp[Math.floor(l.ramp.length * 0.75)], l.ramp[l.ramp.length - 1]]
+              : [0, 1, 2, 3, 4].map(i => l.ramp[Math.round((i / 4) * (l.ramp.length - 1))]);
+            return (
+              <div key={l.key} className="flex flex-col gap-0.5">
+                <span className="font-semibold text-slate-600">{l.label}</span>
+                <div className="flex items-center gap-1">
+                  {swatchStops.map((color, i) => (
+                    <span key={i} className="flex flex-col items-center gap-0.5">
+                      <span className="w-3.5 h-3.5 inline-block border border-slate-300" style={{ backgroundColor: color }} />
+                      {labels[i] && <span className="text-[7px] text-slate-400 whitespace-nowrap">{labels[i]}</span>}
+                    </span>
+                  ))}
+                  {hasNull && (
+                    <span className="flex flex-col items-center gap-0.5 ml-1">
+                      <span className="w-3.5 h-3.5 inline-block border border-slate-300" style={{ backgroundColor: NO_DATA_COLOR, opacity: 0.6 }} />
+                      <span className="text-[7px] text-slate-400">No data</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
           {activeRiRows.length > 0 && (
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full inline-block bg-indigo-600" />
