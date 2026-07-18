@@ -36,9 +36,9 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics' | 'playground'>('explorer');
   const [parks, setParks] = useState<ParkDetails[]>(PRESEEDED_PARKS);
   const [selectedParkIds, setSelectedParkIds] = useState<string[]>([
-    'ChIJK5g4bKNoXz4RHm7pI_U_mHk', // Safa Park
-    'ChIJ_4r62FpCXz4R7K0_5nO00w0', // Zabeel Park
-    'ChIJqSg0f4tcXz4RsY0f_S_vA3G'  // Quranic Park
+    'ChIJW2n2fB9tXz4R3Gqf-661oQE', // Al Safa 2 Park 
+   // 'ChIJ_4r62FpCXz4R7K0_5nO00w0', // Zabeel Park
+    //'ChIJqSg0f4tcXz4RsY0f_S_vA3G'  // Quranic Park
   ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [customPlaceId, setCustomPlaceId] = useState('');
