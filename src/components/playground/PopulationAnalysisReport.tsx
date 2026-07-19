@@ -123,7 +123,7 @@ export function PopulationAnalysisReport({
           <MetricTile label="Average Population Density" value={executiveSummary.avgDensityKm2.toLocaleString()} unit="/km²" />
           <MetricTile label="Primary Community" value={executiveSummary.primaryCommunity} />
           <MetricTile label="Highest Demand Zone" value={executiveSummary.highestDemandZone} />
-          <MetricTile label="Overall Demand Score" value={`${executiveSummary.overallDemandScore}/100`} />
+          <MetricTile label="Overall Demand Score" value={`${executiveSummary.overallDemandScore}/100`} methodologyKey="populationDemand" />
         </div>
       </CollapsibleSection>
 

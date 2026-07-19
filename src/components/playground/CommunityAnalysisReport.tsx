@@ -131,8 +131,8 @@ export function CommunityAnalysisReport({
           <MetricTile label="Schools Within Study Area" value={executiveSummary.schoolsCount ?? undefined} unavailable={executiveSummary.schoolsCount === null} />
           <MetricTile label="Mosques Within Study Area" value={executiveSummary.mosquesCount ?? undefined} unavailable={executiveSummary.mosquesCount === null} />
           <MetricTile label="Healthcare Facilities" value={executiveSummary.healthcareFacilitiesCount ?? undefined} unavailable={executiveSummary.healthcareFacilitiesCount === null} note="Clinics + hospitals." />
-          <MetricTile label="Community Facility Access" value={executiveSummary.communityFacilityAccessStatus} />
-          <MetricTile label="Family Recreation Demand" value={executiveSummary.familyRecreationDemandStatus} />
+          <MetricTile label="Community Facility Access" value={executiveSummary.communityFacilityAccessStatus} methodologyKey="facilityAccess" />
+          <MetricTile label="Family Recreation Demand" value={executiveSummary.familyRecreationDemandStatus} methodologyKey="familyDemand" />
         </div>
       </CollapsibleSection>
 

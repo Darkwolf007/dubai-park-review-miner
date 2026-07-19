@@ -51,6 +51,11 @@ export function OpportunityAdjacencyGraph({
 
   const { preferred, avoided } = useMemo(() => {
     const resolve = (key: string): AdjacencyNodeInfo => {
+      // Adjacency is now authored directly against OpportunityType (opportunityEngine.ts), so most
+      // keys resolve straight to a real program -- OPPORTUNITY_ALIAS is only a fallback for the
+      // handful of legacy PROGRAM_DEFS-sourced keys that never had a direct OpportunityType match.
+      const direct = allResults.find(r => r.type === key);
+      if (direct) return { key, label: direct.name, kind: 'opportunity', opportunity: direct };
       const matchType = OPPORTUNITY_ALIAS[key];
       const match = matchType ? allResults.find(r => r.type === matchType) : undefined;
       return match

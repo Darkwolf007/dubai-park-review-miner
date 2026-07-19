@@ -7,16 +7,22 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import {
   computeAllOpportunities, OPPORTUNITY_CATEGORIES, type OpportunityResult, type OpportunityType,
-  type OpportunityPriority, type OpportunityCategory, type OpportunityCellScore
+  type OpportunityPriority, type OpportunityCategory, type OpportunityCellScore, type EvidenceSource
 } from '../../lib/gis/opportunityEngine';
 import { buildSiteGrid } from '../../lib/gis/siteGrid';
 import type { H3Feature, RoadStats, GeoJsonFeature } from '../../lib/gis/types';
 import type { NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { SectionCard } from '../ui/SectionCard';
+import { InfoTooltip } from '../ui/InfoTooltip';
 import { MetricTile } from './MetricTile';
 import { CollapsibleSection } from './CollapsibleSection';
 import { OpportunityAdjacencyGraph } from './OpportunityAdjacencyGraph';
 import { OpportunitySuitabilityMap } from './OpportunitySuitabilityMap';
+import { OpportunityProgramNetwork } from './OpportunityProgramNetwork';
+import {
+  OpportunitySortFilterBar, sortResults, matchesFilters, DEFAULT_FILTERS,
+  type SortKey, type OpportunityFilters
+} from './OpportunitySortFilterBar';
 
 const ICON_BY_CATEGORY: Record<OpportunityCategory, LucideIcon> = {
   'Arrival / Access': DoorOpen,
@@ -35,6 +41,38 @@ const PRIORITY_STYLE: Record<OpportunityPriority, string> = {
   Medium: 'bg-indigo-50 text-indigo-600 border-indigo-100',
   Low: 'bg-slate-100 text-slate-500 border-slate-200'
 };
+
+const SOURCE_STYLE: Record<EvidenceSource, string> = {
+  'brief-required': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'brief-optional': 'bg-indigo-50/60 text-indigo-400 border-indigo-100',
+  'review-driven': 'bg-amber-50 text-amber-700 border-amber-200',
+  'population-driven': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'community-driven': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+  'accessibility-driven': 'bg-sky-50 text-sky-700 border-sky-200',
+  'environment-driven': 'bg-teal-50 text-teal-700 border-teal-200',
+  'movement-driven': 'bg-violet-50 text-violet-700 border-violet-200',
+  'operations-driven': 'bg-slate-100 text-slate-600 border-slate-200',
+  'user-experience-driven': 'bg-pink-50 text-pink-600 border-pink-200',
+  'designer-assumption': 'bg-slate-50 text-slate-400 border-slate-200 italic'
+};
+
+function sourceLabel(s: EvidenceSource): string {
+  return s.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+
+/** Evidence badges (Part 7): shows every program's traceable source tags -- e.g. brief-required +
+ * population-driven + review-driven -- so no recommendation reads as authoritative on its own. */
+function SourceBadges({ source }: { source: EvidenceSource[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {source.map(s => (
+        <span key={s} className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${SOURCE_STYLE[s]}`}>
+          {sourceLabel(s)}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function OpportunityChip({ result, active, onClick }: { result: OpportunityResult; active: boolean; onClick: () => void }) {
   const Icon = ICON_BY_CATEGORY[result.category];
@@ -74,6 +112,8 @@ export function OpportunityLabPanel({
   const [selectedType, setSelectedType] = useState<OpportunityType | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<OpportunityCategory | 'All'>('All');
   const [activeCellId, setActiveCellId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('opportunity');
+  const [filters, setFilters] = useState<OpportunityFilters>(DEFAULT_FILTERS);
 
   const siteGrid = useMemo(() => {
     if (!parkPolygon || hexes.length === 0) return [];
@@ -85,10 +125,11 @@ export function OpportunityLabPanel({
     return computeAllOpportunities(siteGrid, reviews, roadStats);
   }, [siteGrid, reviews, roadStats]);
 
-  const filteredResults = useMemo(
-    () => (categoryFilter === 'All' ? results : results.filter(r => r.category === categoryFilter)),
-    [results, categoryFilter]
-  );
+  const filteredResults = useMemo(() => {
+    const byCategory = categoryFilter === 'All' ? results : results.filter(r => r.category === categoryFilter);
+    const byFacets = byCategory.filter(r => matchesFilters(r, filters));
+    return sortResults(byFacets, sortKey);
+  }, [results, categoryFilter, filters, sortKey]);
 
   const selected = filteredResults.find(r => r.type === selectedType) ?? filteredResults[0] ?? null;
   const activeCell = selected?.allCells.find(c => c.h3Id === activeCellId) ?? null;
@@ -141,12 +182,27 @@ export function OpportunityLabPanel({
           })}
         </div>
 
+        <OpportunitySortFilterBar
+          results={results}
+          sortKey={sortKey}
+          onSortKeyChange={setSortKey}
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 max-h-[320px] overflow-y-auto pr-1">
           {filteredResults.map(r => (
             <OpportunityChip key={r.type} result={r} active={selected?.type === r.type} onClick={() => selectProgram(r.type)} />
           ))}
+          {filteredResults.length === 0 && (
+            <p className="col-span-full text-[9px] text-slate-400 py-2">No programs match the current filters.</p>
+          )}
         </div>
       </SectionCard>
+
+      {results.length > 0 && (
+        <OpportunityProgramNetwork allResults={results} selectedType={selected?.type ?? null} onSelectProgram={selectProgram} />
+      )}
 
       {selected && (
         <>
@@ -162,16 +218,20 @@ export function OpportunityLabPanel({
             <p className="text-[8px] font-mono uppercase tracking-wider text-slate-400 mb-2">
               {selected.category} · {selected.geometryType} · {selected.scale}
             </p>
+            <div className="mb-2.5">
+              <SourceBadges source={selected.source} />
+            </div>
             <div className="grid grid-cols-4 gap-2 mb-2.5">
-              <MetricTile label="Demand" value={selected.demandScore} unit="/100" />
-              <MetricTile label="Suitability" value={selected.suitabilityScore} unit="/100" />
-              <MetricTile label="Feasibility" value={selected.feasibilityScore} unit="/100" />
-              <MetricTile label="Confidence" value={selected.confidenceScore} unit="/100" />
+              <MetricTile label="Demand" value={selected.demandScore} unit="/100" methodologyKey="demandScore" />
+              <MetricTile label="Suitability" value={selected.suitabilityScore} unit="/100" methodologyKey="suitabilityScore" />
+              <MetricTile label="Feasibility" value={selected.feasibilityScore} unit="/100" methodologyKey="feasibilityScore" />
+              <MetricTile label="Confidence" value={selected.confidenceScore} unit="/100" methodologyKey="confidenceScore" />
             </div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Opportunity Score</span>
               <span className="text-lg font-extrabold text-indigo-700">{selected.opportunityScore}</span>
               <span className="text-[10px] text-slate-400">/ 100</span>
+              <InfoTooltip methodologyKey="opportunityScore" />
             </div>
             <div className="grid grid-cols-3 gap-2 text-[10px]">
               <div className="bg-slate-50 border border-slate-200 rounded p-2">
@@ -197,6 +257,7 @@ export function OpportunityLabPanel({
             parkCenter={parkCenter}
             activeCellId={activeCellId}
             onCellClick={cell => setActiveCellId(cell.h3Id)}
+            hexes={hexes}
           />
 
           {activeCell && (
@@ -307,6 +368,15 @@ export function OpportunityLabPanel({
                 <p className="text-slate-700 leading-relaxed">
                   Prefer: {selected.grasshopperInputs.adjacencyRules.preferred.join(', ') || 'none'} · Avoid: {selected.grasshopperInputs.adjacencyRules.avoid.join(', ') || 'none'}
                 </p>
+                {(selected.grasshopperInputs.adjacencyRules.service.length > 0 || selected.grasshopperInputs.adjacencyRules.movement.length > 0) && (
+                  <p className="text-slate-700 leading-relaxed mt-1">
+                    Service: {selected.grasshopperInputs.adjacencyRules.service.join(', ') || 'none'} · Movement: {selected.grasshopperInputs.adjacencyRules.movement.join(', ') || 'none'}
+                  </p>
+                )}
+              </div>
+              <div className="col-span-2">
+                <p className="font-bold uppercase tracking-wider text-slate-400 text-[8px]">Grasshopper Readiness Score</p>
+                <p className="text-slate-700">{selected.grasshopperReadinessScore}/100 (attractors, repellers, adjacency, recommended area each contribute 25)</p>
               </div>
             </div>
           </CollapsibleSection>

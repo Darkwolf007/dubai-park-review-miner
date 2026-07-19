@@ -137,7 +137,7 @@ export function UrbanAnalysisReport({
           <MetricTile label="Intersection Count" value={kpis.intersectionCount.toLocaleString()} />
           <MetricTile label="Intersection Density" value={kpis.intersectionDensityPerKm2.toLocaleString()} unit="/km²" />
           <MetricTile label="Street Density" value={kpis.streetDensityMPerKm2.toLocaleString()} unit="m/km²" />
-          <MetricTile label="Land Use Diversity" value={`${kpis.landUseDiversityIndex}/100`} />
+          <MetricTile label="Land Use Diversity" value={`${kpis.landUseDiversityIndex}/100`} methodologyKey="landUseDiversity" />
           <MetricTile label="Residential %" value={kpis.residentialPct} unit="%" />
           <MetricTile label="Commercial %" value={kpis.commercialPct} unit="%" />
           <MetricTile label="Institutional %" value={kpis.institutionalPct} unit="%" />
@@ -202,7 +202,7 @@ export function UrbanAnalysisReport({
             note={roadNetwork.blockEstimateMethodology || undefined}
           />
           <MetricTile label="Street Connectivity" value={`${roadNetwork.streetConnectivityScore}/100`} />
-          <MetricTile label="Road Density" value={roadNetwork.roadDensityMPerKm2.toLocaleString()} unit="m/km²" />
+          <MetricTile label="Road Density" value={roadNetwork.roadDensityMPerKm2.toLocaleString()} unit="m/km²" methodologyKey="roadDensity" />
           <MetricTile label="Block Count (Estimate)" value={roadNetwork.blockCountEstimate?.toLocaleString()} unavailable={roadNetwork.blockCountEstimate === null} />
         </div>
 

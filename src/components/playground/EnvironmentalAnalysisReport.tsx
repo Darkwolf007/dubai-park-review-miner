@@ -120,7 +120,7 @@ export function EnvironmentalAnalysisReport({
         <div className="grid grid-cols-2 gap-1.5">
           <MetricTile label="Study Area" value={executiveSummary.studyArea} />
           <MetricTile label="Average Land Surface Temperature" unavailable note="No thermal/satellite raster in this dataset." />
-          <MetricTile label="Peak Heat Zone" value={executiveSummary.peakHeatZone} note="Based on the Heat Exposure Proxy (surface composition), not measured temperature." />
+          <MetricTile label="Peak Heat Zone" value={executiveSummary.peakHeatZone} note="Based on the Heat Exposure Proxy (surface composition), not measured temperature." methodologyKey="heatExposureProxy" />
           <MetricTile label="Tree Canopy Coverage" unavailable note="No canopy raster or tree survey." />
           <MetricTile label="Green Coverage" value={executiveSummary.greenCoveragePct} unit="%" />
           <MetricTile label="Thermal Comfort Status" value={executiveSummary.thermalComfortStatus} note="From review sentiment, not UTCI/PET." />
@@ -163,10 +163,10 @@ export function EnvironmentalAnalysisReport({
       <CollapsibleSection title="Heat and Thermal Comfort" defaultOpen={false}>
         <p className="text-[9px] text-amber-600 font-semibold mb-2">No land surface temperature, air temperature, or UTCI/PET data exists in this dataset. The scores below are a documented Heat Exposure Proxy built from real surface-composition fields (impervious estimate + green deficit) -- never presented as measured °C.</p>
         <div className="grid grid-cols-2 gap-1.5 mb-3">
-          <MetricTile label="Hotspot Area %" value={kpis.hotspotAreaPct} unit="%" note="Share of H3 cells with Heat Exposure Proxy >= 65/100." />
+          <MetricTile label="Hotspot Area %" value={kpis.hotspotAreaPct} unit="%" note="Share of H3 cells with Heat Exposure Proxy >= 65/100." methodologyKey="heatExposureProxy" />
           <MetricTile label="Cool-Zone Area %" value={kpis.coolZoneAreaPct} unit="%" />
           <MetricTile label="Thermal Comfort Score" value={`${kpis.thermalComfortScore}/100`} note="Review-sentiment proxy (shade/heat comfort category)." />
-          <MetricTile label="Cooling Opportunity Score" value={`${kpis.avgCoolingOpportunityScore}/100`} />
+          <MetricTile label="Cooling Opportunity Score" value={`${kpis.avgCoolingOpportunityScore}/100`} methodologyKey="coolingOpportunity" />
           <MetricTile label="UTCI / PET" unavailable note="Requires air temperature, humidity, wind, and radiant temperature data -- none present." />
           <MetricTile label="Evening Heat Retention" unavailable note="Requires a time-series thermal raster -- not present." />
         </div>

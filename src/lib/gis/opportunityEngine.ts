@@ -100,6 +100,14 @@ export type OpportunityType =
 
 export type OpportunityPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
+/** Where a program's inclusion/weighting is actually justified from. Multiple tags per program are
+ * normal (e.g. brief-required AND review-driven). Never presented as a single authoritative source --
+ * see evidence[] and the metric methodology registry for the full disclosure per tag. */
+export type EvidenceSource =
+  | 'brief-required' | 'brief-optional' | 'review-driven' | 'population-driven' | 'community-driven'
+  | 'accessibility-driven' | 'environment-driven' | 'movement-driven' | 'operations-driven'
+  | 'user-experience-driven' | 'designer-assumption';
+
 export interface OpportunityCellScore {
   h3Id: string;
   opportunityScore: number;
@@ -107,6 +115,8 @@ export interface OpportunityCellScore {
   suitabilityScore: number;
   feasibilityScore: number;
   avoided: boolean;
+  /** Why avoided() returned non-null for this cell, or null if not avoided/constrained. */
+  avoidReason: string | null;
 }
 
 export interface RecommendedArea {
@@ -121,7 +131,7 @@ export interface GrasshopperReadiness {
   repellers: string[];
   constraints: string[];
   recommendedAreaM2: RecommendedArea | null;
-  adjacencyRules: { preferred: string[]; avoid: string[] };
+  adjacencyRules: { preferred: string[]; avoid: string[]; service: string[]; movement: string[] };
   geometryType: GeometryType;
   scale: Scale;
 }
@@ -132,11 +142,15 @@ export interface OpportunityResult {
   category: OpportunityCategory;
   geometryType: GeometryType;
   scale: Scale;
+  source: EvidenceSource[];
   opportunityScore: number;
   demandScore: number;
   suitabilityScore: number;
   feasibilityScore: number;
   confidenceScore: number;
+  /** 0-100 completeness of the Grasshopper-facing data for this program (attractors, repellers,
+   * adjacency, recommended area each contribute 25) -- a data-readiness signal, not a design score. */
+  grasshopperReadinessScore: number;
   priority: OpportunityPriority;
   recommendedAreaM2: RecommendedArea | null;
   primaryUsers: string[];
@@ -188,6 +202,10 @@ interface OpportunityDef {
   nlpCategory: string | null;
   nlpCategoryNote?: string;
   primaryUsersFallback: string[];
+  /** Evidence tags for this program's inclusion/weighting -- see EvidenceSource. Every program is
+   * drawn from the AI Park Scope of Work, so all carry brief-required or brief-optional plus
+   * whichever real signal sources actually feed its demand/suitability formulas below. */
+  source: EvidenceSource[];
   demand: (hex: H3Feature, ctx: EngineContext, nlpOpportunity: number) => number;
   suitability: (hex: H3Feature, ctx: EngineContext) => number;
   feasibility: (hex: H3Feature, ctx: EngineContext) => number;
@@ -195,6 +213,12 @@ interface OpportunityDef {
   suitabilityField: string;
   attractors: string[];
   repellers: string[];
+  /** Adjacency authored directly against OpportunityType, independent of the older PROGRAM_DEFS
+   * catalogue (communityEngine.ts) -- this is what the full program network graph renders. */
+  adjacencyPreferred: OpportunityType[];
+  adjacencyAvoid: OpportunityType[];
+  adjacencyService?: OpportunityType[];
+  adjacencyMovement?: OpportunityType[];
 }
 
 const OPPORTUNITY_DEFS: OpportunityDef[] = [
@@ -210,13 +234,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['communityPlaza'],
     nlpCategory: 'accessibility',
     primaryUsersFallback: ['All visitors', 'Nearby residents'],
+    source: ['brief-required', 'accessibility-driven', 'movement-driven'],
     demand: hex => clamp100(0.5 * computeHexDemandScore(hex) + 0.5 * (100 - computeHexParkAccessScore(hex))),
     suitability: hex => clamp100(0.4 * computeHexWalkabilityScore(hex) + 0.3 * (100 - computeHexBarrierSeverityScore(hex)) + 0.3 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000)),
     feasibility: hex => (boundaryRatio(hex) < 0.9 ? 100 : 30),
     avoided: hex => (boundaryRatio(hex) >= 0.98 ? 'Full interior cell -- not a boundary/gateway candidate.' : null),
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Population demand', 'Street connectivity', 'Boundary/edge location'],
-    repellers: ['High barrier severity', 'Full interior cell']
+    repellers: ['High barrier severity', 'Full interior cell'],
+    adjacencyPreferred: ['wayfindingNodes', 'dropOffZone', 'communityPlaza'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden'],
+    adjacencyMovement: ['walkingPromenade', 'accessibleRoutes']
   },
   {
     type: 'secondaryEntrances',
@@ -227,13 +255,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'accessibility',
     primaryUsersFallback: ['Nearby residents', 'Pedestrians'],
+    source: ['brief-required', 'accessibility-driven', 'population-driven'],
     demand: hex => clamp100(0.6 * (100 - computeHexParkAccessScore(hex)) + 0.4 * computeHexDemandScore(hex)),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => (boundaryRatio(hex) < 0.9 ? 100 : 20),
     avoided: hex => (boundaryRatio(hex) >= 0.98 ? 'Full interior cell -- not a boundary candidate.' : null),
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Underserved population', 'Boundary/edge location'],
-    repellers: ['High barrier severity', 'Full interior cell']
+    repellers: ['High barrier severity', 'Full interior cell'],
+    adjacencyPreferred: ['wayfindingNodes', 'accessibleRoutes'],
+    adjacencyAvoid: ['quietGarden'],
+    adjacencyMovement: ['walkingPromenade']
   },
   {
     type: 'accessibleRoutes',
@@ -244,13 +276,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['walkingCircuit'],
     nlpCategory: 'accessibility',
     primaryUsersFallback: ['People of Determination', 'Older adults', 'Caregivers'],
+    source: ['brief-required', 'accessibility-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * (100 - computeHexParkAccessScore(hex)) + 0.5 * nlp),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to build an accessible route from.' : null),
     suitabilityField: 'route_directness_ratio',
     attractors: ['Accessibility deficit', 'Low barrier severity', 'Existing path network'],
-    repellers: ['High barrier severity', 'Sparse path network']
+    repellers: ['High barrier severity', 'Sparse path network'],
+    adjacencyPreferred: ['mainEntrancePlaza', 'secondaryEntrances', 'wayfindingNodes'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['walkingPromenade', 'shadedCirculation', 'joggingLoop']
   },
   {
     type: 'bicycleParking',
@@ -261,13 +297,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'parking',
     primaryUsersFallback: ['Cyclists', 'All visitors'],
+    source: ['brief-optional', 'movement-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * nlp),
-    suitability: pointAmenitySuitability,
+    // Distinct from other point amenities: favors boundary/edge + road-connected cells (arrival
+    // infrastructure), not generic walkability -- keeps it off interior/quiet cells by construction.
+    suitability: hex => clamp100(0.5 * boundaryRatio(hex) * 100 + 0.5 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
-    attractors: ['Population density', 'Path/road connectivity'],
-    repellers: []
+    attractors: ['Population density', 'Boundary/edge location', 'Road connectivity'],
+    repellers: [],
+    adjacencyPreferred: ['mainEntrancePlaza', 'secondaryEntrances', 'dropOffZone'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'dropOffZone',
@@ -278,13 +319,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'parking',
     primaryUsersFallback: ['Families', 'All visitors'],
+    source: ['brief-required', 'movement-driven', 'population-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * computeHexDemandScore(hex) + 0.5 * nlp),
     suitability: hex => clamp100(0.5 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.5 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => (boundaryRatio(hex) < 0.9 ? 90 : 25),
     avoided: hex => (boundaryRatio(hex) >= 0.98 ? 'Full interior cell -- not adjacent to the street.' : null),
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Street connectivity', 'Boundary/edge location'],
-    repellers: ['Full interior cell']
+    repellers: ['Full interior cell'],
+    adjacencyPreferred: ['mainEntrancePlaza', 'bicycleParking'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden']
   },
   {
     type: 'wayfindingNodes',
@@ -295,13 +339,19 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'wayfinding / signage',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-required', 'movement-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * hexCommunityDiversityScore(hex) + 0.6 * nlp),
-    suitability: pointAmenitySuitability,
+    // Distinct from generic point amenities: weighted toward path/route intersections (where
+    // wayfinding actually matters), not general walkability + facility access.
+    suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * computeHexWalkabilityScore(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Path intersections', 'Facility diversity'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['mainEntrancePlaza', 'secondaryEntrances', 'communityPlaza'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'shadedCirculation']
   },
 
   // ===========================================================================================
@@ -316,13 +366,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['walkingCircuit'],
     nlpCategory: null,
     primaryUsersFallback: ['Seniors', 'Families', 'Residents'],
+    source: ['brief-required', 'movement-driven', 'population-driven'],
     demand: hex => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * (100 - hexCommunityVulnerabilityScore(hex))),
     suitability: (hex, ctx) => clamp100(0.4 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.3 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to build a promenade from.' : null),
     suitabilityField: 'route_directness_ratio',
     attractors: ['Existing path network', 'Low heat exposure', 'Low barrier severity'],
-    repellers: ['Sparse path network', 'High heat exposure']
+    repellers: ['Sparse path network', 'High heat exposure'],
+    adjacencyPreferred: ['accessibleRoutes', 'shadedCirculation'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['joggingLoop', 'accessibleRoutes', 'shadedCirculation', 'mainEntrancePlaza']
   },
   {
     type: 'joggingLoop',
@@ -334,13 +388,20 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'sports facilities',
     nlpCategoryNote: 'No review category maps directly to "jogging loop" -- sports-facilities mentions are used as the closest available proxy.',
     primaryUsersFallback: ['Joggers', 'Residents'],
+    source: ['brief-required', 'movement-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * nlp),
-    suitability: hex => clamp100(0.4 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.3 * (100 - computeHexBarrierSeverityScore(hex)) + 0.3 * normalize(hex.properties.green_coverage_pct || 0, 30)),
+    // Distinct from Walking Promenade / Shaded Circulation: a loop needs perimeter/boundary
+    // continuity to run a route around the site, not just any path -- weighted toward edge cells
+    // instead of green coverage, which is what actually separates "loop" from "promenade" spatially.
+    suitability: hex => clamp100(0.35 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.35 * boundaryRatio(hex) * 100 + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 20000)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 2000 ? 'Under 2,000 m/km² real road density -- effectively no path infrastructure to route a loop through.' : null),
     suitabilityField: 'jogging_route_suitability',
-    attractors: ['Path / road density', 'Green coverage (route pleasantness)', 'Low barrier severity'],
-    repellers: ['Sparse path network']
+    attractors: ['Path / road density', 'Perimeter/boundary continuity', 'Low barrier severity'],
+    repellers: ['Sparse path network', 'Interior-only cells'],
+    adjacencyPreferred: ['outdoorFitness', 'walkingPromenade'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['walkingPromenade', 'shadedCirculation', 'accessibleRoutes']
   },
   {
     type: 'shadedCirculation',
@@ -351,13 +412,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'shade / heat comfort',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-required', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexHeatExposureProxy(hex, ctx.avgRoadWidthM) + 0.5 * nlp),
     suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to shade.' : null),
     suitabilityField: 'shade_score',
     attractors: ['Heat exposure', 'Existing path network', 'Green coverage'],
-    repellers: ['Sparse path network']
+    repellers: ['Sparse path network'],
+    adjacencyPreferred: ['treePlanting', 'walkingPromenade'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'accessibleRoutes']
   },
   {
     type: 'serviceAccess',
@@ -368,6 +433,7 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: null,
     primaryUsersFallback: ['Operations / maintenance staff'],
+    source: ['brief-required', 'operations-driven', 'designer-assumption'],
     demand: hex => clamp100(50 + 0.5 * (hex.properties.building_coverage_pct || 0)),
     suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * boundaryRatio(hex) * 100),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 10000)),
@@ -375,6 +441,9 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Boundary/edge location', 'Existing path network'],
     repellers: ['Full interior cell'],
+    adjacencyPreferred: ['operationsArea', 'wastePoints'],
+    adjacencyAvoid: ['quietGarden', 'communityPlaza', 'sensoryGarden'],
+    adjacencyService: ['operationsArea']
   },
 
   // ===========================================================================================
@@ -389,13 +458,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['inclusivePlayground'],
     nlpCategory: 'playground',
     primaryUsersFallback: ['Children', 'Families', 'People of Determination'],
+    source: ['brief-required', 'population-driven', 'review-driven', 'community-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexFamilyDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.4 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.3 * computeHexWalkabilityScore(hex) + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio -- insufficient open land for play equipment.' : null),
     suitabilityField: 'playground_environmental_suitability',
     attractors: ['Family demand', 'Shade availability', 'Low barrier exposure'],
-    repellers: ['High heat exposure', 'High barrier severity (major roads)']
+    repellers: ['High heat exposure', 'High barrier severity (major roads)'],
+    adjacencyPreferred: ['familySeatingPlay', 'restrooms', 'drinkingWater', 'shadedSeating'],
+    adjacencyAvoid: ['serviceAccess', 'sportsCourt', 'operationsArea']
   },
   {
     type: 'toddlerPlay',
@@ -407,13 +479,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'playground',
     nlpCategoryNote: 'Toddler-specific demand has no distinct review category -- general playground mentions are used, weighted toward family/caregiver demand.',
     primaryUsersFallback: ['Toddlers', 'Caregivers', 'Parents'],
+    source: ['brief-required', 'population-driven', 'community-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.7 * hexFamilyDemandScore(hex) + 0.3 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * (100 - computeHexBarrierSeverityScore(hex))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 8 ? 'Less than 8% void ratio -- insufficient enclosed open land.' : null),
     suitabilityField: 'playground_environmental_suitability',
     attractors: ['Family demand', 'Shade availability', 'Low barrier exposure'],
-    repellers: ['High heat exposure', 'High barrier severity']
+    repellers: ['High heat exposure', 'High barrier severity'],
+    adjacencyPreferred: ['inclusivePlayground', 'familySeatingPlay'],
+    adjacencyAvoid: ['sportsCourt', 'serviceAccess']
   },
   {
     type: 'olderChildrenPlay',
@@ -424,13 +499,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['inclusivePlayground'],
     nlpCategory: 'playground',
     primaryUsersFallback: ['Older children', 'Teenagers'],
+    source: ['brief-required', 'population-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexYouthDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.4 * computeHexWalkabilityScore(hex) + 0.3 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.3 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 50)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio -- insufficient open land.' : null),
     suitabilityField: 'playground_environmental_suitability',
     attractors: ['Youth demand', 'Walkability', 'Green coverage'],
-    repellers: ['High heat exposure']
+    repellers: ['High heat exposure'],
+    adjacencyPreferred: ['inclusivePlayground', 'sportsCourt'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'naturePlay',
@@ -441,13 +519,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['naturePlay'],
     nlpCategory: 'landscape / greenery',
     primaryUsersFallback: ['Children', 'Families'],
+    source: ['brief-optional', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexFamilyDemandScore(hex) + 0.5 * nlp),
     suitability: hex => clamp100(0.5 * hexBiodiversityProxy(hex) + 0.5 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'tree_planting_suitability',
     attractors: ['Existing greenery/biodiversity', 'Family demand'],
-    repellers: ['Low green coverage']
+    repellers: ['Low green coverage'],
+    adjacencyPreferred: ['biodiversityHabitat', 'treePlanting'],
+    adjacencyAvoid: ['sportsCourt']
   },
   {
     type: 'familySeatingPlay',
@@ -458,13 +539,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['familySeating'],
     nlpCategory: 'seating',
     primaryUsersFallback: ['Families', 'Caregivers'],
+    source: ['brief-required', 'community-driven', 'user-experience-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexFamilyDemandScore(hex) + 0.4 * nlp),
-    suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * computeHexWalkabilityScore(hex)),
+    // Weighted more toward comfort (heat relief) than general walkability -- distinct from Shaded
+    // Seating, which is weighted toward walkability + building shade, not family demand.
+    suitability: (hex, ctx) => clamp100(0.6 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.4 * computeHexWalkabilityScore(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'shade_score',
     attractors: ['Family demand', 'Shade availability', 'Path proximity'],
-    repellers: ['High heat exposure']
+    repellers: ['High heat exposure'],
+    adjacencyPreferred: ['inclusivePlayground', 'toddlerPlay'],
+    adjacencyAvoid: ['sportsCourt']
   },
 
   // ===========================================================================================
@@ -479,13 +565,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['outdoorFitness'],
     nlpCategory: 'sports facilities',
     primaryUsersFallback: ['Young adults', 'Working adults'],
+    source: ['brief-required', 'population-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexYouthDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * computeHexWalkabilityScore(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'jogging_route_suitability',
     attractors: ['Youth demand', 'Low heat exposure', 'Walkability'],
-    repellers: ['High heat exposure']
+    repellers: ['High heat exposure'],
+    adjacencyPreferred: ['joggingLoop', 'sportsCourt'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden']
   },
   {
     type: 'flexibleRecreation',
@@ -496,13 +585,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['outdoorFitness', 'sportsCourt'],
     nlpCategory: 'sports facilities',
     primaryUsersFallback: ['All age groups'],
+    source: ['brief-optional', 'population-driven', 'community-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexYouthDemandScore(hex) + 0.5 * nlp),
-    suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * hexVoidRatioPct(hex)),
+    // Weighted toward accessibility over raw open land -- distinct from Sports Court, which
+    // prioritizes contiguous void ratio over walkability (a dedicated court vs. general flex space).
+    suitability: hex => clamp100(0.6 * computeHexWalkabilityScore(hex) + 0.4 * hexVoidRatioPct(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 55)),
     avoided: hex => (hexVoidRatioPct(hex) < 15 ? 'Less than 15% void ratio -- insufficient flexible open land.' : null),
     suitabilityField: 'jogging_route_suitability',
     attractors: ['Available flexible land', 'Walkability'],
-    repellers: ['Low void ratio']
+    repellers: ['Low void ratio'],
+    adjacencyPreferred: ['sportsCourt', 'multipurposeLawn'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'sportsCourt',
@@ -513,13 +607,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['sportsCourt'],
     nlpCategory: 'sports facilities',
     primaryUsersFallback: ['Teenagers', 'Young adults'],
+    source: ['brief-required', 'population-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexYouthDemandScore(hex) + 0.4 * nlp),
-    suitability: hex => clamp100(0.5 * hexVoidRatioPct(hex) + 0.5 * computeHexWalkabilityScore(hex)),
+    // Weighted toward contiguous open land over walkability -- a fixed-footprint court needs the
+    // land more than it needs path proximity, distinct from Flexible Recreation above.
+    suitability: hex => clamp100(0.65 * hexVoidRatioPct(hex) + 0.35 * computeHexWalkabilityScore(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
     avoided: hex => (hexVoidRatioPct(hex) < 15 ? 'Less than 15% void ratio -- insufficient contiguous land for a court.' : null),
     suitabilityField: 'jogging_route_suitability',
     attractors: ['Youth demand', 'Available land'],
-    repellers: ['Low void ratio']
+    repellers: ['Low void ratio'],
+    adjacencyPreferred: ['outdoorFitness', 'flexibleRecreation'],
+    adjacencyAvoid: ['quietGarden', 'wellnessZone', 'sensoryGarden']
   },
   {
     type: 'multipurposeLawn',
@@ -531,13 +630,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'crowding',
     nlpCategoryNote: 'No review category maps directly to "multipurpose lawn" -- crowding complaints are used as a proxy for unmet demand for open space.',
     primaryUsersFallback: ['Families', 'Weekend social groups', 'All age groups'],
+    source: ['brief-optional', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 70)),
     avoided: hex => (hexVoidRatioPct(hex) < 20 ? 'Less than 20% void ratio -- insufficient contiguous open land for a lawn.' : null),
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Available contiguous land', 'Green coverage'],
-    repellers: ['High heat exposure', 'Low void ratio']
+    repellers: ['High heat exposure', 'Low void ratio'],
+    adjacencyPreferred: ['flexibleEventLawn', 'communityPlaza'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'wellnessZone',
@@ -549,13 +651,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'shade / heat comfort',
     nlpCategoryNote: 'No review category maps directly to "wellness zone" -- shade/heat-comfort mentions are used as a proxy, since comfort is the dominant siting concern for this program.',
     primaryUsersFallback: ['Older adults', 'Working adults'],
+    source: ['brief-required', 'population-driven', 'environment-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexOlderAdultDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * (100 - normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 30)),
     avoided: hex => (hexVoidRatioPct(hex) < 8 ? 'Less than 8% void ratio.' : null),
     suitabilityField: 'quiet_garden_suitability',
     attractors: ['Older-adult demand', 'Low heat exposure', 'Low traffic noise'],
-    repellers: ['High heat exposure', 'High road density']
+    repellers: ['High heat exposure', 'High road density'],
+    adjacencyPreferred: ['quietGarden', 'sensoryGarden'],
+    adjacencyAvoid: ['sportsCourt', 'flexibleRecreation']
   },
 
   // ===========================================================================================
@@ -571,13 +676,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'crowding',
     nlpCategoryNote: 'No review category maps directly to "community plaza" -- crowding complaints are used as a proxy for unmet demand for gathering space.',
     primaryUsersFallback: ['Weekend social groups', 'Families', 'Residents'],
+    source: ['brief-required', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexCommunityDiversityScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
     avoided: hex => (hexVoidRatioPct(hex) < 15 ? 'Less than 15% void ratio -- insufficient contiguous open land for a plaza.' : null),
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Walkability / accessibility', 'Community diversity'],
-    repellers: ['High heat exposure', 'Low void ratio']
+    repellers: ['High heat exposure', 'Low void ratio'],
+    adjacencyPreferred: ['cafeKiosk', 'mainEntrancePlaza', 'flexibleEventLawn'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden']
   },
   {
     type: 'flexibleEventLawn',
@@ -589,13 +697,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'crowding',
     nlpCategoryNote: 'No review category maps directly to "event lawn" -- crowding complaints are used as a proxy for unmet demand for open gathering space.',
     primaryUsersFallback: ['Families', 'Weekend social groups'],
+    source: ['brief-optional', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 70)),
     avoided: hex => (hexVoidRatioPct(hex) < 20 ? 'Less than 20% void ratio -- insufficient contiguous open land for an event lawn.' : null),
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Walkability / accessibility', 'Available contiguous land'],
-    repellers: ['High heat exposure', 'Low void ratio']
+    repellers: ['High heat exposure', 'Low void ratio'],
+    adjacencyPreferred: ['communityPlaza', 'multipurposeLawn'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'picnicArea',
@@ -606,13 +717,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['picnicArea'],
     nlpCategory: 'seating',
     primaryUsersFallback: ['Families', 'Weekend social groups'],
+    source: ['brief-required', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexFamilyDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.5 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.5 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'shade_score',
     attractors: ['Family demand', 'Shade availability', 'Green coverage'],
-    repellers: ['High heat exposure']
+    repellers: ['High heat exposure'],
+    adjacencyPreferred: ['restrooms', 'drinkingWater', 'shadedSeating'],
+    adjacencyAvoid: ['sportsCourt']
   },
   {
     type: 'socialSeating',
@@ -623,13 +737,19 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['familySeating'],
     nlpCategory: 'seating',
     primaryUsersFallback: ['All visitors', 'Weekend social groups'],
+    source: ['brief-optional', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * nlp),
-    suitability: pointAmenitySuitability,
+    // Distinct from other point amenities: weighted toward available open space (void ratio) rather
+    // than road-density-driven walkability, so it doesn't converge on the same cells as the
+    // route/entrance-oriented Smart/Operations point types.
+    suitability: hex => clamp100(0.55 * hexVoidRatioPct(hex) + 0.45 * computeHexWalkabilityScore(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'plaza_environmental_suitability',
-    attractors: ['Foot traffic / walkability', 'Facility diversity'],
-    repellers: []
+    attractors: ['Foot traffic / walkability', 'Available open space'],
+    repellers: [],
+    adjacencyPreferred: ['communityPlaza', 'cafeKiosk'],
+    adjacencyAvoid: []
   },
   {
     type: 'smallEventZone',
@@ -640,13 +760,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['communityPlaza'],
     nlpCategory: 'crowding',
     primaryUsersFallback: ['Residents', 'Weekend social groups'],
+    source: ['brief-optional', 'community-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * nlp),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * hexVoidRatioPct(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 35)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Walkability', 'Available land'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['communityPlaza'],
+    adjacencyAvoid: ['quietGarden']
   },
 
   // ===========================================================================================
@@ -661,13 +784,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'landscape / greenery',
     primaryUsersFallback: ['All visitors', 'Pedestrians'],
+    source: ['brief-required', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * hexGreenSpaceDeficitScore(hex) + 0.3 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.3 * nlp),
     suitability: (hex, ctx) => hexTreePlantingSuitability(hex, ctx.avgRoadWidthM),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
     avoided: hex => (hexVoidRatioPct(hex) < 8 ? 'Less than 8% void ratio -- effectively no unbuilt land in this cell.' : null),
     suitabilityField: 'tree_planting_suitability',
     attractors: ['Heat exposure', 'Green-space deficit', 'Available land (void ratio)'],
-    repellers: ['High building coverage', 'Already-high green coverage']
+    repellers: ['High building coverage', 'Already-high green coverage'],
+    adjacencyPreferred: ['nativePlanting', 'biodiversityHabitat'],
+    adjacencyAvoid: []
   },
   {
     type: 'nativePlanting',
@@ -678,13 +804,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'landscape / greenery',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-optional', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * hexGreenSpaceDeficitScore(hex) + 0.6 * nlp),
     suitability: hex => clamp100(0.6 * hexBiodiversityProxy(hex) + 0.4 * hexVoidRatioPct(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 50)),
     avoided: hex => (hexVoidRatioPct(hex) < 8 ? 'Less than 8% void ratio.' : null),
     suitabilityField: 'tree_planting_suitability',
     attractors: ['Green-space deficit', 'Available land', 'Existing biodiversity'],
-    repellers: ['High building coverage']
+    repellers: ['High building coverage'],
+    adjacencyPreferred: ['treePlanting', 'biodiversityHabitat'],
+    adjacencyAvoid: []
   },
   {
     type: 'biodiversityHabitat',
@@ -696,13 +825,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'landscape / greenery',
     nlpCategoryNote: 'No review category maps directly to "biodiversity habitat" -- landscape/greenery mentions are used as the closest available proxy.',
     primaryUsersFallback: ['All visitors', 'Wildlife'],
+    source: ['brief-optional', 'environment-driven', 'designer-assumption'],
     demand: hex => clamp100(0.5 * (100 - hexBiodiversityProxy(hex)) + 0.5 * hexGreenSpaceDeficitScore(hex)),
     suitability: hex => clamp100(0.5 * hexBiodiversityProxy(hex) + 0.5 * (100 - normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 50)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) > 40000 ? 'Road density exceeds 40,000 m/km² -- too disturbed for habitat value.' : hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'biodiversity_score',
     attractors: ['Existing biodiversity', 'Low disturbance', 'Available land'],
-    repellers: ['High road density', 'Low void ratio']
+    repellers: ['High road density', 'Low void ratio'],
+    adjacencyPreferred: ['nativePlanting', 'quietGarden'],
+    adjacencyAvoid: ['sportsCourt']
   },
   {
     type: 'sensoryGarden',
@@ -714,13 +846,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'accessibility',
     nlpCategoryNote: 'No review category maps directly to "sensory garden" -- accessibility mentions are used as a proxy given the People-of-Determination-focused user group.',
     primaryUsersFallback: ['People of Determination', 'Children', 'Older adults'],
+    source: ['brief-required', 'accessibility-driven', 'user-experience-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexFamilyDemandScore(hex) + 0.5 * nlp),
     suitability: (hex, ctx) => clamp100(0.4 * (100 - normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000)) + 0.3 * hexBiodiversityProxy(hex) + 0.3 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 35)),
     avoided: hex => (hexVoidRatioPct(hex) < 8 ? 'Less than 8% void ratio.' : null),
     suitabilityField: 'quiet_garden_suitability',
     attractors: ['Low traffic noise', 'Existing biodiversity', 'Accessibility demand'],
-    repellers: ['High road density', 'High heat exposure']
+    repellers: ['High road density', 'High heat exposure'],
+    adjacencyPreferred: ['quietGarden', 'wellnessZone'],
+    adjacencyAvoid: ['sportsCourt', 'cafeKiosk']
   },
   {
     type: 'quietGarden',
@@ -732,13 +867,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     nlpCategory: 'landscape / greenery',
     nlpCategoryNote: 'No review category maps directly to "quiet garden" -- landscape/greenery mentions are used as the closest available proxy for garden-quality interest.',
     primaryUsersFallback: ['Older adults', 'Working adults'],
+    source: ['brief-required', 'environment-driven', 'user-experience-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * hexOlderAdultDemandScore(hex) + 0.4 * nlp),
     suitability: (hex, ctx) => clamp100(0.4 * (100 - normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000)) + 0.3 * hexBiodiversityProxy(hex) + 0.3 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM))),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) > 30000 ? 'Road density exceeds 30,000 m/km² -- too much traffic noise for a quiet garden.' : hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'quiet_garden_suitability',
     attractors: ['Low traffic noise', 'Existing biodiversity', 'Low heat exposure'],
-    repellers: ['High road density', 'High heat exposure']
+    repellers: ['High road density', 'High heat exposure'],
+    adjacencyPreferred: ['sensoryGarden', 'wellnessZone', 'viewingPoints'],
+    adjacencyAvoid: ['sportsCourt', 'communityPlaza', 'flexibleEventLawn', 'cafeKiosk', 'smallEventZone']
   },
   {
     type: 'bioswale',
@@ -749,13 +887,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'water features',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-required', 'environment-driven'],
     demand: hex => clamp100(0.5 * normalize(hex.properties.building_coverage_pct || 0, 80) + 0.5 * hexGreenSpaceDeficitScore(hex)),
     suitability: (hex, ctx) => hexWaterSensitiveSuitability(hex, ctx.avgRoadWidthM),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'water_score',
     attractors: ['Impervious surface (runoff)', 'Available land'],
-    repellers: ['Low void ratio']
+    repellers: ['Low void ratio'],
+    adjacencyPreferred: ['treePlanting', 'nativePlanting'],
+    adjacencyAvoid: ['communityPlaza', 'flexibleEventLawn']
   },
   {
     type: 'irrigationEfficiency',
@@ -766,13 +907,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: null,
     primaryUsersFallback: ['Operations / maintenance staff'],
+    source: ['brief-required', 'operations-driven', 'environment-driven'],
     demand: hex => clamp100(normalize(hex.properties.green_coverage_pct || 0, 30)),
     suitability: hex => clamp100(normalize(hex.properties.green_coverage_pct || 0, 30)),
     feasibility: () => 100,
     avoided: NO_AVOID,
     suitabilityField: 'green_coverage_pct',
     attractors: ['Existing green/irrigated coverage'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['treePlanting', 'bioswale'],
+    adjacencyAvoid: [],
+    adjacencyService: ['operationsArea']
   },
 
   // ===========================================================================================
@@ -787,13 +932,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['familySeating'],
     nlpCategory: 'shade / heat comfort',
     primaryUsersFallback: ['Families', 'Older adults', 'Caregivers'],
+    source: ['brief-required', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexHeatExposureProxy(hex, ctx.avgRoadWidthM) + 0.5 * nlp),
     suitability: hex => clamp100(0.6 * computeHexWalkabilityScore(hex) + 0.4 * (100 - normalize(hex.properties.building_coverage_pct || 0, 80))),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'shade_score',
     attractors: ['Heat exposure (where relief is most needed)', 'Path proximity'],
-    repellers: ['High building coverage']
+    repellers: ['High building coverage'],
+    adjacencyPreferred: ['inclusivePlayground', 'picnicArea', 'walkingPromenade'],
+    adjacencyAvoid: []
   },
   {
     type: 'restrooms',
@@ -804,13 +952,21 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['toilets'],
     nlpCategory: 'toilets',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-required', 'population-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * nlp),
-    suitability: pointAmenitySuitability,
+    // Weighted toward developed/active-use cells (building presence dominant), not generic
+    // walkability -- restrooms belong near where people already gather (play/sports/plaza), and the
+    // Phase A spatial-conflict pass keeps them off the quiet-garden core specifically. Building
+    // coverage is real per-site-grid-cell data (unlike facility access, which this dataset only has
+    // at the single-parent-hex resolution), so it's the dominant term rather than a tie-breaker.
+    suitability: hex => clamp100(0.5 * normalize(hex.properties.building_coverage_pct || 0, 40) + 0.35 * computeHexWalkabilityScore(hex) + 0.15 * hexFacilityAccessScore(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
-    attractors: ['Population density', 'Facility access / walkability'],
-    repellers: []
+    attractors: ['Population density', 'Facility access', 'Proximity to active-use nodes'],
+    repellers: ['Quiet-garden-like conditions'],
+    adjacencyPreferred: ['inclusivePlayground', 'sportsCourt', 'communityPlaza', 'picnicArea'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden']
   },
   {
     type: 'drinkingWater',
@@ -821,13 +977,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['drinkingFountains'],
     nlpCategory: 'water features',
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-required', 'population-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * nlp),
-    suitability: hex => computeHexWalkabilityScore(hex),
+    // Distinct from Restrooms: blends population density directly into suitability (a purely
+    // hydration-driven node, not tied to a "developed cell" proxy the way restrooms are).
+    suitability: hex => clamp100(0.4 * computeHexWalkabilityScore(hex) + 0.3 * hexFacilityAccessScore(hex) + 0.3 * normalize(hex.properties.pop_density_km2 || 0, 20000)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 20)),
     avoided: NO_AVOID,
     suitabilityField: 'water_score',
     attractors: ['Pedestrian path density', 'Population density'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['inclusivePlayground', 'joggingLoop', 'sportsCourt'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'cafeKiosk',
@@ -838,13 +999,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: ['cafe', 'retailKiosk'],
     nlpCategory: 'food / cafe',
     primaryUsersFallback: ['Families', 'Working adults', 'Weekend social groups'],
+    source: ['brief-optional', 'review-driven', 'movement-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * (100 - hexFacilityAccessScore(hex)) + 0.5 * nlp),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * hexCommunityDiversityScore(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (hexVoidRatioPct(hex) < 5 ? 'Less than 5% void ratio -- no room for a structure.' : null),
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Foot traffic / walkability', 'Mixed-use vibrancy', 'Low existing facility access'],
-    repellers: ['Quiet / low-footfall cells']
+    repellers: ['Quiet / low-footfall cells'],
+    adjacencyPreferred: ['communityPlaza', 'mainEntrancePlaza', 'walkingPromenade'],
+    adjacencyAvoid: ['quietGarden', 'sensoryGarden']
   },
   {
     type: 'wastePoints',
@@ -855,13 +1019,19 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'cleanliness',
     primaryUsersFallback: ['All visitors', 'Operations / maintenance staff'],
+    source: ['brief-required', 'review-driven', 'operations-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.6 * nlp),
-    suitability: pointAmenitySuitability,
+    // Distinct from Restrooms/Drinking Fountains: weighted toward facility access + developed-cell
+    // presence (food/plaza nodes generate the most waste), not generic walkability.
+    suitability: hex => clamp100(0.5 * hexFacilityAccessScore(hex) + 0.5 * normalize(hex.properties.building_coverage_pct || 0, 40)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
-    attractors: ['Population density', 'Facility access / walkability'],
-    repellers: []
+    attractors: ['Facility access', 'Food/plaza proximity'],
+    repellers: ['Quiet-garden-like conditions'],
+    adjacencyPreferred: ['cafeKiosk', 'picnicArea', 'communityPlaza'],
+    adjacencyAvoid: ['quietGarden'],
+    adjacencyService: ['operationsArea', 'serviceAccess']
   },
   {
     type: 'viewingPoints',
@@ -872,13 +1042,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: null,
     primaryUsersFallback: ['All visitors'],
+    source: ['brief-optional', 'environment-driven', 'user-experience-driven'],
     demand: hex => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * normalize(hex.properties.green_coverage_pct || 0, 30)),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * hexBiodiversityProxy(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'biodiversity_score',
     attractors: ['Green coverage / biodiversity', 'Walkability'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['quietGarden', 'naturePlay'],
+    adjacencyAvoid: []
   },
 
   // ===========================================================================================
@@ -893,13 +1066,19 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'safety',
     primaryUsersFallback: ['Operations / security staff'],
+    source: ['brief-required', 'operations-driven', 'designer-assumption'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * computeHexBarrierSeverityScore(hex) + 0.6 * nlp),
-    suitability: pointAmenitySuitability,
+    // Distinct from Safety Point and Digital Experience Zone: weighted toward route/entrance
+    // coverage (road density + boundary proximity), not generic walkability -- a monitoring point
+    // belongs at circulation nodes and edges, not interior gathering spaces.
+    suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * boundaryRatio(hex) * 100),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
-    attractors: ['Safety concern density', 'Path intersections'],
-    repellers: []
+    attractors: ['Safety concern density', 'Route/entrance coverage'],
+    repellers: [],
+    adjacencyPreferred: ['mainEntrancePlaza', 'wayfindingNodes', 'communityPlaza'],
+    adjacencyAvoid: []
   },
   {
     type: 'digitalExperience',
@@ -910,13 +1089,18 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: null,
     primaryUsersFallback: ['Children', 'Teenagers', 'Families'],
+    source: ['brief-optional', 'population-driven', 'designer-assumption'],
     demand: hex => clamp100(0.5 * hexYouthDemandScore(hex) + 0.5 * hexCommunityDiversityScore(hex)),
-    suitability: pointAmenitySuitability,
+    // Distinct from other point amenities: weighted toward community diversity (mixed-use vibrancy)
+    // instead of facility access, matching its social/gathering-node siting logic.
+    suitability: hex => clamp100(0.5 * hexCommunityDiversityScore(hex) + 0.5 * computeHexWalkabilityScore(hex)),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 25)),
     avoided: NO_AVOID,
     suitabilityField: 'plaza_environmental_suitability',
     attractors: ['Youth demand', 'Foot traffic'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['communityPlaza', 'cafeKiosk'],
+    adjacencyAvoid: ['quietGarden']
   },
   {
     type: 'efficientLighting',
@@ -927,13 +1111,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'lighting',
     primaryUsersFallback: ['All visitors', 'Evening users'],
+    source: ['brief-required', 'operations-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.6 * nlp),
     suitability: hex => normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000),
     feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
     avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to light.' : null),
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Existing path network', 'Evening safety demand'],
-    repellers: ['Sparse path network']
+    repellers: ['Sparse path network'],
+    adjacencyPreferred: ['walkingPromenade', 'joggingLoop', 'mainEntrancePlaza'],
+    adjacencyAvoid: [],
+    adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'shadedCirculation']
   },
   {
     type: 'safetyPoint',
@@ -944,13 +1132,16 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'safety',
     primaryUsersFallback: ['All visitors', 'Operations / security staff'],
+    source: ['brief-required', 'operations-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.4 * computeHexBarrierSeverityScore(hex) + 0.6 * nlp),
     suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * computeHexTransitAccessibilityScore(hex)),
     feasibility: smallFootprintFeasibility,
     avoided: NO_AVOID,
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Safety concern density', 'Path intersections / visibility'],
-    repellers: []
+    repellers: [],
+    adjacencyPreferred: ['mainEntrancePlaza', 'wayfindingNodes', 'communityPlaza'],
+    adjacencyAvoid: []
   },
   {
     type: 'operationsArea',
@@ -961,13 +1152,17 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     programKeys: [],
     nlpCategory: 'maintenance',
     primaryUsersFallback: ['Operations / maintenance staff'],
+    source: ['brief-required', 'operations-driven'],
     demand: (hex, ctx, nlp) => clamp100(50 + 0.5 * nlp),
     suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * boundaryRatio(hex) * 100),
     feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 40)),
     avoided: hex => (boundaryRatio(hex) >= 0.98 ? 'Full interior cell -- operations area needs a boundary/service connection.' : hexVoidRatioPct(hex) < 10 ? 'Less than 10% void ratio.' : null),
     suitabilityField: 'environmental_constraint_score',
     attractors: ['Boundary/edge location', 'Service access', 'Available land'],
-    repellers: ['Full interior cell']
+    repellers: ['Full interior cell'],
+    adjacencyPreferred: ['serviceAccess', 'wastePoints'],
+    adjacencyAvoid: ['quietGarden', 'communityPlaza'],
+    adjacencyService: ['serviceAccess']
   }
 ];
 
@@ -1000,10 +1195,69 @@ function averageProgramArea(defs: ProgramDef[]): RecommendedArea | null {
   return { minimum, target, maximum };
 }
 
-function collectAdjacency(defs: ProgramDef[], key: 'preferredAdjacencies' | 'avoidAdjacencies'): string[] {
+/** Fallback only -- reads the older PROGRAM_DEFS (communityEngine.ts) adjacency union, used solely
+ * for a def whose own adjacencyPreferred/adjacencyAvoid (authored directly against OpportunityType,
+ * see OPPORTUNITY_DEFS above) is empty. Every def currently declares its own, so this is a safety
+ * net, not the primary path. */
+function collectLegacyAdjacency(defs: ProgramDef[], key: 'preferredAdjacencies' | 'avoidAdjacencies'): string[] {
   const set = new Set<string>();
   defs.forEach(d => d[key].forEach(a => set.add(a)));
   return [...set];
+}
+
+/** Declarative table of program pairs that spatially repel each other beyond what any single
+ * per-cell formula can express -- a cell can't know it's "near a quiet garden" without knowing
+ * where the quiet garden's best cells actually are. Applied as a bounded, cell-level-only penalty
+ * (see applySpatialConflicts) after every program's base scores are computed independently. */
+const SPATIAL_CONFLICTS: { attractor: OpportunityType; repelled: OpportunityType[] }[] = [
+  { attractor: 'quietGarden', repelled: ['restrooms', 'drinkingWater', 'cafeKiosk', 'smallEventZone', 'sportsCourt', 'wastePoints'] },
+  { attractor: 'sensoryGarden', repelled: ['cafeKiosk', 'sportsCourt', 'wastePoints'] },
+  { attractor: 'sportsCourt', repelled: ['quietGarden', 'wellnessZone', 'sensoryGarden'] }
+];
+const CONFLICT_ATTRACTOR_TOP_SHARE = 0.1; // top ~10% of an attractor's own cells define its "core"
+const CONFLICT_PENALTY = 25; // bounded suitability penalty applied to a repelled program's cells inside that core
+
+/** Second pass over already-computed results: pushes each repelled program's suitability/opportunity
+ * down (bounded, cell-level only) inside the attractor program's own top-suitability core. Never
+ * touches the population-weighted headline demand/suitability/opportunity scores shown in the
+ * summary tiles -- only the per-cell allCells/topCells that drive the suitability map and top-cells
+ * table, so the aggregate numbers stay exactly as rigorously (population-weighted) computed. */
+function applySpatialConflicts(results: OpportunityResult[]): OpportunityResult[] {
+  const byType = new Map(results.map(r => [r.type, r]));
+  const coreByAttractor = new Map<OpportunityType, Set<string>>();
+  SPATIAL_CONFLICTS.forEach(({ attractor }) => {
+    const attractorResult = byType.get(attractor);
+    if (!attractorResult) return;
+    const coreCount = Math.max(1, Math.round(attractorResult.allCells.length * CONFLICT_ATTRACTOR_TOP_SHARE));
+    const core = [...attractorResult.allCells]
+      .filter(c => !c.avoided)
+      .sort((a, b) => b.suitabilityScore - a.suitabilityScore)
+      .slice(0, coreCount)
+      .map(c => c.h3Id);
+    coreByAttractor.set(attractor, new Set(core));
+  });
+
+  return results.map(result => {
+    const conflictingCores = SPATIAL_CONFLICTS
+      .filter(c => c.repelled.includes(result.type))
+      .map(c => coreByAttractor.get(c.attractor))
+      .filter((s): s is Set<string> => !!s && s.size > 0);
+    if (conflictingCores.length === 0) return result;
+
+    const inAnyCore = (h3Id: string) => conflictingCores.some(core => core.has(h3Id));
+    let touched = false;
+    const adjustedCells = result.allCells.map(c => {
+      if (c.avoided || !inAnyCore(c.h3Id)) return c;
+      touched = true;
+      const suitabilityScore = clamp100(c.suitabilityScore - CONFLICT_PENALTY);
+      const opportunityScore = clamp100(c.demandScore * 0.4 + suitabilityScore * 0.35 + c.feasibilityScore * 0.25);
+      return { ...c, suitabilityScore, opportunityScore };
+    });
+    if (!touched) return result;
+
+    const topCells = [...adjustedCells].sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 15);
+    return { ...result, allCells: adjustedCells, topCells };
+  });
 }
 
 export function computeOpportunity(
@@ -1032,7 +1286,7 @@ export function computeOpportunity(
     const suitabilityScore = clamp100(def.suitability(hex, ctx));
     const feasibilityScore = avoidReason ? 0 : clamp100(def.feasibility(hex, ctx));
     const opportunityScore = clamp100(demandScore * 0.4 + suitabilityScore * 0.35 + feasibilityScore * 0.25);
-    return { h3Id: hex.properties.h3_id, opportunityScore, demandScore, suitabilityScore, feasibilityScore, avoided: !!avoidReason };
+    return { h3Id: hex.properties.h3_id, opportunityScore, demandScore, suitabilityScore, feasibilityScore, avoided: !!avoidReason, avoidReason };
   });
 
   const eligible = cellScores.filter(c => !c.avoided);
@@ -1069,9 +1323,23 @@ export function computeOpportunity(
 
   const programDefs = def.programKeys.map(k => PROGRAM_DEFS.find(p => p.key === k)).filter((p): p is ProgramDef => !!p);
   const primaryUsers = programDefs.length > 0 ? [...new Set(programDefs.flatMap(p => p.primaryUsers))] : def.primaryUsersFallback;
-  const adjacencyNeeds = programDefs.length > 0 ? collectAdjacency(programDefs, 'preferredAdjacencies') : [];
-  const avoidAdjacency = programDefs.length > 0 ? collectAdjacency(programDefs, 'avoidAdjacencies') : [];
+  // Adjacency is authored directly per OpportunityType above; the legacy PROGRAM_DEFS union is only
+  // consulted if a def somehow left its own arrays empty (defensive fallback, not the primary path).
+  const adjacencyNeeds: string[] = def.adjacencyPreferred.length > 0
+    ? def.adjacencyPreferred
+    : (programDefs.length > 0 ? collectLegacyAdjacency(programDefs, 'preferredAdjacencies') : []);
+  const avoidAdjacency: string[] = def.adjacencyAvoid.length > 0
+    ? def.adjacencyAvoid
+    : (programDefs.length > 0 ? collectLegacyAdjacency(programDefs, 'avoidAdjacencies') : []);
+  const serviceAdjacency: string[] = def.adjacencyService ?? [];
+  const movementAdjacency: string[] = def.adjacencyMovement ?? [];
   const recommendedAreaM2 = def.geometryType === 'area' ? averageProgramArea(programDefs) : null;
+  const grasshopperReadinessScore = clamp100(
+    (def.attractors.length > 0 ? 25 : 0) +
+    (def.repellers.length > 0 ? 25 : 0) +
+    (adjacencyNeeds.length > 0 || avoidAdjacency.length > 0 ? 25 : 0) +
+    (recommendedAreaM2 ? 25 : 0)
+  );
 
   const evidence: string[] = [];
   evidence.push(`Population-weighted demand score: ${demandScore}/100 across ${hexes.length} H3 cells.`);
@@ -1104,11 +1372,13 @@ export function computeOpportunity(
     category: def.category,
     geometryType: def.geometryType,
     scale: def.scale,
+    source: def.source,
     opportunityScore,
     demandScore,
     suitabilityScore,
     feasibilityScore,
     confidenceScore,
+    grasshopperReadinessScore,
     priority: priorityFromScore(opportunityScore),
     recommendedAreaM2,
     primaryUsers,
@@ -1121,7 +1391,7 @@ export function computeOpportunity(
       repellers: def.repellers,
       constraints: finalAvoidConditions,
       recommendedAreaM2,
-      adjacencyRules: { preferred: adjacencyNeeds, avoid: avoidAdjacency },
+      adjacencyRules: { preferred: adjacencyNeeds, avoid: avoidAdjacency, service: serviceAdjacency, movement: movementAdjacency },
       geometryType: def.geometryType,
       scale: def.scale
     },
@@ -1131,7 +1401,6 @@ export function computeOpportunity(
 }
 
 export function computeAllOpportunities(hexes: H3Feature[], reviews: NLPAnalyzedReview[], roadStats: RoadStats | null): OpportunityResult[] {
-  return OPPORTUNITY_DEFS
-    .map(def => computeOpportunity(def.type, hexes, reviews, roadStats))
-    .sort((a, b) => b.opportunityScore - a.opportunityScore);
+  const base = OPPORTUNITY_DEFS.map(def => computeOpportunity(def.type, hexes, reviews, roadStats));
+  return applySpatialConflicts(base).sort((a, b) => b.opportunityScore - a.opportunityScore);
 }

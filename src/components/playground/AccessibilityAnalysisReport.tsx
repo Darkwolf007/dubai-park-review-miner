@@ -136,7 +136,7 @@ export function AccessibilityAnalysisReport({
           <MetricTile label="Dead-End Street Count" value={kpis.deadEndStreetCount.toLocaleString()} />
           <MetricTile label="Accessible Route Coverage" unavailable note={kpis.accessibleRouteNote} />
           <MetricTile label="Universal Accessibility Score" unavailable note={kpis.universalAccessibilityNote} />
-          <MetricTile label="Overall Accessibility Score" value={`${kpis.overallAccessibilityScore}/100`} />
+          <MetricTile label="Overall Accessibility Score" value={`${kpis.overallAccessibilityScore}/100`} methodologyKey="accessibilityScore" />
         </div>
       </CollapsibleSection>
 
@@ -207,7 +207,7 @@ export function AccessibilityAnalysisReport({
         {entrance.entrance ? (
           <div className="grid grid-cols-2 gap-1.5 mb-2">
             <MetricTile label="Entrance" value={entrance.entrance.label} note={`Snapped ${entrance.entrance.snapDistanceM}m from the verified park center.`} />
-            <MetricTile label="Entrance Accessibility Score" value={`${entrance.entrance.entranceAccessibilityScore}/100`} />
+            <MetricTile label="Entrance Accessibility Score" value={`${entrance.entrance.entranceAccessibilityScore}/100`} methodologyKey="entranceOpportunity" />
             <MetricTile label="Population Served (15-Min Catchment)" value={entrance.entrance.populationServedWithin15Min.toLocaleString()} />
             <MetricTile label="15-Min Catchment Share" value={entrance.entrance.catchment15MinPct} unit="%" />
             <MetricTile label="Avg Walking Distance" value={entrance.entrance.avgWalkingDistanceM ?? undefined} unavailable={entrance.entrance.avgWalkingDistanceM === null} unit="m" />

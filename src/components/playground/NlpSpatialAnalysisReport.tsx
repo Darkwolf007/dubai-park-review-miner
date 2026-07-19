@@ -137,7 +137,7 @@ export function NlpSpatialAnalysisReport({
           <MetricTile label="Reviews Analyzed" value={executiveSummary.reviewsAnalyzed.toLocaleString()} />
           <MetricTile label="Average Rating" value={`${executiveSummary.averageRating} / 5`} />
           <MetricTile label="Top Positive Topic" value={executiveSummary.topPositiveTopic} />
-          <MetricTile label="Top Negative Topic" value={executiveSummary.topNegativeTopic} />
+          <MetricTile label="Top Negative Topic" value={executiveSummary.topNegativeTopic} methodologyKey="reviewTopicDemand" />
           <MetricTile label="Most Requested Improvement" value={executiveSummary.mostRequestedImprovement} />
           <MetricTile label="Most Mentioned User Group" value={executiveSummary.mostMentionedUserGroup} />
           <MetricTile label="Critical Issue Cluster" value={executiveSummary.criticalIssueCluster} />
@@ -346,7 +346,7 @@ export function NlpSpatialAnalysisReport({
       {/* 9. SPATIAL REVIEW ANALYSIS & H3 REVIEW INTELLIGENCE */}
       <CollapsibleSection title="Spatial Review Analysis & H3 Review Intelligence" defaultOpen={false}>
         <p className="text-[9px] text-amber-600 font-semibold mb-2">Spatial confidence for every review-derived figure: <span className="font-bold">Park-Level</span> (never Exact/Facility-Level). Reviews are geocoded only to the single park coordinate -- confirmed no per-review location exists in this dataset. H3-level values below are a population-weighted redistribution of the one real park-level complaint rate, not measured per-cell review activity.</p>
-        <MetricTile label="Spatial Data Source" value="Park-level single point + population-weighted redistribution" />
+        <MetricTile label="Spatial Data Source" value="Park-level single point + population-weighted redistribution" methodologyKey="reviewOpportunity" />
       </CollapsibleSection>
 
       {/* 10. DESIGN REQUIREMENT MATRIX */}
