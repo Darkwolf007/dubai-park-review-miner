@@ -1602,7 +1602,10 @@ ${JSON.stringify(promptInput, null, 2)}`;
           u.label.toLowerCase().includes(firstWord(ageGroupDef.label)) || ageGroupDef.label.toLowerCase().includes(firstWord(u.label))
         );
         if (userGroupMatch) {
-          parts.push(`Reviewers matching "${userGroupMatch.label}" (${userGroupMatch.reviewCount} review mentions, typically visiting ${userGroupMatch.likelyVisitTime}) support this: ${userGroupMatch.suggestedIntervention}`);
+          const visitTimeClause = userGroupMatch.likelyVisitTime && userGroupMatch.likelyVisitTime !== 'Not enough time-of-day evidence'
+            ? `, typically visiting ${userGroupMatch.likelyVisitTime}`
+            : '';
+          parts.push(`Reviewers matching "${userGroupMatch.label}" (${userGroupMatch.reviewCount} review mentions${visitTimeClause}) support this: ${userGroupMatch.suggestedIntervention}`);
         } else if ((reviewSummary.topIssues || []).length) {
           const issue = reviewSummary.topIssues[0];
           parts.push(`Reviews raise "${issue.category}" (${issue.mentions} mentions, ${issue.priority} priority): ${issue.designRequirement}`);

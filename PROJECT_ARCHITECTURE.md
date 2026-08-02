@@ -2,7 +2,7 @@
 
 ## Project Description, Functional Architecture, and Technical Design
 
-**Document status:** Current-state documentation with a proposed Results architecture  
+**Document status:** Current-state documentation, including the implemented Results tab (section 3.5) and its still-aspirational surrounding architecture  
 **Primary study site:** Al Safa 2 Park, Dubai  
 **Primary users:** Landscape architects, urban designers, planners, researchers, and competition teams
 
@@ -20,7 +20,7 @@ The project is intended to help a designer move through five stages:
 4. Test those findings against site and urban data.
 5. Convert the combined evidence into a design strategy and a Grasshopper-ready design package.
 
-The existing application implements the first four stages. A fifth top-level **Results** tab is proposed as the synthesis, decision, and combined-export layer.
+The existing application implements the first four stages. A fifth top-level **Results** tab implements the synthesis stage as a 6-tier Experience-to-Space matrix and persona-journey space graph (section 3.5); the full decision/combined-export layer described elsewhere in this document remains partly aspirational.
 
 ```mermaid
 flowchart LR
@@ -54,7 +54,7 @@ The platform is a decision-support tool. It does not replace site surveys, stake
 | Visualize | Provide a fast semantic overview of analyzed reviews | Analyzed reviews | Topic and sentiment summaries and visualizations | Implemented |
 | Analytics | Perform deeper review-based analysis | Analyzed reviews and selected parks | KPIs, trends, benchmarks, personas, issues, topic networks, rating drivers, and review exploration | Implemented |
 | Playground | Explore GIS layers and run site-analysis and opportunity engines | Al Safa 2 GIS layers, reviews, H3 grid, roads, amenities, and analysis statistics | Spatial reports, maps, program opportunities, candidate cells, and specialized exports | Implemented |
-| Results | Combine all analysis into an approved design brief, strategy, program, and unified Grasshopper package | Review analytics, spatial reports, opportunity results, assumptions, and designer choices | Evidence ledger, strategy, selected program, spatial rules, and combined export | Proposed |
+| Results | Synthesize review analytics, the full Opportunity Lab space catalog, and infrared.city climate evidence into a 6-tier Age Group -> Archetype -> Activities -> Experience -> Space -> Scores matrix, a persona-journey space graph, and Grasshopper-ready exports | Review analytics, the real Al Safa 2 site grid and Opportunity Lab results, infrared.city seasonal UTCI/wind data, and a fixed competition brief (budget/area caps) | Experience-to-space matrix, Sankey flow diagram, budget/footprint check, shared-priority-space summary, full space graph with exhaustive per-archetype user journeys, and two JSON exports (Grasshopper program spaces; space graph + journeys) | Implemented |
 
 ### 3.1 Explorer
 
@@ -144,74 +144,29 @@ Opportunity Lab converts analysis signals into program-specific assessments. Eac
 
 Opportunity scores are directional planning composites. They should not be presented as measured site performance or as a mathematically unique design answer.
 
-### 3.5 Proposed Results Tab
+### 3.5 Results Tab
 
-Results should be the synthesis and decision layer rather than another dashboard. It should answer:
+Results is the synthesis and decision layer. The current implementation is scoped to one concrete deliverable -- a 6-tier, evidence-grounded Experience-to-Space matrix for Al Safa 2 -- rather than the full multi-analysis decision workspace originally envisioned (see "Not yet built" below for what remains aspirational).
 
-1. What did the analyses establish?
-2. Which findings matter most to the design?
-3. Where do different evidence sources reinforce or contradict one another?
-4. Which strategies and programs does the designer approve?
-5. What should be exported to Grasshopper?
+#### Implemented
 
-Recommended Results sections:
+Like Playground, Results is a single-site (Al Safa 2) workspace that loads its own evidence independently on mount (GIS manifest/H3 grid, Al Safa 2 reviews, community facility layers, and the park's own building/road geometry for Opportunity Lab's 10m site grid) rather than reading shared App-level state -- see limitation 12.1.
 
-#### A. Analysis Readiness
+- **Evidence condensation** (`src/lib/results/`): `reviewSummary.ts` and `gisSummary.ts` condense the existing review-analytics and GIS-analysis engines (the same `computeXAnalysisReport` functions Playground uses) into compact `REVIEW_SUMMARY_JSON`/`GIS_SUMMARY_JSON` bundles, including the **full 43-entry Opportunity Lab catalog** (every score, cost, and adjacency relationship, not just a subset). `climateData.ts` holds real infrared.city CFD/UTCI figures (heat-island peak, 8-direction wind, seasonal comfort) transcribed from three site-specific analysis decks, tagged as simulated/proxy evidence per section 5.4. `competitionBrief.ts` holds the fixed site-area cap (15,000 m2), budget cap (AED 35M), accessibility/microclimate rules, and a cost-rate table -- hardcoded rather than sourced from a RAG store, since it is a fixed static ruleset.
+- **Synthesis endpoint** (`POST /api/results-synthesis` in `server.ts`): same Gemini-with-deterministic-template-fallback pattern as every other AI endpoint in this file. Produces a 6-9 row `archetype_experience_matrix` (Age Group -> Archetype -> Activities -> Desired Experience -> Usable Space & Amenities -> Spatial Scores), with every assigned space drawn from the real Opportunity Lab catalog (never invented). `project_metadata` (budget/area totals), `grasshopper_export_manifest`, `shared_priority_spaces` (spaces independently claimed by 2+ archetypes), and the space graph/journeys below are always computed **deterministically server-side** from the final matrix -- never trusted from the AI's own arithmetic, so a shared space's area/cost is counted once regardless of how many archetypes reference it.
+- **Space graph + persona journeys**: the same endpoint also returns `space_graph` (all 43 Opportunity Lab spaces as graph nodes, with every score, cost, shade/biodiversity value, and real preferred/avoid/service/movement adjacency) and `persona_journeys` -- an *exhaustive* set of real user journeys (Entry -> circulation -> destination -> amenity), one per plausible (archetype, destination-space) pairing, built via BFS pathfinding over the real adjacency graph. Each journey carries a time-of-day, a climate-evidence-grounded season (the real season with the lowest UTCI comfort share), and a narrative stitched from actual review evidence, the competition brief, and GIS/community context (schools, mosques, dominant community type) -- never invented prose. A space's `journeyPriorityScore` rises with how many journeys actually cross it (not just how many archetypes are directly assigned to it).
+- **UI** (`src/components/results/`): `ResultsTab.tsx` orchestrates loading and the synthesis run; `ExperienceSankeyFlow.tsx` renders the whole 6-tier flow as one Sankey (Recharts, no new dependency), link color following the dominant age-group persona so convergence across archetypes is visible; `ExperienceMatrixTable.tsx` is the row-level detail table; `SharedPrioritySpaces.tsx` and `BudgetStatusCard.tsx` are compact summary cards; `SpaceJourneyGraph.tsx` is a force-directed (`d3-force` + `@xyflow/react`, same technique as Playground's `OpportunityProgramNetwork.tsx`) graph of all 43 spaces with journey-path highlighting. Two JSON exports: the Grasshopper program-space manifest, and a separate space-graph-and-journeys export.
+- The age-tier categorical palette (Kids/Teens/Adults/Old) was run through a colorblind-safety validator; the original Teens color collided with Adults and was swapped.
 
-- List completed, missing, stale, and failed analyses.
-- Show dataset versions and analysis timestamps.
-- Warn when results come from different sites or review selections.
-- Prevent a combined export when essential spatial inputs are missing.
+#### Not yet built
 
-#### B. Executive Design Brief
+The following pieces of the original Results vision remain aspirational:
 
-- Project and study-area summary.
-- Community voice summary.
-- Strengths to retain.
-- Problems to resolve.
-- Site constraints.
-- Highest-value opportunities.
-- Editable design vision.
-
-#### C. Evidence Synthesis Matrix
-
-Each design driver should connect review evidence, spatial evidence, an interpretation, limitations, and confidence.
-
-| Design driver | Review evidence | Spatial evidence | Design interpretation | Evidence nature |
-|---|---|---|---|---|
-| Thermal comfort | Shade and heat complaints | Green deficit and heat-exposure proxy | Create continuous shaded movement and dwell areas | Derived/proxy |
-| Family activity | Family and playground mentions | Facility and playground-deficit signals | Prioritize inclusive play and family support facilities | Mixed |
-| Accessibility | Access complaints | Network walking time and barrier indicators | Improve accessible routes and entrances | Mixed |
-| Landscape identity | Positive greenery sentiment | Existing green-area data | Retain valued landscape character | Mixed |
-
-#### D. Design Strategy Builder
-
-Every proposed strategy should contain:
-
-- Title and design intent.
-- Supporting and conflicting evidence.
-- Target user groups.
-- Related programs.
-- Spatial criteria.
-- Performance objective.
-- Confidence and limitations.
-- Designer status: proposed, accepted, modified, or rejected.
-
-#### E. Program and Spatial Brief
-
-The designer should be able to select programs and edit:
-
-- Priority and quantity.
-- Minimum, target, and maximum area.
-- Primary users.
-- Shade, access, visibility, and noise requirements.
-- Preferred, avoided, service, and movement adjacencies.
-- Candidate cells and exclusions.
-- Designer notes and assumptions.
-
-#### F. Export Center
-
-Results should generate a single versioned design package containing the approved strategy, programs, spatial fields, evidence, assumptions, and methodology.
+- **Analysis readiness**: no cross-tab check for stale/missing/mismatched analyses (Results computes everything itself rather than reading a shared analysis-run history).
+- **Executive design brief** with an editable design vision, and a **design strategy builder** with an accept/modify/reject workflow -- Results currently presents the synthesized matrix and journeys for review, but there is no persisted designer-decision state.
+- **Program and spatial brief editing** -- areas/adjacencies/materiality come from real Opportunity Lab data and competition-brief rules, but a designer cannot yet interactively override priority, quantity, or area per program.
+- **Unified versioned export package** (`design_package/` folder per section 8.2) -- today there are two independent JSON exports (Grasshopper manifest; space graph + journeys), not one combined, versioned bundle with a manifest, evidence register, and methodology file.
+- **Supabase persistence** of synthesis runs, so results can be reproduced or compared over time (see limitation 12.5/12.6).
 
 ---
 
@@ -270,6 +225,7 @@ flowchart TB
 - Google Places proxying.
 - Gemini NLP analysis.
 - Evidence-grounded AI interpretations for population, urban, accessibility, environmental, community, NLP-spatial, and design-strategy workflows.
+- The Results tab's 6-tier synthesis (`/api/results-synthesis`), including deterministic (non-AI) space-graph and persona-journey construction.
 - Deterministic fallbacks when an AI call is unavailable or unsuccessful.
 
 The Vercel adapter in `api/index.ts` exports this Express application as a serverless entry point. `vercel.json` includes the local dataset directory in the function bundle and rewrites `/api/*` requests to that entry point.
@@ -404,7 +360,9 @@ flowchart LR
     G --> H["Program and candidate-cell results"]
 ```
 
-### 6.3 Proposed Results Flow
+### 6.3 Proposed Results Flow (target state)
+
+The evidence-synthesis half of this flow is implemented (see 3.5): review analytics, GIS analysis (including the full Opportunity Lab catalog), and infrared.city climate evidence already combine into a project result snapshot and an evidence synthesis (the 6-tier matrix, space graph, and journeys). Designer approval/edit workflow and the single combined design package remain future work.
 
 ```mermaid
 flowchart TB
@@ -454,12 +412,14 @@ The project currently supports:
 - Environmental Grasshopper JSON/CSV.
 - Community Grasshopper JSON/CSV.
 - NLP Grasshopper JSON/CSV.
+- Results Grasshopper program-space export (`grasshopper_export_manifest` -- one entry per unique assigned space, deduplicated across archetypes).
+- Results space-graph and persona-journey export (all 43 Opportunity Lab spaces with full scores/adjacency, plus every exhaustive persona journey).
 
 Existing Grasshopper exports include projected centroids, analysis fields, program information, and methodology notes.
 
 ### 8.2 Proposed Combined Grasshopper Design Package
 
-Results should generate one versioned package:
+The two Results exports above are still independent JSON files, not the single combined package described below. Results should eventually generate one versioned package:
 
 ```text
 <project>_design_package/
@@ -540,13 +500,15 @@ dubai-park-review-miner/
 |   |   |-- analytics/         Review-analysis dashboards
 |   |   |-- auth/              Authentication gate
 |   |   |-- playground/        Map, analysis reports, and Opportunity Lab
+|   |   |-- results/           Results tab: Sankey flow, matrix table, space-journey graph
 |   |   |-- status/            Dataset/run status components
 |   |   `-- ui/                Shared visual components
 |   |-- lib/
 |   |   |-- analytics/         Review analytics functions
 |   |   |-- backend/           FastAPI client helpers
-|   |   |-- gis/               GIS, report, opportunity, and export engines
+|   |   |-- gis/               GIS, report, opportunity, export, and results-synthesis engines
 |   |   |-- metrics/           Metric methodology registry
+|   |   |-- results/           Results evidence condensation (review/GIS summaries, climate data, competition brief)
 |   |   `-- supabase/          Auth, projects, datasets, runs, and output clients
 |   |-- App.tsx                Top-level application and review state
 |   `-- main.tsx               React entry point
@@ -573,7 +535,7 @@ dubai-park-review-miner/
 
 ### 12.1 Split frontend state
 
-The main application owns selected parks and analyzed reviews, while Playground independently loads Al Safa 2 reviews. Results cannot reliably combine the application until those states are unified.
+The main application owns selected parks and analyzed reviews, while Playground and Results each independently load their own Al Safa 2 reviews and GIS/Opportunity Lab data on mount. This means Results does not (and currently cannot) reuse an analysis a designer already ran in Playground -- it recomputes its own evidence bundle every time, by design, rather than reading a shared analysis-run history. A true cross-tab "combined application" state (one designer decision persisted and reused everywhere) still requires the state unification described in section 9.
 
 ### 12.2 Local component results
 
@@ -612,11 +574,10 @@ The repository has extensive scoring and export logic but very little automated 
 
 ### Phase 2: Build Results synthesis
 
-- Add the Results top-level tab.
-- Add readiness and consistency checks.
-- Build the evidence synthesis matrix.
-- Generate editable strategies.
-- Add accept, modify, and reject decisions.
+- [Done] Add the Results top-level tab.
+- [Done] Build the evidence synthesis matrix (the 6-tier Age Group -> Archetype -> Activities -> Experience -> Space -> Scores matrix, Sankey flow, and space graph/persona journeys -- see section 3.5).
+- Add readiness and consistency checks (still outstanding).
+- Generate editable strategies; add accept, modify, and reject decisions (still outstanding -- the matrix and journeys are generated and reviewable, not yet designer-editable or persisted).
 
 ### Phase 3: Build the approved program
 
