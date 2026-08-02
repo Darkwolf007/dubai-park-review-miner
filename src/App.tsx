@@ -30,10 +30,11 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 import { PlaygroundTab } from './components/playground/PlaygroundTab';
+import { ResultsTab } from './components/results/ResultsTab';
 
 export default function App() {
   // --- STATE ---
-  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics' | 'playground'>('explorer');
+  const [currentTab, setCurrentTab] = useState<'explorer' | 'visualize' | 'analytics' | 'playground' | 'results'>('explorer');
   const [parks, setParks] = useState<ParkDetails[]>(PRESEEDED_PARKS);
   const [selectedParkIds, setSelectedParkIds] = useState<string[]>([
     'ChIJW2n2fB9tXz4R3Gqf-661oQE', // Al Safa 2 Park 
@@ -459,6 +460,12 @@ export default function App() {
             >
               Playground
             </button>
+            <button
+              onClick={() => setCurrentTab('results')}
+              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${currentTab === 'results' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Results
+            </button>
           </div>
         </div>
       </header>
@@ -486,7 +493,7 @@ export default function App() {
 
         {/* LEFT PANEL: PARK SELECTOR -- Playground is a self-contained single-site
             workspace and doesn't use selectedParkIds/parks, so this doesn't apply there. */}
-        {currentTab !== 'playground' && (
+        {currentTab !== 'playground' && currentTab !== 'results' && (
         <aside className="w-full lg:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
 
           {/* SEARCH & SELECT CONTROLS */}
@@ -596,7 +603,7 @@ export default function App() {
         <main className="flex-1 p-4 space-y-4 overflow-y-auto">
 
           {/* KPI METRIC CARDS -- driven by selectedParkIds/stats, which Playground doesn't use */}
-          {currentTab !== 'playground' && (
+          {currentTab !== 'playground' && currentTab !== 'results' && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 
             <div className="bg-white p-2.5 rounded border border-slate-200/80 shadow-sm flex flex-col justify-between">
@@ -1167,6 +1174,8 @@ export default function App() {
           )}
 
           {currentTab === 'playground' && <PlaygroundTab />}
+
+          {currentTab === 'results' && <ResultsTab />}
 
         </main>
       </div>

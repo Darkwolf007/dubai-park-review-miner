@@ -1344,6 +1344,527 @@ ${JSON.stringify(promptInput, null, 2)}`;
     }
   });
 
+  // API Route: Results Tab -- 6-tier Experience-to-Space synthesis matrix (Playground/Results ->
+  // Al Safa 2 program). Same Gemini-with-template-fallback pattern as the six insights endpoints
+  // above, but the request body is the full condensed evidence bundle (review analytics, GIS
+  // analysis including the real Opportunity Lab program catalog, infrared.city climate simulation,
+  // and the fixed competition brief/budget caps) built client-side by src/lib/results/*.ts.
+  //
+  // tier_5_assigned_space is always one of gisSummary.opportunities (the same catalog Opportunity
+  // Lab renders), never an invented space name -- both the template and the AI path pick from it.
+  // project_metadata / grasshopper_export_manifest / overlap_priority_score / shared_priority_spaces
+  // are ALWAYS computed deterministically server-side from the final archetype_experience_matrix
+  // (whichever engine produced it) via finalizeSynthesis() below, never trusted from the AI's own
+  // arithmetic -- this is what lets multiple archetypes legitimately converge on the same real space
+  // and have that overlap correctly reflected in cost/area totals and in overlap_priority_score.
+  app.post('/api/results-synthesis', async (req, res) => {
+    const { reviewSummary, gisSummary, climateSummary, competitionBrief } = req.body;
+
+    if (!reviewSummary || !gisSummary || !climateSummary || !competitionBrief) {
+      return res.status(400).json({ error: 'reviewSummary, gisSummary, climateSummary, and competitionBrief are all required' });
+    }
+
+    const AGE_TIER_BY_KEY: Record<string, 'Kids' | 'Teens' | 'Adults' | 'Old'> = {
+      youngChildren: 'Kids',
+      olderChildren: 'Kids',
+      teenagers: 'Teens',
+      youngAdults: 'Adults',
+      families: 'Adults',
+      workingAdults: 'Adults',
+      caregivers: 'Adults',
+      olderAdults: 'Old',
+      peopleOfDetermination: 'Adults'
+    };
+
+    // Which Opportunity Lab categories (in priority order) and which primaryUsers vocabulary
+    // (matched as case-insensitive substrings) a given archetype should gravitate toward. Both
+    // signals are real evidence already computed by opportunityEngine.ts -- this just picks among
+    // opportunities that already exist, it doesn't invent new site-fitness scoring.
+    const ARCHETYPE_AFFINITY: Record<string, { categories: string[]; tokens: string[] }> = {
+      youngChildren: { categories: ['Play', 'Comfort / Amenities'], tokens: ['toddler', 'children', 'famil', 'caregiver', 'parent'] },
+      olderChildren: { categories: ['Play', 'Sports / Wellness'], tokens: ['older children', 'children', 'teenager'] },
+      teenagers: { categories: ['Sports / Wellness', 'Movement'], tokens: ['teenager', 'youth', 'young adult'] },
+      youngAdults: { categories: ['Sports / Wellness', 'Movement', 'Community / Social'], tokens: ['young adult', 'jogger', 'cyclist', 'working adult'] },
+      families: { categories: ['Community / Social', 'Play'], tokens: ['famil', 'weekend social', 'caregiver', 'toddler'] },
+      workingAdults: { categories: ['Community / Social', 'Landscape / Environment'], tokens: ['working adult', 'young adult', 'resident'] },
+      olderAdults: { categories: ['Landscape / Environment', 'Comfort / Amenities'], tokens: ['older adult', 'senior', 'caregiver'] },
+      peopleOfDetermination: { categories: ['Landscape / Environment', 'Play'], tokens: ['people of determination', 'children', 'older adult'] },
+      caregivers: { categories: ['Play', 'Community / Social'], tokens: ['caregiver', 'toddler', 'parent', 'famil'] }
+    };
+
+    // Short categorical "experience" label per Opportunity Lab category -- drives tier_4_experience_tag
+    // and the flow diagram's Experience column. Grounded in the space's own real category, not invented
+    // per row, so identical-category spaces always read the same experience regardless of archetype.
+    const EXPERIENCE_TAG_BY_CATEGORY: Record<string, string> = {
+      'Play': 'Sensory & Imaginative Play',
+      'Sports / Wellness': 'Active & Energetic',
+      'Community / Social': 'Social & Communal',
+      'Landscape / Environment': 'Calm & Restorative',
+      'Comfort / Amenities': 'Comfort & Rest',
+      'Arrival / Access': 'Welcoming & Wayfinding',
+      'Movement': 'Active Circulation',
+      'Smart / Operations': 'Operational Support'
+    };
+
+    function materialityForSpace(spaceName: string): 'EPDM_RUBBER' | 'HIGH_ALBEDO_PAVING' | 'NATURAL_GRAVEL' | 'TURF' {
+      const n = spaceName.toLowerCase();
+      if (n.includes('play') || n.includes('sensory')) return 'EPDM_RUBBER';
+      if (n.includes('plaza') || n.includes('court') || n.includes('fitness') || n.includes('loop') || n.includes('jog') || n.includes('event')) return 'HIGH_ALBEDO_PAVING';
+      if (n.includes('garden') || n.includes('planting') || n.includes('nature') || n.includes('habitat') || n.includes('bioswale')) return 'NATURAL_GRAVEL';
+      return 'TURF';
+    }
+
+    function peakWindowForTier(tier: string): 'MORNING' | 'MIDDAY' | 'EVENING' | 'NIGHT' {
+      if (tier === 'Old') return 'MORNING';
+      if (tier === 'Kids') return 'MIDDAY';
+      return 'EVENING';
+    }
+
+    function zoneForTier(tier: string, category: string): 'INNER_BUFFER' | 'PERIMETER_LOOP' | 'ACTIVE_EDGE' | 'GATEWAY_NODE' {
+      if (tier === 'Kids' || tier === 'Old') return 'GATEWAY_NODE';
+      if (category === 'Arrival / Access' || category === 'Movement') return 'PERIMETER_LOOP';
+      if (tier === 'Teens') return 'ACTIVE_EDGE';
+      return 'INNER_BUFFER';
+    }
+
+    /**
+     * Deterministically finishes a raw archetype_experience_matrix (from either engine) into the
+     * full response: rescales areas to the site cap WITHOUT double-counting spaces shared by
+     * multiple archetypes, computes overlap_priority_score + shared_priority_spaces from the actual
+     * row groupings, and builds project_metadata + grasshopper_export_manifest from those same
+     * final numbers. Never trusts an engine's own aggregate math.
+     */
+    function finalizeSynthesis(rawRows: any[]) {
+      const rows = rawRows.filter(r => r?.tier_5_assigned_space && r?.tier_6_spatial_properties_and_scores);
+
+      rows.forEach(r => {
+        const opp = (gisSummary.opportunities || []).find((o: any) => o.type === r.tier_5_assigned_space.opportunity_type);
+        r.tier_4_experience_tag = EXPERIENCE_TAG_BY_CATEGORY[opp?.category] || 'General Experience';
+      });
+
+      const groups = new Map<string, any[]>();
+      rows.forEach(r => {
+        const key = r.tier_5_assigned_space.opportunity_type || r.tier_5_assigned_space.space_name;
+        const list = groups.get(key) || [];
+        list.push(r);
+        groups.set(key, list);
+      });
+
+      const siteAreaCap = competitionBrief.totalSiteAreaM2Cap;
+      let uniqueAreaSum = 0;
+      groups.forEach(list => { uniqueAreaSum += list[0].tier_5_assigned_space.target_area_m2 || 0; });
+      const scale = uniqueAreaSum > siteAreaCap && uniqueAreaSum > 0 ? siteAreaCap / uniqueAreaSum : 1;
+      if (scale !== 1) {
+        rows.forEach(r => { r.tier_5_assigned_space.target_area_m2 = Math.max(1, Math.round(r.tier_5_assigned_space.target_area_m2 * scale)); });
+      }
+
+      groups.forEach(list => {
+        const n = list.length;
+        const overlapScore = n === 1 ? 3 : Math.min(10, 3 + n * 2);
+        list.forEach(r => { r.tier_6_spatial_properties_and_scores.overlap_priority_score = overlapScore; });
+      });
+
+      rows.forEach(r => {
+        const t6 = r.tier_6_spatial_properties_and_scores;
+        const composite = Math.round((t6.active_shade_score + t6.passive_shade_score + t6.biodiversity_score + t6.overlap_priority_score) / 4);
+        t6.composite_spatial_score = composite;
+        t6.spatial_score_band = composite >= 8 ? 'High' : composite >= 5 ? 'Medium' : 'Low';
+      });
+
+      const shared_priority_spaces = [...groups.entries()]
+        .filter(([, list]) => list.length >= 2)
+        .map(([key, list]) => ({
+          space_name: list[0].tier_5_assigned_space.space_name,
+          opportunity_type: list[0].tier_5_assigned_space.opportunity_type || key,
+          archetypes: list.map((r: any) => r.tier_2_archetype),
+          combined_priority_score: list[0].tier_6_spatial_properties_and_scores.overlap_priority_score,
+          overlap_note: `Shared by ${list.length} archetypes (${list.map((r: any) => r.tier_2_archetype).join(', ')}) -- treat as one consolidated high-priority zone rather than duplicating area.`
+        }))
+        .sort((a, b) => b.combined_priority_score - a.combined_priority_score);
+
+      shared_priority_spaces.forEach(sp => {
+        const list = groups.get(sp.opportunity_type) || groups.get(sp.space_name) || [];
+        list.forEach((r: any) => {
+          const others = sp.archetypes.filter(a => a !== r.tier_2_archetype);
+          if (others.length && !/shared-priority/i.test(r.tier_4_desired_experience)) {
+            r.tier_4_desired_experience = `${r.tier_4_desired_experience} This is a shared-priority space also serving ${others.join(', ')}.`;
+          }
+        });
+      });
+
+      let totalSiteAreaM2 = 0;
+      let calculatedTotalCostAed = 0;
+      groups.forEach(list => {
+        const area = list[0].tier_5_assigned_space.target_area_m2 || 0;
+        const rate = list[0].tier_6_spatial_properties_and_scores.cost_rate_aed_per_m2 || 0;
+        totalSiteAreaM2 += area;
+        calculatedTotalCostAed += area * rate;
+      });
+
+      const project_metadata = {
+        site_name: competitionBrief.siteName,
+        total_site_area_m2: Math.round(totalSiteAreaM2),
+        total_budget_cap_aed: competitionBrief.totalBudgetCapAed,
+        calculated_total_cost_aed: Math.round(calculatedTotalCostAed),
+        budget_status: calculatedTotalCostAed <= competitionBrief.totalBudgetCapAed ? 'WITHIN_BUDGET' : 'EXCEEDS_BUDGET',
+        crs_projection: competitionBrief.crsProjection,
+        synthesis_timestamp: new Date().toISOString()
+      };
+
+      const grasshopper_export_manifest = {
+        units: 'meters',
+        projection: competitionBrief.crsProjection,
+        program_spaces: [...groups.values()].map(list => {
+          const r = list[0];
+          return {
+            space_id: r.tier_5_assigned_space.space_id,
+            space_name: r.tier_5_assigned_space.space_name,
+            target_area_m2: r.tier_5_assigned_space.target_area_m2,
+            location_zone: r.tier_6_spatial_properties_and_scores.preferred_location_zone,
+            active_shade_weight: r.tier_6_spatial_properties_and_scores.active_shade_score / 10,
+            passive_shade_weight: r.tier_6_spatial_properties_and_scores.passive_shade_score / 10,
+            attractors: list.some((x: any) => x.tier_1_age_group === 'Kids' || x.tier_1_age_group === 'Old') ? ['entry_gateway', 'restroom'] : ['primary_path'],
+            repellers: ['parking', 'service_yard']
+          };
+        })
+      };
+
+      return { project_metadata, archetype_experience_matrix: rows, grasshopper_export_manifest, shared_priority_spaces };
+    }
+
+    /**
+     * Builds the full 43-space graph (every gisSummary.opportunities entry as a node with its real
+     * Opportunity Lab scores, cost, shade/biodiversity, and adjacency) plus an exhaustive set of
+     * persona journeys -- one per (archetype, plausible destination) pair, not just each archetype's
+     * single best match. Entirely deterministic (BFS pathfinding over the real adjacency edges,
+     * evidence-grounded narrative text) -- no LLM involved, so it's computed identically regardless
+     * of whether the matrix above came from Gemini or the template. journeyPriorityScore is the
+     * "more journeys cross a space, the higher its priority" signal: a tally of how often each space
+     * appears as a STEP (not just a final destination) across every journey.
+     */
+    function buildSpaceGraphAndJourneys() {
+      const opportunities: any[] = gisSummary.opportunities || [];
+      const byType = new Map(opportunities.map((o: any) => [o.type, o]));
+
+      const adjList = new Map<string, Set<string>>();
+      function addEdge(a: string, b: string) {
+        if (!byType.has(a) || !byType.has(b) || a === b) return;
+        if (!adjList.has(a)) adjList.set(a, new Set());
+        if (!adjList.has(b)) adjList.set(b, new Set());
+        adjList.get(a)!.add(b);
+        adjList.get(b)!.add(a);
+      }
+      opportunities.forEach((o: any) => {
+        (o.adjacency?.preferred || []).forEach((t: string) => addEdge(o.type, t));
+        (o.adjacency?.movement || []).forEach((t: string) => addEdge(o.type, t));
+        (o.adjacency?.service || []).forEach((t: string) => addEdge(o.type, t));
+      });
+
+      function bfsPath(startId: string, endId: string): string[] {
+        if (startId === endId) return [startId];
+        if (!adjList.has(startId) || !adjList.has(endId)) return [startId, endId];
+        const visited = new Set([startId]);
+        const queue: string[][] = [[startId]];
+        while (queue.length) {
+          const path = queue.shift()!;
+          const last = path[path.length - 1];
+          if (last === endId) return path;
+          for (const next of adjList.get(last) || []) {
+            if (!visited.has(next)) {
+              visited.add(next);
+              queue.push([...path, next]);
+            }
+          }
+        }
+        return [startId, endId]; // no adjacency chain found -- fall back to a direct hop between two real spaces
+      }
+
+      function cappedPath(path: string[], maxIntermediate: number): string[] {
+        if (path.length <= maxIntermediate + 2) return path;
+        return [path[0], ...path.slice(1, -1).slice(0, maxIntermediate), path[path.length - 1]];
+      }
+
+      const entryOpp = [...opportunities].filter((o: any) => o.category === 'Arrival / Access').sort((a: any, b: any) => b.opportunityScore - a.opportunityScore)[0];
+      const amenityOpp = [...opportunities].filter((o: any) => o.category === 'Comfort / Amenities').sort((a: any, b: any) => b.opportunityScore - a.opportunityScore)[0];
+
+      const seasons = climateSummary.yearRoundComfort?.seasons || [];
+      const worstSeason = seasons.length ? [...seasons].sort((a: any, b: any) => a.comfortAreaPct - b.comfortAreaPct)[0] : null;
+      const bestSeason = seasons.length ? [...seasons].sort((a: any, b: any) => b.comfortAreaPct - a.comfortAreaPct)[0] : null;
+      const journeySeason = worstSeason?.season || 'SUMMER';
+      const journeySeasonContext = worstSeason
+        ? `${worstSeason.season} is the design-critical season: mean UTCI ${worstSeason.meanUtciC}C with only ${worstSeason.comfortAreaPct}% comfortable area${bestSeason ? ` (compare ${bestSeason.season}: ${bestSeason.meanUtciC}C, ${bestSeason.comfortAreaPct}% comfortable).` : '.'}`
+        : 'No seasonal UTCI data available for this run.';
+
+      function buildStory(ageGroupDef: any, tier: string, destOpp: any): string {
+        const parts: string[] = [];
+        const firstWord = (s: string) => s.toLowerCase().split(' ')[0];
+        const userGroupMatch = (reviewSummary.userGroups || []).find((u: any) =>
+          u.label.toLowerCase().includes(firstWord(ageGroupDef.label)) || ageGroupDef.label.toLowerCase().includes(firstWord(u.label))
+        );
+        if (userGroupMatch) {
+          parts.push(`Reviewers matching "${userGroupMatch.label}" (${userGroupMatch.reviewCount} review mentions, typically visiting ${userGroupMatch.likelyVisitTime}) support this: ${userGroupMatch.suggestedIntervention}`);
+        } else if ((reviewSummary.topIssues || []).length) {
+          const issue = reviewSummary.topIssues[0];
+          parts.push(`Reviews raise "${issue.category}" (${issue.mentions} mentions, ${issue.priority} priority): ${issue.designRequirement}`);
+        }
+        if (tier === 'Kids' || tier === 'Old') {
+          parts.push(competitionBrief.accessibilityRules?.[0] || 'Barrier-free access required for this age group.');
+        } else if (['Play', 'Sports / Wellness', 'Community / Social'].includes(destOpp?.category)) {
+          parts.push(competitionBrief.microclimateModulationRules?.[0] || 'Active shade required for long-stay outdoor zones.');
+        }
+        const gisBits: string[] = [];
+        if (gisSummary.community?.schoolsCount != null) gisBits.push(`${gisSummary.community.schoolsCount} schools`);
+        if (gisSummary.community?.mosquesCount != null) gisBits.push(`${gisSummary.community.mosquesCount} mosques`);
+        if (gisBits.length) {
+          parts.push(`With ${gisBits.join(' and ')} nearby and a ${gisSummary.community?.dominantCommunityType || 'mixed'} community (primary demand zone: ${gisSummary.population?.highestDemandZone || 'the surrounding catchment'}), this destination sees real neighborhood-driven traffic.`);
+        }
+        return parts.join(' ') || `Grounded in ${destOpp?.evidenceTop || 'observed site demand'}.`;
+      }
+
+      const ageGroupDefs = (gisSummary.community?.ageGroups || []).filter((g: any) => AGE_TIER_BY_KEY[g.key]);
+      const areaOpportunities = opportunities.filter((o: any) => o.geometryType === 'area' && o.recommendedAreaM2);
+
+      const traversalCounts = new Map<string, number>();
+      const tallyStep = (spaceId: string) => traversalCounts.set(spaceId, (traversalCounts.get(spaceId) || 0) + 1);
+
+      const persona_journeys = ageGroupDefs.map((g: any) => {
+        const tier = AGE_TIER_BY_KEY[g.key];
+        const affinity = ARCHETYPE_AFFINITY[g.key] || { categories: [], tokens: [] };
+
+        const scored = areaOpportunities
+          .map((o: any) => {
+            const usersText = (o.primaryUsers || []).join(' ').toLowerCase();
+            const tokenMatches = affinity.tokens.filter((t: string) => usersText.includes(t)).length;
+            const categoryRank = affinity.categories.indexOf(o.category);
+            const relevant = tokenMatches > 0 || categoryRank >= 0;
+            const score = tokenMatches * 25 + (categoryRank === 0 ? 25 : categoryRank === 1 ? 12 : 0) + o.opportunityScore * 0.3;
+            return { o, score, relevant };
+          })
+          .filter((s: any) => s.relevant)
+          .sort((a: any, b: any) => b.score - a.score)
+          .slice(0, 8);
+
+        const journeys = scored.map(({ o: destOpp }: any) => {
+          const entryToDest = entryOpp ? cappedPath(bfsPath(entryOpp.type, destOpp.type), 3) : [destOpp.type];
+          const destToAmenity = amenityOpp && amenityOpp.type !== destOpp.type
+            ? cappedPath(bfsPath(destOpp.type, amenityOpp.type), 2).slice(1)
+            : [];
+          const fullPath = [...entryToDest, ...destToAmenity];
+
+          const steps = fullPath.map((id: string) => {
+            const spaceOpp = byType.get(id);
+            const role = id === entryOpp?.type ? 'entry' : id === destOpp.type ? 'primary_activity' : (amenityOpp && id === amenityOpp.type ? 'amenity' : 'circulation');
+            tallyStep(id);
+            return { spaceId: id, spaceName: spaceOpp?.name || id, role, category: spaceOpp?.category || 'Unknown' };
+          });
+
+          return {
+            journeyId: `journey_${g.key}_${destOpp.type}`,
+            label: `${g.label} -> ${destOpp.name}`,
+            destinationSpaceId: destOpp.type,
+            timeOfDay: peakWindowForTier(tier),
+            season: journeySeason,
+            seasonContext: journeySeasonContext,
+            story: buildStory(g, tier, destOpp),
+            steps
+          };
+        });
+
+        return { archetypeKey: g.key, archetype: g.label, ageGroup: tier, demandScore: g.demandScore, journeys };
+      });
+
+      const maxTraversal = Math.max(1, ...[...traversalCounts.values()]);
+      const heatCritical = climateSummary.heatIslandExtreme?.meanUtciC > 38;
+      const biodiversityBase = Math.max(1, Math.min(10, Math.round((gisSummary.environmental?.biodiversityScore || 40) / 10)));
+
+      const space_graph = opportunities.map((o: any) => {
+        const materiality = materialityForSpace(o.name);
+        const count = traversalCounts.get(o.type) || 0;
+        return {
+          id: o.type,
+          name: o.name,
+          category: o.category,
+          geometryType: o.geometryType,
+          scale: o.scale,
+          scores: {
+            opportunityScore: o.opportunityScore,
+            demandScore: o.demandScore,
+            suitabilityScore: o.suitabilityScore,
+            feasibilityScore: o.feasibilityScore,
+            confidenceScore: o.confidenceScore,
+            grasshopperReadinessScore: o.grasshopperReadinessScore
+          },
+          priority: o.priority,
+          recommendedAreaM2: o.recommendedAreaM2,
+          cost: { aestheticMateriality: materiality, costRateAedPerM2: competitionBrief.costRateGuidanceAedPerM2[materiality] },
+          activeShadeScore: heatCritical && o.geometryType === 'area' ? 8 : 5,
+          passiveShadeScore: heatCritical && o.geometryType === 'area' ? 6 : 4,
+          biodiversityScore: biodiversityBase,
+          primaryUsers: o.primaryUsers,
+          evidence: o.evidenceTop,
+          adjacency: o.adjacency,
+          journeyTraversalCount: count,
+          journeyPriorityScore: Math.max(1, Math.min(10, Math.round((count / maxTraversal) * 10)))
+        };
+      });
+
+      return { space_graph, persona_journeys };
+    }
+
+    function buildTemplateSynthesis() {
+      const heatCritical = climateSummary.heatIslandExtreme?.meanUtciC > 38;
+      const biodiversityBase = Math.max(1, Math.min(10, Math.round((gisSummary.environmental?.biodiversityScore || 40) / 10)));
+      const opportunities: any[] = (gisSummary.opportunities || []).filter((o: any) => o.geometryType === 'area' && o.recommendedAreaM2);
+
+      const ageGroups = (gisSummary.community?.ageGroups || [])
+        .filter((g: any) => AGE_TIER_BY_KEY[g.key])
+        .sort((a: any, b: any) => b.demandScore - a.demandScore)
+        .slice(0, 8);
+
+      function pickOpportunity(ageGroupKey: string): any | null {
+        if (opportunities.length === 0) return null;
+        const affinity = ARCHETYPE_AFFINITY[ageGroupKey] || { categories: [], tokens: [] };
+        const scored = opportunities.map(o => {
+          const usersText = (o.primaryUsers || []).join(' ').toLowerCase();
+          const tokenMatches = affinity.tokens.filter(t => usersText.includes(t)).length;
+          const categoryRank = affinity.categories.indexOf(o.category);
+          const categoryBonus = categoryRank === 0 ? 25 : categoryRank === 1 ? 12 : 0;
+          return { o, score: tokenMatches * 25 + categoryBonus + o.opportunityScore * 0.4 };
+        });
+        scored.sort((a, b) => b.score - a.score);
+        return scored[0].o;
+      }
+
+      const rows = ageGroups.map((g: any, idx: number) => {
+        const tier = AGE_TIER_BY_KEY[g.key];
+        const opp = pickOpportunity(g.key);
+        const spaceName = opp?.name || g.recommendedPrograms?.[0] || `${g.label} Program Area`;
+        const activities = (g.recommendedPrograms || []).slice(0, 4);
+        const targetAreaM2 = opp?.recommendedAreaM2?.target || 400;
+        const materiality = materialityForSpace(spaceName);
+        const activityText = activities.slice(0, 2).join(' and ').toLowerCase() || 'their primary activities';
+        const roleEvidence = opp?.evidenceTop || `observed demand: ${g.evidence?.[0] || 'no specific evidence available'}`;
+        const heatNote = heatCritical && opp?.geometryType === 'area' ? ' Requires active shade -- climate simulation shows UTCI exceeding 38C during the peak heat-wave window.' : '';
+
+        return {
+          tier_1_age_group: tier,
+          tier_2_archetype: g.label,
+          tier_3_activities: activities.length ? activities : [`${g.label} activities`],
+          tier_4_desired_experience: `${g.label} use the ${spaceName} for ${activityText}, grounded in ${roleEvidence}.${heatNote}`,
+          tier_5_assigned_space: {
+            space_id: opp ? `space_${opp.type}` : `space_${g.key}_${idx}`,
+            space_name: spaceName,
+            target_area_m2: targetAreaM2,
+            opportunity_type: opp?.type || ''
+          },
+          tier_6_spatial_properties_and_scores: {
+            preferred_location_zone: zoneForTier(tier, opp?.category || ''),
+            active_shade_score: heatCritical ? 8 : 5,
+            passive_shade_score: heatCritical ? 6 : 4,
+            biodiversity_score: biodiversityBase,
+            aesthetic_materiality: materiality,
+            cost_rate_aed_per_m2: competitionBrief.costRateGuidanceAedPerM2[materiality],
+            peak_usage_window: peakWindowForTier(tier)
+          }
+        };
+      });
+
+      return finalizeSynthesis(rows);
+    }
+
+    const spaceGraphAndJourneys = buildSpaceGraphAndJourneys();
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+      console.log('No GEMINI_API_KEY configured. Using template results-synthesis.');
+      return res.json({ ...buildTemplateSynthesis(), ...spaceGraphAndJourneys, engine: 'Template Synthesis (Offline)' });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const systemInstruction = `You are an expert Urban Designer, Landscape Architect, and Computational Design Strategist synthesizing multi-source evidence for ${competitionBrief.siteName} in Dubai, UAE into a 6-tier Experience-to-Space Matrix.
+
+You will be given real, pre-computed evidence: review analytics (reviewSummary), GIS/H3 catchment analysis including the full Opportunity Lab program catalog (gisSummary.opportunities), and an infrared.city CFD/UTCI microclimate simulation (climateSummary -- proxy/simulated, not field-measured). Use ONLY the evidence provided -- do not invent statistics, user groups, or facilities not implied by it.
+
+Build a 6-9 row archetype_experience_matrix. Each row must define, in order:
+1. tier_1_age_group: exactly one of "Kids", "Teens", "Adults", "Old".
+2. tier_2_archetype: a specific user archetype grounded in gisSummary.community.ageGroups or reviewSummary.userGroups.
+3. tier_3_activities: specific core activities.
+4. tier_4_desired_experience: a sentence SPECIFIC to this exact archetype-space pairing -- name the archetype, name the space, and reference why this specific space serves this specific archetype's needs (use the opportunity's primaryUsers/evidence and the archetype's own evidence). Do NOT write generic boilerplate that would fit any row -- every row's text must differ because the archetype and space differ.
+5. tier_5_assigned_space: space_id, space_name, target_area_m2, and opportunity_type. tier_5_assigned_space MUST be chosen from gisSummary.opportunities (copy its "type" into opportunity_type and its "name" into space_name, and use its recommendedAreaM2.target as target_area_m2) -- never invent a space that isn't in that list. Prefer opportunities with geometryType "area". It is fine and expected for two different archetypes to independently need the same real space (e.g. both "Families" and "Caregivers" needing the Picnic Area) -- pick honestly per archetype, do not artificially avoid reuse.
+6. tier_6_spatial_properties_and_scores: preferred_location_zone, active_shade_score (1-10), passive_shade_score (1-10), biodiversity_score (1-10), aesthetic_materiality, cost_rate_aed_per_m2 (use competitionBrief.costRateGuidanceAedPerM2), peak_usage_window. Do not set overlap_priority_score -- it is computed server-side afterward.
+
+Rules:
+- Spaces for "Kids" or "Old" must use preferred_location_zone "GATEWAY_NODE" (barrier-free, near entries/restrooms per competitionBrief.accessibilityRules).
+- Per competitionBrief.microclimateModulationRules: if climateSummary indicates UTCI > 38C, long-stay active zones need active_shade_score >= 7; circulation paths should prioritize passive_shade_score instead.
+- Every row needs a peak_usage_window (MORNING, MIDDAY, EVENING, or NIGHT).
+
+Only output archetype_experience_matrix -- project_metadata and grasshopper_export_manifest are computed deterministically afterward from your matrix, do not include them.`;
+
+      const contents = `reviewSummary:\n${JSON.stringify(reviewSummary, null, 2)}\n\ngisSummary:\n${JSON.stringify(gisSummary, null, 2)}\n\nclimateSummary:\n${JSON.stringify(climateSummary, null, 2)}\n\ncompetitionBrief:\n${JSON.stringify(competitionBrief, null, 2)}\n\nSynthesize the 6-tier Experience-to-Space Matrix grounded strictly in this evidence.`;
+
+      const tierRowSchema = {
+        type: Type.OBJECT,
+        properties: {
+          tier_1_age_group: { type: Type.STRING, description: 'Kids, Teens, Adults, or Old' },
+          tier_2_archetype: { type: Type.STRING },
+          tier_3_activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          tier_4_desired_experience: { type: Type.STRING },
+          tier_5_assigned_space: {
+            type: Type.OBJECT,
+            properties: {
+              space_id: { type: Type.STRING },
+              space_name: { type: Type.STRING },
+              target_area_m2: { type: Type.NUMBER },
+              opportunity_type: { type: Type.STRING, description: 'Must equal the "type" field of the chosen entry in gisSummary.opportunities' }
+            },
+            required: ['space_id', 'space_name', 'target_area_m2', 'opportunity_type']
+          },
+          tier_6_spatial_properties_and_scores: {
+            type: Type.OBJECT,
+            properties: {
+              preferred_location_zone: { type: Type.STRING, description: 'INNER_BUFFER, PERIMETER_LOOP, ACTIVE_EDGE, or GATEWAY_NODE' },
+              active_shade_score: { type: Type.NUMBER },
+              passive_shade_score: { type: Type.NUMBER },
+              biodiversity_score: { type: Type.NUMBER },
+              aesthetic_materiality: { type: Type.STRING, description: 'EPDM_RUBBER, HIGH_ALBEDO_PAVING, NATURAL_GRAVEL, or TURF' },
+              cost_rate_aed_per_m2: { type: Type.NUMBER },
+              peak_usage_window: { type: Type.STRING, description: 'MORNING, MIDDAY, EVENING, or NIGHT' }
+            },
+            required: ['preferred_location_zone', 'active_shade_score', 'passive_shade_score', 'biodiversity_score', 'aesthetic_materiality', 'cost_rate_aed_per_m2', 'peak_usage_window']
+          }
+        },
+        required: ['tier_1_age_group', 'tier_2_archetype', 'tier_3_activities', 'tier_4_desired_experience', 'tier_5_assigned_space', 'tier_6_spatial_properties_and_scores']
+      };
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              archetype_experience_matrix: { type: Type.ARRAY, items: tierRowSchema }
+            },
+            required: ['archetype_experience_matrix']
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({ ...finalizeSynthesis(parsed.archetype_experience_matrix || []), ...spaceGraphAndJourneys, engine: 'Gemini 3.5 Flash Model' });
+    } catch (error: any) {
+      console.error('Results Synthesis Gemini Error, falling back to template:', error);
+      return res.json({ ...buildTemplateSynthesis(), ...spaceGraphAndJourneys, engine: 'Template Synthesis (Fallback due to error)' });
+    }
+  });
+
 async function initServer() {
   // Serve static assets or use Vite dev server
   if (process.env.NODE_ENV !== 'production') {
