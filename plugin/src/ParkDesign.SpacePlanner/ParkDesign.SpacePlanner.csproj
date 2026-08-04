@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>ParkDesign.SpacePlanner</AssemblyName>
+    <RootNamespace>ParkDesign.SpacePlanner</RootNamespace>
+    <OutputType>Library</OutputType>
+    <TargetExt>.gha</TargetExt>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ParkDesign.SpacePlanner.Core\ParkDesign.SpacePlanner.Core.csproj" />
+    <PackageReference Include="Grasshopper" Version="8.32.26160.13001" ExcludeAssets="runtime" />
+  </ItemGroup>
+</Project>

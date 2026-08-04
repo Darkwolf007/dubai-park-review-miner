@@ -9,3 +9,5 @@ coverage/
 backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
+plugin/**/bin/
+plugin/**/obj/

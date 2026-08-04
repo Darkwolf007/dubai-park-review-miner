@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ParkDesign.SpacePlanner.SmokeTests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ParkDesign.SpacePlanner.Core\ParkDesign.SpacePlanner.Core.csproj" />
+  </ItemGroup>
+</Project>

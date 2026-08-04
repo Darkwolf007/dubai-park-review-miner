@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>ParkDesign.SpacePlanner.Core</AssemblyName>
+    <RootNamespace>ParkDesign.SpacePlanner.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

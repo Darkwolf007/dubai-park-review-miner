@@ -1,0 +1,26 @@
+{
+  "units": "meters",
+  "projection": "EPSG:32640",
+  "program_spaces": [
+    {
+      "space_id": "inclusivePlayground",
+      "space_name": "Inclusive Playground",
+      "target_area_m2": 600,
+      "location_zone": "INNER_BUFFER",
+      "active_shade_weight": 0.9,
+      "passive_shade_weight": 0.7,
+      "attractors": ["accessibleRoutes", "familySeatingPlay"],
+      "repellers": ["serviceAccess"]
+    },
+    {
+      "space_id": "familySeatingPlay",
+      "space_name": "Family Seating Near Play",
+      "target_area_m2": 200,
+      "location_zone": "ACTIVE_EDGE",
+      "active_shade_weight": 0.6,
+      "passive_shade_weight": 0.95,
+      "attractors": ["inclusivePlayground"],
+      "repellers": []
+    }
+  ]
+}

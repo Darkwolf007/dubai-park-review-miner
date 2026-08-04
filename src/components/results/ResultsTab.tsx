@@ -21,6 +21,8 @@ import { ExperienceMatrixTable } from './ExperienceMatrixTable';
 import { ExperienceSankeyFlow } from './ExperienceSankeyFlow';
 import { SharedPrioritySpaces } from './SharedPrioritySpaces';
 import { SpaceJourneyGraph } from './SpaceJourneyGraph';
+import { ParkBrainKnowledgeGuide } from './ParkBrainKnowledgeGuide';
+import { ApprovedRuleCompilerPanel } from './ApprovedRuleCompilerPanel';
 
 const AL_SAFA_2_PLACE_ID = 'ChIJW2n2fB9tXz4R3Gqf-661oQE';
 // Same match used by PlaygroundTab to find Al Safa 2's own polygon within the 'parks' layer --
@@ -247,6 +249,9 @@ export function ResultsTab() {
           <span>{loadError || runError}</span>
         </div>
       )}
+
+      <ParkBrainKnowledgeGuide />
+      <ApprovedRuleCompilerPanel opportunities={opportunities} />
 
       {result && (
         <>

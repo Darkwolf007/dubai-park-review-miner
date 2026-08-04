@@ -15,10 +15,86 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const PARK_BRAIN_URL = (process.env.PARK_BRAIN_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Park Brain stays an independent citation/rule service. The browser talks through this proxy so
+// deployment location and service credentials never become part of the frontend bundle. This route
+// returns knowledge, citations, candidate rules, and approved rules unchanged; consuming code must
+// still enforce that candidate rules and chatbot prose never become graph constraints.
+app.post('/api/park-brain/query', async (req, res) => {
+  const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+  if (!question) return res.status(400).json({ error: 'question is required' });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const upstream = await fetch(`${PARK_BRAIN_URL}/api/v1/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        jurisdiction: req.body?.jurisdiction || 'Dubai',
+        project_type: req.body?.projectType || 'public_park',
+        collections: Array.isArray(req.body?.collections) ? req.body.collections : null,
+        include_candidate_rules: true,
+        include_approved_rules: true,
+        require_citations: true
+      }),
+      signal: controller.signal
+    });
+
+    const text = await upstream.text();
+    let payload: any;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = { error: 'Park Brain returned an invalid JSON response' };
+    }
+
+    if (!upstream.ok) {
+      return res.status(502).json({
+        error: payload?.detail || payload?.error || `Park Brain returned HTTP ${upstream.status}`
+      });
+    }
+    return res.json(payload);
+  } catch (error: any) {
+    const unavailable = error?.name === 'AbortError'
+      ? 'Park Brain query timed out'
+      : 'Park Brain is unavailable. Start its API service or configure PARK_BRAIN_URL.';
+    return res.status(503).json({ error: unavailable });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
+app.get('/api/park-brain/registry', async (_req, res) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const [rulesResponse, conflictsResponse] = await Promise.all([
+      fetch(`${PARK_BRAIN_URL}/api/v1/rules?status=active`, { signal: controller.signal }),
+      fetch(`${PARK_BRAIN_URL}/api/v1/rules/conflicts`, { signal: controller.signal })
+    ]);
+
+    if (!rulesResponse.ok || !conflictsResponse.ok) {
+      return res.status(502).json({ error: 'Park Brain registry returned an unsuccessful response' });
+    }
+
+    const [rules, conflicts] = await Promise.all([rulesResponse.json(), conflictsResponse.json()]);
+    return res.json({ rules, conflicts, fetched_at: new Date().toISOString() });
+  } catch (error: any) {
+    const unavailable = error?.name === 'AbortError'
+      ? 'Park Brain registry request timed out'
+      : 'Park Brain registry is unavailable. Start its API service or configure PARK_BRAIN_URL.';
+    return res.status(503).json({ error: unavailable });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
 
 // --- GIS static dataset loader (Playground tab) ---
 // Same 3-path fallback pattern as the Apify dataset loader above, applied to
