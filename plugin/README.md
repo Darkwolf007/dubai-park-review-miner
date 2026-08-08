@@ -1,17 +1,36 @@
 # Park Design Space Planner
 
-Rhino 8 / Grasshopper plugin foundation for deterministic, evidence-aware park-space distribution.
+Rhino 8 / Grasshopper plugin foundation for deterministic, evidence-aware park-space distribution. This checkout is pinned to the installed Rhino `8.15.25019.13001` SDK and its .NET 7 runtime so the component loads on the current workstation.
 
 ## Current component
 
 `Distribute Park Spaces` accepts:
 
 - a closed, planar site boundary in EPSG:32640 coordinates;
-- a path to the current Results Grasshopper JSON or a `ParkDesignPackage` v1 JSON;
+- a path to the Results **Park Design Package ZIP** (preferred), its extracted folder, a unified `ParkDesignPackage` v1 JSON, or the legacy Results JSON;
 - a deterministic seed; and
-- a run toggle.
+- a run toggle;
+- an `All Programs` compatibility toggle (the final mixed-design contract always processes every program); and
+- a strategy: `AUTO`, `Balanced`, `Suitability`, or `Connectivity`; and
+- `Use Package Boundary`, which explicitly selects the EPSG:32640 polygon in `site.json` instead of the Rhino input curve.
 
-It validates metre units and EPSG:32640, converts approved target areas to equal-area circles, and places non-overlapping bubbles fully inside the boundary. It does not yet apply suitability grids, entrances, exclusions, accepted relationship forces, activity-zone clustering, or layout optimization.
+The ZIP keeps geometry types separate. `area_programs.json` drives area-correct bubbles, `node_programs.json` drives grid-ranked point placement, and `route_programs.json` drives conceptual linear or network centerlines. The package also carries the site, suitability grid, accepted relationship graph, unresolved decisions, and a human-readable README.
+
+The component validates metre units and EPSG:32640 and runs five deterministic stages:
+
+1. place every area program with a documented extent as a non-overlapping, area-correct bubble using named suitability fields and hard grid exclusions; if target totals exceed the site but documented minimums fit, use those minimums without scaling below them;
+2. apply accepted qualitative relationships as placement forces and accepted mandatory numeric metre constraints as fail-closed checks;
+3. place point nodes on unique eligible grid cells;
+4. generate loop, linear desire-line, or minimum-spanning network routes without inventing widths; and
+5. compare Balanced, Suitability, and Connectivity scenarios when `AUTO` is selected.
+
+The original Bubbles, Centers, Names, Warnings, and Summary outputs are unchanged. Additional outputs expose Nodes, Node Names, Routes, Route Names, accepted Relationship lines, Relationship Names, and Scenario summaries.
+
+`ParkBubbles` also exposes `Route Program IDs`, `Route GIS Layers`, `Loop Routes`, and `Loop Names`. Conceptual jogging and exercise-cycling loops use separate radial inset bands so they remain visible in Rhino; these are planning geometry, not surveyed construction offsets. Connect `Routes`, `Route Names`, and `Route GIS Layers` to `BakeRoutes`, then pulse its Bake input to create color-coded Rhino layers beneath `PARK_DESIGN_GIS`.
+
+The component stops with `GRID_BOUNDARY_MISMATCH` when no exported grid centroid lies inside the selected boundary. It never translates or stretches the grid to make a mismatched boundary appear valid. `Resolved Boundary` exposes the exact polygon used by the engines.
+
+Routes are conceptual centerlines, not construction geometry. The engine does not invent gates, widths, turning radii, slopes, obstacles, or visibility obstructions. Those require supplied design/GIS inputs or approved standards.
 
 When the compact current Results manifest is loaded, the component reports that the grid and relationship graph are absent. It never fabricates those inputs.
 
@@ -22,13 +41,27 @@ dotnet build ParkDesign.SpacePlanner.sln
 dotnet run --project tests/ParkDesign.SpacePlanner.SmokeTests/ParkDesign.SpacePlanner.SmokeTests.csproj
 ```
 
-Copy the runtime bundle from `src/ParkDesign.SpacePlanner/bin/Debug/net8.0/` into a dedicated folder under your Grasshopper Libraries folder:
+Debug builds automatically deploy these runtime files to `%APPDATA%\Grasshopper\Libraries`:
 
 - `ParkDesign.SpacePlanner.gha`
 - `ParkDesign.SpacePlanner.Core.dll`
 - `ParkDesign.SpacePlanner.deps.json`
 
-Then unblock the downloaded/copied files in Windows file properties if required. The `.pdb` files are optional debugging symbols.
+The `.pdb` files remain in the build output so Visual Studio can resolve breakpoints.
+
+## Debug in Rhino 8
+
+1. Close every running Rhino instance before rebuilding; loaded Grasshopper assemblies are locked.
+2. Open `ParkDesign.SpacePlanner.sln` in Visual Studio 2022.
+3. Set `ParkDesign.SpacePlanner` as the startup project.
+4. Select the `Rhino 8 + Grasshopper` launch profile.
+5. Put a breakpoint inside `DistributeSpacesComponent.SolveInstance`.
+6. Press `F5`. Rhino starts with the .NET 7 runtime used by the installed Rhino 8.15 build and opens Grasshopper.
+7. In Grasshopper, open the `Park Design` tab and the `Planning` panel, or double-click the canvas and search for `ParkBubbles`.
+
+The breakpoint is reached when the component has its required inputs and `Run` is set to `True`.
+
+If the tab is missing, use Grasshopper's `File > Special Folders > Components Folder` and confirm the three deployed runtime files are present. Close Rhino, rebuild Debug, and launch again.
 
 ## Coordinate contract
 
@@ -37,4 +70,23 @@ Then unblock the downloaded/copied files in Windows file properties if required.
 - Exported grid coordinates: EPSG:32640
 - No bounding-box stretching, inferred reprojection, or silent coordinate correction
 
-The current legacy Results export does not identify whether program areas are designer-approved. Those bubbles are therefore a provisional planning visualization and the component emits a legacy-package warning. The unified package will carry explicit area-authority statuses.
+The current legacy Results export does not identify whether program areas are designer-approved. Those bubbles are therefore a provisional planning visualization and the component emits a legacy-package warning. The new ZIP carries explicit area-authority statuses; system/AI recommendations still require designer approval before they become authoritative design requirements.
+
+The current Al Safa 2 package carries 44 mixed programs: sixteen area programs with numeric ranges, six area programs whose extents remain unresolved, fourteen point nodes, and eight route/network programs including exercise cycling. All are represented. Unresolved areas appear as `Area Intent Anchors` rather than fabricated circles.
+
+## Access optimization components
+
+The `Park Design > Optimization` panel contains:
+
+- `AccessCandidates`, which reads every georeferenced boundary candidate, eligibility flag, hard exclusion, raw demand metric, and normalized access score. The list index is the integer gene used by the optimizer.
+- `AccessFitness`, which accepts main, secondary, and service candidate indices. It rejects duplicate, ineligible, school-facing, and building-facing choices and outputs raw access metrics plus eight minimization-ready Wallacei fitness values. Objectives whose design intent is maximization are negated; invalid combinations receive `1e9` on every fitness output.
+
+The access evaluator uses exported pair metrics and does not invent service/public path conflicts. That conflict can only be evaluated after route geometry exists. Population pull remains a modeled potential-demand proxy, not observed pedestrian counts.
+
+## Authoritative CAD grid
+
+`CADGrid` in `Park Design > GIS` reads closed curves and hatch boundaries directly from named Rhino layers and exports EPSG:32640 plus EPSG:4326 GeoJSON without AutoCAD. Connect the UTM result to the optional `ParkBubbles.CAD Grid GeoJSON` input to replace the package-generated analysis grid. See [docs/cad-grid-workflow.md](docs/cad-grid-workflow.md).
+
+## Terrain optimization components
+
+The `Park Design > Terrain` panel contains `TerrainGrid`, `RouteTerrain`, and `CutFill`. They sample an authoritative terrain mesh, evaluate walking/jogging/exercise-cycling routes, and compare existing/proposed grading meshes with raw numeric outputs suitable for Wallacei. See [docs/terrain-optimization.md](docs/terrain-optimization.md) for the Grasshopper wiring and objective contract.

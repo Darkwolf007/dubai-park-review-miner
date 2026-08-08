@@ -4,9 +4,25 @@
     <RootNamespace>ParkDesign.SpacePlanner</RootNamespace>
     <OutputType>Library</OutputType>
     <TargetExt>.gha</TargetExt>
+    <GrasshopperLibrariesDirectory Condition="'$(GrasshopperLibrariesDirectory)' == '' and '$(OS)' == 'Windows_NT'">$(APPDATA)\Grasshopper\Libraries</GrasshopperLibrariesDirectory>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ParkDesign.SpacePlanner.Core\ParkDesign.SpacePlanner.Core.csproj" />
-    <PackageReference Include="Grasshopper" Version="8.32.26160.13001" ExcludeAssets="runtime" />
+    <PackageReference Include="Grasshopper" Version="8.15.25019.13001" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" ExcludeAssets="runtime" />
   </ItemGroup>
+
+  <Target Name="DeployDebugGrasshopperPlugin" AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Debug' and '$(OS)' == 'Windows_NT' and '$(GrasshopperLibrariesDirectory)' != ''">
+    <ItemGroup>
+      <GrasshopperDeploymentFiles Include="$(TargetPath)" />
+      <GrasshopperDeploymentFiles Include="$(TargetDir)ParkDesign.SpacePlanner.Core.dll" />
+      <GrasshopperDeploymentFiles Include="$(TargetDir)ParkDesign.SpacePlanner.deps.json" />
+    </ItemGroup>
+    <MakeDir Directories="$(GrasshopperLibrariesDirectory)" />
+    <Copy SourceFiles="@(GrasshopperDeploymentFiles)"
+          DestinationFolder="$(GrasshopperLibrariesDirectory)"
+          SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed Park Design Space Planner to $(GrasshopperLibrariesDirectory)" />
+  </Target>
 </Project>

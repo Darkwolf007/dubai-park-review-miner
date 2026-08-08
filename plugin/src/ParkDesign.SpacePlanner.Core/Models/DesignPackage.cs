@@ -19,6 +19,12 @@ public sealed class DesignPackage
     [JsonPropertyName("programs")]
     public List<ProgramDefinition> Programs { get; set; } = [];
 
+    [JsonIgnore]
+    public List<ProgramDefinition> NodePrograms { get; set; } = [];
+
+    [JsonIgnore]
+    public List<ProgramDefinition> RoutePrograms { get; set; } = [];
+
     [JsonPropertyName("relationships")]
     public List<RelationshipDefinition> Relationships { get; set; } = [];
 
@@ -27,6 +33,24 @@ public sealed class DesignPackage
 
     [JsonIgnore]
     public bool AdaptedFromLegacyManifest { get; set; }
+
+    [JsonIgnore]
+    public List<Point2> PackageBoundary { get; set; } = [];
+
+    [JsonIgnore]
+    public List<AccessCandidateDefinition> AccessCandidates { get; set; } = [];
+
+    [JsonIgnore]
+    public List<AccessCandidatePairDefinition> AccessCandidatePairs { get; set; } = [];
+
+    [JsonIgnore]
+    public MovementRequirementsDefinition MovementRequirements { get; set; } = new();
+
+    [JsonIgnore]
+    public TerrainRequirementsDefinition TerrainRequirements { get; set; } = new();
+
+    [JsonIgnore]
+    public MasterplanSettingsDefinition MasterplanSettings { get; set; } = new();
 }
 
 public sealed class ProjectDefinition
@@ -66,6 +90,21 @@ public sealed class GridCell
 
     [JsonPropertyName("scores")]
     public Dictionary<string, double?> Scores { get; set; } = [];
+
+    [JsonPropertyName("program_constraints")]
+    public Dictionary<string, string> ProgramConstraints { get; set; } = [];
+
+    [JsonIgnore]
+    public List<Point2> Ring { get; set; } = [];
+
+    [JsonIgnore]
+    public double? AreaM2 { get; set; }
+
+    [JsonIgnore]
+    public string? SourceLayer { get; set; }
+
+    [JsonIgnore]
+    public string GridAuthority { get; set; } = "package_generated";
 }
 
 public sealed class ProgramDefinition
@@ -86,7 +125,10 @@ public sealed class ProgramDefinition
     public double? MaximumAreaM2 { get; set; }
 
     [JsonPropertyName("location_zone")]
-    public string LocationZone { get; set; } = "INNER_BUFFER";
+    public string LocationZone { get; set; } = "UNSPECIFIED";
+
+    [JsonPropertyName("geometry_type")]
+    public string GeometryType { get; set; } = "area";
 
     [JsonPropertyName("priority")]
     public double Priority { get; set; } = 0.5;
@@ -99,6 +141,15 @@ public sealed class ProgramDefinition
 
     [JsonPropertyName("area_status")]
     public string AreaStatus { get; set; } = "designer_approved";
+
+    [JsonPropertyName("attractors")]
+    public List<string> Attractors { get; set; } = [];
+
+    [JsonPropertyName("repellers")]
+    public List<string> Repellers { get; set; } = [];
+
+    [JsonPropertyName("constraints")]
+    public List<string> Constraints { get; set; } = [];
 }
 
 public sealed class RelationshipDefinition
@@ -120,4 +171,19 @@ public sealed class RelationshipDefinition
 
     [JsonPropertyName("accepted")]
     public bool Accepted { get; set; }
+
+    [JsonPropertyName("graph_layer")]
+    public string GraphLayer { get; set; } = "functional";
+
+    [JsonPropertyName("directed")]
+    public bool Directed { get; set; }
+
+    [JsonPropertyName("numeric_value")]
+    public double? NumericValue { get; set; }
+
+    [JsonPropertyName("numeric_unit")]
+    public string? NumericUnit { get; set; }
+
+    [JsonPropertyName("numeric_parameter")]
+    public string? NumericParameter { get; set; }
 }

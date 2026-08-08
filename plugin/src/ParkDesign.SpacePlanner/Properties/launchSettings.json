@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Rhino 8 + Grasshopper": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Rhino 8\\System\\Rhino.exe",
+      "commandLineArgs": "/netcore-7 /nosplash /runscript=\"_Grasshopper\"",
+      "workingDirectory": "C:\\Program Files\\Rhino 8\\System"
+    }
+  }
+}

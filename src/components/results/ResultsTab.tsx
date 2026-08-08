@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Feature, Polygon } from 'geojson';
 import { bbox as turfBbox } from '@turf/turf';
 import { Sparkles, Loader2, RefreshCw, Download, AlertTriangle } from 'lucide-react';
 import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
 import { fetchGisManifest, fetchGisLayer } from '../../lib/gis/gisEngine';
-import { downloadJson } from '../../lib/gis/exportEngine';
+import { downloadJson, downloadZip } from '../../lib/gis/exportEngine';
 import type { GisManifest, H3Feature, GeoJsonFeature } from '../../lib/gis/types';
 import type { CommunityFacilityLayers } from '../../lib/gis/communityEngine';
 import { buildSiteGrid } from '../../lib/gis/siteGrid';
@@ -23,6 +23,11 @@ import { SharedPrioritySpaces } from './SharedPrioritySpaces';
 import { SpaceJourneyGraph } from './SpaceJourneyGraph';
 import { ParkBrainKnowledgeGuide } from './ParkBrainKnowledgeGuide';
 import { ApprovedRuleCompilerPanel } from './ApprovedRuleCompilerPanel';
+import { buildParkDesignPackageFiles } from '../../lib/gis/parkDesignPackage';
+import type { MasterplanExportSettings } from '../../lib/gis/parkDesignPackage';
+import type { CompiledRuleEdge, UnresolvedApprovedRule } from '../../lib/results/approvedRuleCompiler';
+import { MasterplanExportSettingsPanel } from './MasterplanExportSettingsPanel';
+import { MovementGisOverlay } from './MovementGisOverlay';
 
 const AL_SAFA_2_PLACE_ID = 'ChIJW2n2fB9tXz4R3Gqf-661oQE';
 // Same match used by PlaygroundTab to find Al Safa 2's own polygon within the 'parks' layer --
@@ -49,6 +54,18 @@ export function ResultsTab() {
   const [result, setResult] = useState<ResultsSynthesisResult | null>(null);
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [acceptedRuleEdges, setAcceptedRuleEdges] = useState<CompiledRuleEdge[]>([]);
+  const [unresolvedRules, setUnresolvedRules] = useState<UnresolvedApprovedRule[]>([]);
+  const [masterplanSettings, setMasterplanSettings] = useState<MasterplanExportSettings>({
+    operationsAreaM2: null,
+    dropOffAreaM2: null,
+    candidateSpacingM: 10,
+    accessCatchmentRadiusM: 800,
+    roadEdgeMaxDistanceM: 25,
+    allPedestrianRoutesAccessible: false,
+    allowWalkingJoggingSharing: true,
+    allowServicePublicPathSharing: false
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -169,15 +186,42 @@ export function ResultsTab() {
     }
   }
 
-  function handleExportGrasshopper() {
-    if (!result) return;
-    downloadJson(result.grasshopper_export_manifest, 'al_safa_2_grasshopper_export.json');
+  function handleExportGrasshopperPackage() {
+    if (!result || !parkPolygon || siteGrid.length === 0 || opportunities.length === 0) return;
+    const selectedProgramZones: Record<string, string> = {};
+    for (const row of result.archetype_experience_matrix) {
+      const type = row.tier_5_assigned_space.opportunity_type;
+      if (type && !(type in selectedProgramZones)) {
+        selectedProgramZones[type] = row.tier_6_spatial_properties_and_scores.preferred_location_zone;
+      }
+    }
+    const files = buildParkDesignPackageFiles({
+      siteName: AL_SAFA_2_COMPETITION_BRIEF.siteName,
+      siteBoundary: parkPolygon,
+      siteGrid,
+      opportunities,
+      selectedProgramZones,
+      acceptedRuleEdges,
+      unresolvedRules,
+      h3Catchment: hexes,
+      roads: oppRoads,
+      buildings: oppBuildings,
+      schools: facilities?.schools ?? [],
+      busStops,
+      masterplanSettings
+    });
+    downloadZip(files, 'al_safa_2_park_design_package.zip');
   }
 
   function handleExportSpaceGraph() {
     if (!result) return;
     downloadJson({ space_graph: result.space_graph, persona_journeys: result.persona_journeys }, 'al_safa_2_space_graph_and_journeys.json');
   }
+
+  const handleRuleCompilationChange = useCallback((accepted: CompiledRuleEdge[], unresolved: UnresolvedApprovedRule[]) => {
+    setAcceptedRuleEdges(accepted);
+    setUnresolvedRules(unresolved);
+  }, []);
 
   if (loading) {
     return (
@@ -208,11 +252,11 @@ export function ResultsTab() {
             )}
             {result && (
               <button
-                onClick={handleExportGrasshopper}
+                onClick={handleExportGrasshopperPackage}
                 className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded border border-slate-200 text-slate-600 hover:bg-slate-50"
               >
                 <Download className="w-3 h-3" />
-                Export Grasshopper JSON
+                Export Grasshopper Package
               </button>
             )}
             <button
@@ -251,7 +295,21 @@ export function ResultsTab() {
       )}
 
       <ParkBrainKnowledgeGuide />
-      <ApprovedRuleCompilerPanel opportunities={opportunities} />
+      <ApprovedRuleCompilerPanel
+        opportunities={opportunities}
+        onCompilationChange={handleRuleCompilationChange}
+      />
+
+      <MasterplanExportSettingsPanel settings={masterplanSettings} onChange={setMasterplanSettings} />
+
+      {parkPolygon && siteGrid.length > 0 && opportunities.length > 0 && (
+        <MovementGisOverlay
+          siteGrid={siteGrid}
+          opportunities={opportunities}
+          parkBoundary={parkPolygon}
+          parkCenter={parkCenter}
+        />
+      )}
 
       {result && (
         <>

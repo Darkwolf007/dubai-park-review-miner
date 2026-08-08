@@ -84,7 +84,7 @@ export type OpportunityType =
   // Arrival / Access
   | 'mainEntrancePlaza' | 'secondaryEntrances' | 'accessibleRoutes' | 'bicycleParking' | 'dropOffZone' | 'wayfindingNodes'
   // Movement
-  | 'walkingPromenade' | 'joggingLoop' | 'shadedCirculation' | 'serviceAccess'
+  | 'walkingPromenade' | 'joggingLoop' | 'exerciseCyclingLoop' | 'shadedCirculation' | 'serviceAccess'
   // Play
   | 'inclusivePlayground' | 'toddlerPlay' | 'olderChildrenPlay' | 'naturePlay' | 'familySeatingPlay'
   // Sports / Wellness
@@ -376,11 +376,11 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     repellers: ['Sparse path network', 'High heat exposure'],
     adjacencyPreferred: ['accessibleRoutes', 'shadedCirculation'],
     adjacencyAvoid: [],
-    adjacencyMovement: ['joggingLoop', 'accessibleRoutes', 'shadedCirculation', 'mainEntrancePlaza']
+    adjacencyMovement: ['joggingLoop', 'exerciseCyclingLoop', 'accessibleRoutes', 'shadedCirculation', 'mainEntrancePlaza']
   },
   {
     type: 'joggingLoop',
-    name: 'Jogging Loop (~1 km)',
+    name: 'Jogging Loop',
     category: 'Movement',
     geometryType: 'linear',
     scale: 'route',
@@ -401,7 +401,29 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     repellers: ['Sparse path network', 'Interior-only cells'],
     adjacencyPreferred: ['outdoorFitness', 'walkingPromenade'],
     adjacencyAvoid: [],
-    adjacencyMovement: ['walkingPromenade', 'shadedCirculation', 'accessibleRoutes']
+    adjacencyMovement: ['walkingPromenade', 'exerciseCyclingLoop', 'shadedCirculation', 'accessibleRoutes']
+  },
+  {
+    type: 'exerciseCyclingLoop',
+    name: 'Exercise Cycling Loop',
+    category: 'Movement',
+    geometryType: 'linear',
+    scale: 'route',
+    programKeys: [],
+    nlpCategory: 'sports facilities',
+    nlpCategoryNote: 'Sports-facilities mentions are only a demand proxy. Terrain slope, curvature, width, and mode-sharing feasibility are evaluated later in Rhino from an authoritative mesh and approved requirements.',
+    primaryUsersFallback: ['Exercise cyclists', 'Adults', 'Residents'],
+    source: ['brief-optional', 'movement-driven', 'designer-assumption'],
+    demand: (hex, ctx, nlp) => clamp100(0.6 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.4 * nlp),
+    suitability: hex => clamp100(0.35 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.35 * boundaryRatio(hex) * 100 + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
+    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 20000)),
+    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 2000 ? 'Under 2,000 m/kmÂ² real road density -- no existing movement infrastructure proxy for a cycling loop.' : null),
+    suitabilityField: 'exercise_cycling_route_suitability',
+    attractors: ['Both public entrances', 'Perimeter continuity', 'Low slope from Rhino terrain mesh'],
+    repellers: ['High slope', 'Tight curvature', 'High pedestrian conflict'],
+    adjacencyPreferred: ['outdoorFitness', 'walkingPromenade'],
+    adjacencyAvoid: ['toddlerPlay', 'quietGarden'],
+    adjacencyMovement: ['mainEntrancePlaza', 'secondaryEntrances', 'walkingPromenade', 'joggingLoop']
   },
   {
     type: 'shadedCirculation',
@@ -422,7 +444,7 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     repellers: ['Sparse path network'],
     adjacencyPreferred: ['treePlanting', 'walkingPromenade'],
     adjacencyAvoid: [],
-    adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'accessibleRoutes']
+    adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'exerciseCyclingLoop', 'accessibleRoutes']
   },
   {
     type: 'serviceAccess',

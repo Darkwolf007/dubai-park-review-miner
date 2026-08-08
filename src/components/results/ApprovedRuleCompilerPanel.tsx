@@ -20,7 +20,12 @@ function reasonLabel(reason: string): string {
   return reason.replaceAll('_', ' ');
 }
 
-export function ApprovedRuleCompilerPanel({ opportunities }: { opportunities: OpportunityResult[] }) {
+interface ApprovedRuleCompilerPanelProps {
+  opportunities: OpportunityResult[];
+  onCompilationChange?: (acceptedEdges: CompiledRuleEdge[], unresolved: ReturnType<typeof compileApprovedRules>['unresolved']) => void;
+}
+
+export function ApprovedRuleCompilerPanel({ opportunities, onCompilationChange }: ApprovedRuleCompilerPanelProps) {
   const [registry, setRegistry] = useState<ParkBrainRegistryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +60,14 @@ export function ApprovedRuleCompilerPanel({ opportunities }: { opportunities: Op
     }));
   }, [compilation, decisions]);
 
-  const acceptedEdges = decidedEdges.filter(edge => edge.decision === 'accepted');
+  const acceptedEdges = useMemo(
+    () => decidedEdges.filter(edge => edge.decision === 'accepted'),
+    [decidedEdges]
+  );
+
+  useEffect(() => {
+    onCompilationChange?.(acceptedEdges, compilation?.unresolved || []);
+  }, [acceptedEdges, compilation, onCompilationChange]);
 
   function setDecision(edge: CompiledRuleEdge, decision: EdgeDecision) {
     setDecisions(previous => ({ ...previous, [edge.edge_id]: decision }));

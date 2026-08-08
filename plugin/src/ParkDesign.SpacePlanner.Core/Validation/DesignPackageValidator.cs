@@ -10,7 +10,7 @@ public static class DesignPackageValidator
     {
         var messages = new List<ValidationMessage>();
 
-        if (!string.Equals(package.CoordinateSystem.Crs, "EPSG:32640", StringComparison.OrdinalIgnoreCase))
+        if (!IsUtmZone40N(package.CoordinateSystem.Crs))
             messages.Add(new("CRS_UNSUPPORTED", $"Expected EPSG:32640 but received {package.CoordinateSystem.Crs}.", true));
         if (!string.Equals(package.CoordinateSystem.Units, "meters", StringComparison.OrdinalIgnoreCase))
             messages.Add(new("UNITS_UNSUPPORTED", $"Expected meters but received {package.CoordinateSystem.Units}.", true));
@@ -34,5 +34,18 @@ public static class DesignPackageValidator
             messages.Add(new("RELATIONSHIPS_EMPTY", "No accepted relationships are present; adjacency forces are disabled.", false));
 
         return messages;
+    }
+
+    private static bool IsUtmZone40N(string? crs)
+    {
+        if (string.IsNullOrWhiteSpace(crs)) return false;
+        var normalized = crs
+            .ToUpperInvariant()
+            .Replace(" ", string.Empty)
+            .Replace("_", string.Empty)
+            .Replace("-", string.Empty);
+        return normalized.Contains("EPSG:32640", StringComparison.Ordinal)
+            || normalized.Contains("UTMZONE40N", StringComparison.Ordinal)
+            || normalized == "32640";
     }
 }
