@@ -278,12 +278,12 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     primaryUsersFallback: ['People of Determination', 'Older adults', 'Caregivers'],
     source: ['brief-required', 'accessibility-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * (100 - computeHexParkAccessScore(hex)) + 0.5 * nlp),
-    suitability: hex => clamp100(0.5 * computeHexWalkabilityScore(hex) + 0.5 * (100 - computeHexBarrierSeverityScore(hex))),
-    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
-    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to build an accessible route from.' : null),
+    suitability: hex => clamp100(0.45 * computeHexWalkabilityScore(hex) + 0.35 * (100 - computeHexBarrierSeverityScore(hex)) + 0.2 * normalize(hexVoidRatioPct(hex), 60)),
+    feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
+    avoided: NO_AVOID,
     suitabilityField: 'route_directness_ratio',
-    attractors: ['Accessibility deficit', 'Low barrier severity', 'Existing path network'],
-    repellers: ['High barrier severity', 'Sparse path network'],
+    attractors: ['Accessibility deficit', 'Low barrier severity', 'Program-space connections'],
+    repellers: ['High barrier severity', 'Inaccessible terrain'],
     adjacencyPreferred: ['mainEntrancePlaza', 'secondaryEntrances', 'wayfindingNodes'],
     adjacencyAvoid: [],
     adjacencyMovement: ['walkingPromenade', 'shadedCirculation', 'joggingLoop']
@@ -368,12 +368,12 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     primaryUsersFallback: ['Seniors', 'Families', 'Residents'],
     source: ['brief-required', 'movement-driven', 'population-driven'],
     demand: hex => clamp100(0.5 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.5 * (100 - hexCommunityVulnerabilityScore(hex))),
-    suitability: (hex, ctx) => clamp100(0.4 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.3 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
-    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
-    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to build a promenade from.' : null),
+    suitability: (hex, ctx) => clamp100(0.35 * (100 - hexHeatExposureProxy(hex, ctx.avgRoadWidthM)) + 0.35 * (100 - computeHexBarrierSeverityScore(hex)) + 0.3 * normalize(hexVoidRatioPct(hex), 60)),
+    feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
+    avoided: NO_AVOID,
     suitabilityField: 'route_directness_ratio',
-    attractors: ['Existing path network', 'Low heat exposure', 'Low barrier severity'],
-    repellers: ['Sparse path network', 'High heat exposure'],
+    attractors: ['Program-space anchors', 'Low heat exposure', 'Low barrier severity'],
+    repellers: ['High heat exposure', 'Program-space conflicts'],
     adjacencyPreferred: ['accessibleRoutes', 'shadedCirculation'],
     adjacencyAvoid: [],
     adjacencyMovement: ['joggingLoop', 'exerciseCyclingLoop', 'accessibleRoutes', 'shadedCirculation', 'mainEntrancePlaza']
@@ -393,12 +393,14 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     // Distinct from Walking Promenade / Shaded Circulation: a loop needs perimeter/boundary
     // continuity to run a route around the site, not just any path -- weighted toward edge cells
     // instead of green coverage, which is what actually separates "loop" from "promenade" spatially.
-    suitability: hex => clamp100(0.35 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.35 * boundaryRatio(hex) * 100 + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
-    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 20000)),
-    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 2000 ? 'Under 2,000 m/km² real road density -- effectively no path infrastructure to route a loop through.' : null),
+    suitability: hex => clamp100(0.55 * boundaryRatio(hex) * 100
+      + 0.25 * normalize(hexVoidRatioPct(hex), 60)
+      + 0.2 * (100 - computeHexBarrierSeverityScore(hex))),
+    feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
+    avoided: NO_AVOID,
     suitabilityField: 'jogging_route_suitability',
-    attractors: ['Path / road density', 'Perimeter/boundary continuity', 'Low barrier severity'],
-    repellers: ['Sparse path network', 'Interior-only cells'],
+    attractors: ['Perimeter/boundary continuity', 'Low barrier severity', 'Outdoor fitness access'],
+    repellers: ['Broken loop continuity', 'Program-space conflicts'],
     adjacencyPreferred: ['outdoorFitness', 'walkingPromenade'],
     adjacencyAvoid: [],
     adjacencyMovement: ['walkingPromenade', 'exerciseCyclingLoop', 'shadedCirculation', 'accessibleRoutes']
@@ -415,9 +417,13 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     primaryUsersFallback: ['Exercise cyclists', 'Adults', 'Residents'],
     source: ['brief-optional', 'movement-driven', 'designer-assumption'],
     demand: (hex, ctx, nlp) => clamp100(0.6 * normalize(hex.properties.pop_density_km2 || 0, 20000) + 0.4 * nlp),
-    suitability: hex => clamp100(0.35 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.35 * boundaryRatio(hex) * 100 + 0.3 * (100 - computeHexBarrierSeverityScore(hex))),
-    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 20000)),
-    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 2000 ? 'Under 2,000 m/kmÂ² real road density -- no existing movement infrastructure proxy for a cycling loop.' : null),
+    // Cycling uses the outermost continuous band. It deliberately weights boundary continuity
+    // more heavily than the jogging loop; the two modes must not inherit identical cell rankings.
+    suitability: hex => clamp100(0.65 * boundaryRatio(hex) * 100
+      + 0.2 * normalize(hexVoidRatioPct(hex), 60)
+      + 0.15 * (100 - computeHexBarrierSeverityScore(hex))),
+    feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
+    avoided: NO_AVOID,
     suitabilityField: 'exercise_cycling_route_suitability',
     attractors: ['Both public entrances', 'Perimeter continuity', 'Low slope from Rhino terrain mesh'],
     repellers: ['High slope', 'Tight curvature', 'High pedestrian conflict'],
@@ -436,12 +442,12 @@ const OPPORTUNITY_DEFS: OpportunityDef[] = [
     primaryUsersFallback: ['All visitors'],
     source: ['brief-required', 'environment-driven', 'review-driven'],
     demand: (hex, ctx, nlp) => clamp100(0.5 * hexHeatExposureProxy(hex, ctx.avgRoadWidthM) + 0.5 * nlp),
-    suitability: hex => clamp100(0.6 * normalize(hex.properties.real_road_density_m_per_km2 || 0, 40000) + 0.4 * normalize(hex.properties.green_coverage_pct || 0, 30)),
-    feasibility: hex => clamp100(normalize(hex.properties.real_road_density_m_per_km2 || 0, 15000)),
-    avoided: hex => ((hex.properties.real_road_density_m_per_km2 || 0) < 1000 ? 'Under 1,000 m/km² real path density -- no existing circulation to shade.' : null),
+    suitability: hex => clamp100(0.4 * normalize(hex.properties.green_coverage_pct || 0, 30) + 0.35 * normalize(hexVoidRatioPct(hex), 60) + 0.25 * (100 - computeHexBarrierSeverityScore(hex))),
+    feasibility: hex => clamp100(normalize(hexVoidRatioPct(hex), 60)),
+    avoided: NO_AVOID,
     suitabilityField: 'shade_score',
-    attractors: ['Heat exposure', 'Existing path network', 'Green coverage'],
-    repellers: ['Sparse path network'],
+    attractors: ['Heat exposure', 'Walking-network demand', 'Green coverage'],
+    repellers: ['Unshadeable conflicts'],
     adjacencyPreferred: ['treePlanting', 'walkingPromenade'],
     adjacencyAvoid: [],
     adjacencyMovement: ['walkingPromenade', 'joggingLoop', 'exerciseCyclingLoop', 'accessibleRoutes']

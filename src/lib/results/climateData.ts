@@ -30,6 +30,18 @@ export interface AlSafa2ClimateSummary {
   source: string;
   siteAreaKm2: number;
   evidenceNature: 'proxy';
+  regionalEpw: {
+    station: string;
+    source: string;
+    evidenceNature: 'weather-file';
+    hours: number;
+    hoursAtOrAbove35C: number;
+    hoursAtOrAbove40C: number;
+    eveningHoursAtOrAbove35C: number;
+    hottestHour: { month: number; day: number; hour: number; dryBulbC: number; relativeHumidityPct: number; windDirectionDeg: number; windSpeedMs: number };
+    windSectorHours: Record<'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW', number>;
+    dominantWindSectors: Array<'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'>;
+  };
   heatIslandExtreme: {
     window: string;
     meanUtciC: number;
@@ -54,9 +66,21 @@ export interface AlSafa2ClimateSummary {
 }
 
 export const AL_SAFA_2_CLIMATE_SUMMARY: AlSafa2ClimateSummary = {
-  source: 'infrared.city Environmental Climate Analysis, 2026-07-26 (CFD/UTCI simulation, unvalidated EPW wind rose)',
+  source: 'Dubai Intl Airport TMYx EPW + infrared.city Environmental Climate Analysis, 2026-07-26 (regional weather file and site CFD/UTCI simulation)',
   siteAreaKm2: 2.48,
   evidenceNature: 'proxy',
+  regionalEpw: {
+    station: 'Dubai.Intl.AP 411940',
+    source: 'ARE_DU_Dubai.Intl.AP.411940_TMYx.epw (8,760-hour regional typical meteorological year)',
+    evidenceNature: 'weather-file',
+    hours: 8760,
+    hoursAtOrAbove35C: 1673,
+    hoursAtOrAbove40C: 285,
+    eveningHoursAtOrAbove35C: 559,
+    hottestHour: { month: 6, day: 9, hour: 12, dryBulbC: 46, relativeHumidityPct: 28, windDirectionDeg: 220, windSpeedMs: 2.5 },
+    windSectorHours: { N: 673, NE: 600, E: 986, SE: 754, S: 1657, SW: 665, W: 1590, NW: 1509 },
+    dominantWindSectors: ['S', 'W', 'NW']
+  },
   heatIslandExtreme: {
     window: 'Peak 4-hour heat-wave window, June 6, 15:00-19:00',
     meanUtciC: 49.94,

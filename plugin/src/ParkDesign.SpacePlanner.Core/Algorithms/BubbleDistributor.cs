@@ -85,7 +85,7 @@ public static class BubbleDistributor
                 if (!PolygonMath.Contains(boundary, candidate)) continue;
                 var clearance = PolygonMath.DistanceToBoundary(boundary, candidate);
                 if (clearance + 1e-7 < radius) continue;
-                if (result.Placements.Any(other => PolygonMath.Distance(candidate, other.Center) + 1e-7 < radius + other.Radius)) continue;
+                if (result.Placements.Any(other => PolygonMath.Distance(candidate, other.Center) + 1e-7 < RequiredSeparation(program.Id, radius, other.ProgramId, other.Radius, relationList))) continue;
 
                 var relationshipPenalty = SpatialScoring.RelationshipPenalty(program.Id, candidate, placedById, relationList, siteScale, out var hardViolation);
                 if (hardViolation) continue;
@@ -124,6 +124,18 @@ public static class BubbleDistributor
     {
         if (candidates.Count == 0) return 0;
         return candidates.OrderBy(candidate => PolygonMath.Distance(point, candidate.Point)).First().Suitability ?? 0;
+    }
+
+    private static double RequiredSeparation(string programId, double radius, string otherId, double otherRadius,
+        IReadOnlyList<RelationshipDefinition> relationships)
+    {
+        var compatibility = relationships
+            .Where(item => item.Accepted && item.Type.Contains("overlap", StringComparison.OrdinalIgnoreCase)
+                && ((item.Source == programId && item.Target == otherId) || (item.Source == otherId && item.Target == programId)))
+            .Select(item => Math.Clamp(item.CompatibilityScore ?? 0, 0, 1))
+            .DefaultIfEmpty(0)
+            .Max();
+        return (radius + otherRadius) * (1 - compatibility);
     }
 
     private static double ZonePenalty(string zone, double clearance, double radius, double siteScale)

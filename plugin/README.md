@@ -14,23 +14,25 @@ Rhino 8 / Grasshopper plugin foundation for deterministic, evidence-aware park-s
 - a strategy: `AUTO`, `Balanced`, `Suitability`, or `Connectivity`; and
 - `Use Package Boundary`, which explicitly selects the EPSG:32640 polygon in `site.json` instead of the Rhino input curve.
 
-The ZIP keeps geometry types separate. `area_programs.json` drives area-correct bubbles, `node_programs.json` drives grid-ranked point placement, and `route_programs.json` drives conceptual linear or network centerlines. The package also carries the site, suitability grid, accepted relationship graph, unresolved decisions, and a human-readable README.
+The ZIP keeps geometry types separate. `area_programs.json` drives area-correct bubbles, `node_programs.json` drives grid-ranked point placement, and `route_programs.json` drives conceptual linear or network centerlines. The package also carries the site, suitability grid, accepted and designer-approved relationship graphs, climate morphology, planting governance, unresolved decisions, and a human-readable README.
+
+As of package schema v1.4, `park_design_package.json` is the canonical cross-application contract. The role-specific files above remain compatibility views for this plugin until its Phase 2 canonical importer is introduced.
 
 The component validates metre units and EPSG:32640 and runs five deterministic stages:
 
-1. place every area program with a documented extent as a non-overlapping, area-correct bubble using named suitability fields and hard grid exclusions; if target totals exceed the site but documented minimums fit, use those minimums without scaling below them;
-2. apply accepted qualitative relationships as placement forces and accepted mandatory numeric metre constraints as fail-closed checks;
-3. place point nodes on unique eligible grid cells;
-4. generate loop, linear desire-line, or minimum-spanning network routes without inventing widths; and
+1. place every mandatory area program with a documented extent as an area-correct bubble using named suitability fields and hard grid exclusions; approved compatibility scores reduce separation between shared and overlay territories; if target totals exceed the site but documented minimums fit, use those minimums without scaling below them;
+2. apply accepted evidence rules and separately identified designer-approved relationships as placement forces, while accepted mandatory numeric metre constraints remain fail-closed checks;
+3. place point nodes on unique eligible grid cells using suitability, accepted and advisory adjacency, program-specific edge roles, and maximin spatial coverage so generic scores cannot collapse every amenity onto one boundary;
+4. generate distinct loop bands, program-relevant desire lines, or minimum-spanning networks from each movement program's governed anchors without inventing widths; and
 5. compare Balanced, Suitability, and Connectivity scenarios when `AUTO` is selected.
 
-The original Bubbles, Centers, Names, Warnings, and Summary outputs are unchanged. Additional outputs expose Nodes, Node Names, Routes, Route Names, accepted Relationship lines, Relationship Names, and Scenario summaries.
+The original Bubbles, Centers, Names, Warnings, and Summary outputs are unchanged. Additional outputs expose Nodes, Node Names, Routes, Route Names, governed Relationship lines, Relationship Names, Scenario summaries, climate-axis curves, axis metadata, baraha points, and baraha scoring data.
 
 `ParkBubbles` also exposes `Route Program IDs`, `Route GIS Layers`, `Loop Routes`, and `Loop Names`. Conceptual jogging and exercise-cycling loops use separate radial inset bands so they remain visible in Rhino; these are planning geometry, not surveyed construction offsets. Connect `Routes`, `Route Names`, and `Route GIS Layers` to `BakeRoutes`, then pulse its Bake input to create color-coded Rhino layers beneath `PARK_DESIGN_GIS`.
 
 The component stops with `GRID_BOUNDARY_MISMATCH` when no exported grid centroid lies inside the selected boundary. It never translates or stretches the grid to make a mismatched boundary appear valid. `Resolved Boundary` exposes the exact polygon used by the engines.
 
-Routes are conceptual centerlines, not construction geometry. The engine does not invent gates, widths, turning radii, slopes, obstacles, or visibility obstructions. Those require supplied design/GIS inputs or approved standards.
+Routes are conceptual centerlines, not construction geometry. Walking, accessible, shaded, service, irrigation, and lighting systems use different program-anchor sets; jogging and exercise cycling use separate inset bands. The engine does not invent gates, widths, turning radii, slopes, obstacles, or visibility obstructions. Those require supplied design/GIS inputs or approved standards.
 
 When the compact current Results manifest is loaded, the component reports that the grid and relationship graph are absent. It never fabricates those inputs.
 

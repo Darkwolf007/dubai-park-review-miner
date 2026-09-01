@@ -58,22 +58,25 @@ internal static class SpatialScoring
         IReadOnlyDictionary<string, Point2> placed,
         IEnumerable<RelationshipDefinition> relationships,
         double siteScale,
-        out bool violatesMandatory)
+        out bool violatesMandatory,
+        bool includeAdvisory = false)
     {
         violatesMandatory = false;
         var total = 0d;
-        var count = 0;
-        foreach (var relationship in relationships.Where(item => item.Accepted && (item.Source == programId || item.Target == programId)))
+        var totalWeight = 0d;
+        foreach (var relationship in relationships.Where(item => (item.Accepted || includeAdvisory)
+            && (item.Source == programId || item.Target == programId)))
         {
             var otherId = relationship.Source == programId ? relationship.Target : relationship.Source;
             if (!placed.TryGetValue(otherId, out var other)) continue;
             var distance = PolygonMath.Distance(candidate, other);
             var evaluation = Evaluate(relationship, distance, siteScale);
             if (relationship.Mandatory && evaluation.HardViolation) violatesMandatory = true;
-            total += evaluation.Penalty;
-            count++;
+            var authorityWeight = relationship.Accepted ? 1d : 0.35 * Math.Clamp(relationship.Confidence ?? 0.75, 0, 1);
+            total += evaluation.Penalty * authorityWeight;
+            totalWeight += authorityWeight;
         }
-        return count == 0 ? 0 : total / count;
+        return totalWeight == 0 ? 0 : total / totalWeight;
     }
 
     private static (double Penalty, bool HardViolation) Evaluate(RelationshipDefinition relationship, double distance, double siteScale)

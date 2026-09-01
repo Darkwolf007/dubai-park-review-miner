@@ -58,13 +58,18 @@ public static class DesignPackageLoader
         package.RoutePrograms = ReadPrograms(readFile, "route_programs.json");
         package.Grid = JsonSerializer.Deserialize<GridDefinition>(readFile("grid.json"), Options)
             ?? new GridDefinition();
-        package.Relationships = ReadAcceptedRelationships(readFile);
+        package.Relationships = ReadRelationships(readFile);
         package.Unresolved = ReadUnresolved(readFile);
         package.AccessCandidates = ReadOptionalList<AccessCandidateDefinition>(readFile, "access_candidates.json", "candidates");
         package.AccessCandidatePairs = ReadOptionalList<AccessCandidatePairDefinition>(readFile, "access_pair_metrics.json", "pairs");
         package.MovementRequirements = ReadOptionalObject(readFile, "movement_requirements.json", new MovementRequirementsDefinition());
         package.TerrainRequirements = ReadOptionalObject(readFile, "terrain_requirements.json", new TerrainRequirementsDefinition());
         package.MasterplanSettings = ReadOptionalObject(readFile, "masterplan_settings.json", new MasterplanSettingsDefinition());
+        package.ClimateMorphology = ReadOptionalObject(readFile, "climate_morphology.json", new ClimateMorphologyDefinition());
+        package.PlantingStrategy = ReadOptionalObject(readFile, "planting_strategy.json", new PlantingStrategyDefinition());
+        package.UserGroups = ReadOptionalList<UserGroupDefinition>(readFile, "user_program_suitability.json", "user_groups");
+        package.UserProgramSuitability = ReadOptionalList<UserProgramSuitabilityDefinition>(readFile, "user_program_suitability.json", "suitability");
+        package.ParametricRelationships = ReadOptionalList<ParametricRelationshipDefinition>(readFile, "parametric_relationships.json", "relationships");
         Normalize(package);
         return package;
     }
@@ -131,11 +136,11 @@ public static class DesignPackageLoader
         return JsonSerializer.Deserialize<List<ProgramDefinition>>(programs.GetRawText(), Options) ?? [];
     }
 
-    private static List<RelationshipDefinition> ReadAcceptedRelationships(Func<string, string> readFile)
+    private static List<RelationshipDefinition> ReadRelationships(Func<string, string> readFile)
     {
         using var document = JsonDocument.Parse(readFile("relationships.json"));
-        if (!document.RootElement.TryGetProperty("accepted_rule_edges", out var edges)) return [];
         var relationships = new List<RelationshipDefinition>();
+        if (document.RootElement.TryGetProperty("accepted_rule_edges", out var edges))
         foreach (var edge in edges.EnumerateArray())
         {
             JsonElement numericConstraint = default;
@@ -153,10 +158,48 @@ public static class DesignPackageLoader
                 Directed = ReadBoolean(edge, "directed"),
                 NumericValue = hasNumericConstraint ? ReadDouble(numericConstraint, "value") : null,
                 NumericUnit = hasNumericConstraint ? ReadString(numericConstraint, "unit") : null,
-                NumericParameter = hasNumericConstraint ? ReadString(numericConstraint, "parameter") : null
+                NumericParameter = hasNumericConstraint ? ReadString(numericConstraint, "parameter") : null,
+                Authority = "accepted_rule",
+                SourceProvenance = ReadString(edge, "source") ?? ReadString(edge, "provenance")
             });
         }
-        return relationships.Where(relationship => relationship.Accepted).ToList();
+        if (document.RootElement.TryGetProperty("advisory_relationships", out var advisories))
+        foreach (var edge in advisories.EnumerateArray())
+        {
+            relationships.Add(new RelationshipDefinition
+            {
+                Id = ReadString(edge, "edge_id") ?? ReadString(edge, "id") ?? string.Empty,
+                Source = ReadString(edge, "source_node_id") ?? ReadString(edge, "source_id") ?? ReadString(edge, "source") ?? string.Empty,
+                Target = ReadString(edge, "target_node_id") ?? ReadString(edge, "target_id") ?? ReadString(edge, "target") ?? string.Empty,
+                Type = ReadString(edge, "relationship_type") ?? ReadString(edge, "type") ?? "preferred",
+                Mandatory = ReadBoolean(edge, "mandatory"), Accepted = ReadBoolean(edge, "accepted"),
+                Authority = ReadString(edge, "authority") ?? "advisory",
+                GraphLayer = ReadString(edge, "graph_layer") ?? "design_intelligence",
+                Directed = ReadBoolean(edge, "directed"), Confidence = ReadDouble(edge, "confidence"),
+                SourceProvenance = ReadString(edge, "source_provenance") ?? ReadString(edge, "provenance"),
+                CompatibilityScore = ReadDouble(edge, "compatibility_score"),
+                OverlapMode = ReadString(edge, "overlap_mode"), Reason = ReadString(edge, "reason")
+            });
+        }
+        if (document.RootElement.TryGetProperty("designer_relationships", out var designerRelationships))
+        foreach (var edge in designerRelationships.EnumerateArray())
+        {
+            relationships.Add(new RelationshipDefinition
+            {
+                Id = ReadString(edge, "edge_id") ?? ReadString(edge, "id") ?? string.Empty,
+                Source = ReadString(edge, "source_node_id") ?? ReadString(edge, "source") ?? string.Empty,
+                Target = ReadString(edge, "target_node_id") ?? ReadString(edge, "target") ?? string.Empty,
+                Type = ReadString(edge, "relationship_type") ?? ReadString(edge, "type") ?? "preferred",
+                Mandatory = ReadBoolean(edge, "mandatory"), Accepted = true,
+                Authority = ReadString(edge, "authority") ?? "designer_approved_competition_input",
+                GraphLayer = ReadString(edge, "graph_layer") ?? "designer_intelligence",
+                Directed = ReadBoolean(edge, "directed"), Confidence = ReadDouble(edge, "confidence") ?? 1,
+                SourceProvenance = ReadString(edge, "source_provenance") ?? ReadString(edge, "provenance"),
+                CompatibilityScore = ReadDouble(edge, "compatibility_score"),
+                OverlapMode = ReadString(edge, "overlap_mode"), Reason = ReadString(edge, "reason")
+            });
+        }
+        return relationships.Where(relationship => relationship.Accepted || relationship.Authority == "advisory").ToList();
     }
 
     private static List<string> ReadUnresolved(Func<string, string> readFile)
@@ -236,12 +279,25 @@ public static class DesignPackageLoader
         package.MovementRequirements ??= new MovementRequirementsDefinition();
         package.TerrainRequirements ??= new TerrainRequirementsDefinition();
         package.MasterplanSettings ??= new MasterplanSettingsDefinition();
+        package.ClimateMorphology ??= new ClimateMorphologyDefinition();
+        package.PlantingStrategy ??= new PlantingStrategyDefinition();
+        package.UserGroups ??= [];
+        package.UserProgramSuitability ??= [];
+        package.ParametricRelationships ??= [];
 
         foreach (var program in package.Programs)
         {
             if (string.IsNullOrWhiteSpace(program.Name)) program.Name = program.Id;
             if (string.IsNullOrWhiteSpace(program.LocationZone))
                 program.LocationZone = package.AdaptedFromLegacyManifest ? "INNER_BUFFER" : "UNSPECIFIED";
+            if (string.IsNullOrWhiteSpace(program.RepresentationStatus))
+                program.RepresentationStatus = program.TargetAreaM2 is > 0
+                    ? "quantified_area"
+                    : program.SpatialMode == "overlay" ? "landscape_overlay_intent" : "area_intent_anchor";
+            if (string.IsNullOrWhiteSpace(program.PlacementStatus))
+                program.PlacementStatus = program.TargetAreaM2 is > 0
+                    ? "place_as_area_territory"
+                    : program.SpatialMode == "overlay" ? "represent_as_overlapping_landscape_system" : "represent_as_ranked_intent_anchor";
         }
     }
 

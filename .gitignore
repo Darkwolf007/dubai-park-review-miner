@@ -12,3 +12,7 @@ backend/**/__pycache__/
 plugin/**/bin/
 plugin/**/obj/
 plugin/.vs/
+ai-park-scope/
+dataset/
+pdfs/
+outputs/

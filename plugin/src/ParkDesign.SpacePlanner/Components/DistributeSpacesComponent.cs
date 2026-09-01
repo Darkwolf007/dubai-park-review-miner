@@ -6,6 +6,7 @@ using ParkDesign.SpacePlanner.Core.Serialization;
 using ParkDesign.SpacePlanner.Core.Validation;
 using Rhino;
 using Rhino.Geometry;
+using System.Text.Json;
 
 namespace ParkDesign.SpacePlanner.Components;
 
@@ -18,7 +19,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         : base(
             "Distribute Park Spaces",
             "ParkBubbles",
-            "Generates suitability-aware area layouts, nodes, routes, and accepted-rule relationship geometry from a Park Design Package.",
+            "Generates suitability-aware area layouts, nodes, routes, governed relationships, climate axes, and baraha candidates from a Park Design Package.",
             "Park Design",
             "Planning")
     {
@@ -53,8 +54,8 @@ public sealed class DistributeSpacesComponent : GH_Component
         parameters.AddTextParameter("Node Names", "PN", "Point-program names matching Nodes.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Routes", "R", "Conceptual route centerlines or networks; no unapproved widths are inferred.", GH_ParamAccess.list);
         parameters.AddTextParameter("Route Names", "RN", "Route-program names matching Routes.", GH_ParamAccess.list);
-        parameters.AddCurveParameter("Relationships", "L", "Accepted relationship lines between placed programs.", GH_ParamAccess.list);
-        parameters.AddTextParameter("Relationship Names", "LN", "Accepted relationship descriptions matching Relationships.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Relationships", "L", "Accepted-rule, designer-approved, and advisory relationship lines between placed programs.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Relationship Names", "LN", "Governed relationship descriptions matching Relationships.", GH_ParamAccess.list);
         parameters.AddTextParameter("Scenarios", "SC", "Compared strategy scores and counts.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Resolved Boundary", "RB", "The exact boundary used by the planning engines.", GH_ParamAccess.item);
         parameters.AddPointParameter("Area Intent Anchors", "AI", "Suitability anchors for area-type programs whose extent is unresolved because no approved area was exported.", GH_ParamAccess.list);
@@ -63,6 +64,17 @@ public sealed class DistributeSpacesComponent : GH_Component
         parameters.AddTextParameter("Route GIS Layers", "GL", "Suggested Rhino GIS layer paths matching Routes; connect these to BakeRoutes.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Loop Routes", "LR", "Jogging and exercise-cycling conceptual loop centerlines only.", GH_ParamAccess.list);
         parameters.AddTextParameter("Loop Names", "LN", "Program names matching Loop Routes.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Preferred Links", "PL", "Soft advisory preferred links.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Avoid Links", "AL", "Soft advisory avoid links (repulsive, retained for inspection).", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Accepted Links", "HL", "Designer-approved accepted-rule links.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Solver Diagnostics", "SD", "Energy terms, convergence, validity, and relationship satisfaction.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Dune Morphology Axes", "DMA", "Climate-informed primary sikka and ventilation-cut guide axes clipped to the site boundary.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Dune Axis Names", "DAN", "Role, azimuth, and evidence basis matching Dune Morphology Axes.", GH_ParamAccess.list);
+        parameters.AddPointParameter("Baraha Candidates", "BC", "Movement-route intersections scored as candidate protected civic clearings.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Baraha Candidate Data", "BCD", "Radius, score, connected routes, and basis matching Baraha Candidates.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Parametric Programs", "PP", "JSON records for ontology, spatial behavior, normalized users, time/season demand, performance attributes, commercial values, and D0-D10 compatibility.", GH_ParamAccess.list);
+        parameters.AddTextParameter("User Program Weights", "UPW", "JSON records mapping canonical user groups to programs with 0-1 suitability weights and auditable components.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Parametric Relationship Matrix", "PRM", "JSON records for the complete -1 repulsion to +1 attraction matrix. Computed advisory data; not an accepted constraint.", GH_ParamAccess.list);
     }
 
     protected override void SolveInstance(IGH_DataAccess data)
@@ -181,7 +193,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         var result = planning.Best;
         warnings.AddRange(result.Warnings);
         foreach (var warning in result.Warnings)
-            AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, warning);
+            AddRuntimeMessage(IsPlanningNotice(warning) ? GH_RuntimeMessageLevel.Remark : GH_RuntimeMessageLevel.Warning, warning);
 
         var bubbles = result.Areas.Placements
             .Select(placement => new Circle(new Point3d(placement.Center.X, placement.Center.Y, 0), placement.Radius).ToNurbsCurve())
@@ -208,7 +220,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         var routeProgramCount = result.Routes.Select(route => route.ProgramId).Distinct(StringComparer.Ordinal).Count();
         var representedPrograms = result.Areas.Placements.Count + result.AreaAnchors.Count + result.Nodes.Count + routeProgramCount;
         var gridAuthority = package.Grid.Cells.Any(cell => cell.GridAuthority == "designer_cad") ? "designer CAD" : "package generated";
-        var summary = $"{package.Project.SiteName} | {package.CoordinateSystem.Crs} | seed {effectiveSeed} | {result.Strategy} strategy | represented {representedPrograms}/{package.Programs.Count + package.NodePrograms.Count + package.RoutePrograms.Count} programs: {result.Areas.Placements.Count} area bubbles, {result.AreaAnchors.Count} unresolved-area anchors, {result.Nodes.Count} nodes, {routeProgramCount} route programs ({result.Routes.Count} curves) | sizing {result.AreaSizingMode}, program area {result.Areas.RequestedProgramAreaM2:0} m2 / boundary area {result.Areas.BoundaryAreaM2:0} m2 | {package.Grid.Cells.Count} {gridAuthority} suitability cells";
+        var summary = $"{package.Project.SiteName} | {package.CoordinateSystem.Crs} | seed {effectiveSeed} | {result.Strategy} strategy | represented {representedPrograms}/{package.Programs.Count + package.NodePrograms.Count + package.RoutePrograms.Count} programs: {result.Areas.Placements.Count} area bubbles, {result.AreaAnchors.Count} unresolved-area anchors, {result.Nodes.Count} nodes, {routeProgramCount} route programs ({result.Routes.Count} curves) | sizing {result.AreaSizingMode}, program area {result.Areas.RequestedProgramAreaM2:0} m2 / boundary area {result.Areas.BoundaryAreaM2:0} m2 | {package.Grid.Cells.Count} {gridAuthority} suitability cells | {result.MorphologyAxes.Count} climate axes | {result.BarahaCandidates.Count} baraha candidates";
 
         data.SetDataList(0, bubbles);
         data.SetDataList(1, centers);
@@ -228,6 +240,29 @@ public sealed class DistributeSpacesComponent : GH_Component
         data.SetDataList(16, routeGisLayers);
         data.SetDataList(17, loopCurves);
         data.SetDataList(18, loopNames);
+        data.SetDataList(19, result.RelationshipLines.Where(line => line.Authority == "advisory" && line.RelationshipType == "preferred").Select(line => new LineCurve(new Point3d(line.Source.X, line.Source.Y, 0), new Point3d(line.Target.X, line.Target.Y, 0))));
+        data.SetDataList(20, result.RelationshipLines.Where(line => line.Authority == "advisory" && line.RelationshipType == "avoid").Select(line => new LineCurve(new Point3d(line.Source.X, line.Source.Y, 0), new Point3d(line.Target.X, line.Target.Y, 0))));
+        data.SetDataList(21, result.RelationshipLines.Where(line => line.Authority == "accepted_rule").Select(line => new LineCurve(new Point3d(line.Source.X, line.Source.Y, 0), new Point3d(line.Target.X, line.Target.Y, 0))));
+        var diagnostics = result.SolverDiagnostics;
+        data.SetDataList(22, diagnostics is null ? [] : new[]
+        {
+            $"valid={diagnostics.Valid} converged={diagnostics.Converged} iterations={diagnostics.IterationCount} hard_violations={diagnostics.HardViolationCount}",
+            $"energy total={diagnostics.Energy.Total:0.####} suitability={diagnostics.Energy.Suitability:0.####} overlap={diagnostics.Energy.Overlap:0.####} boundary={diagnostics.Energy.Boundary:0.####} preferred={diagnostics.Energy.Preferred:0.####} avoid={diagnostics.Energy.Avoid:0.####} accepted={diagnostics.Energy.Accepted:0.####}",
+            $"average_suitability={diagnostics.AverageSuitability:0.####} relationship_satisfaction={diagnostics.RelationshipSatisfactionRatio:0.####}"
+        });
+        data.SetDataList(23, result.MorphologyAxes.Select(axis => new Polyline(axis.Points.Select(point => new Point3d(point.X, point.Y, 0))).ToNurbsCurve()));
+        data.SetDataList(24, result.MorphologyAxes.Select(axis => $"{axis.Id} | {axis.Role} | azimuth {axis.AzimuthDegFromNorth:0.0}deg | {axis.Basis}"));
+        data.SetDataList(25, result.BarahaCandidates.Select(candidate => new Point3d(candidate.Point.X, candidate.Point.Y, 0)));
+        data.SetDataList(26, result.BarahaCandidates.Select(candidate => $"radius={candidate.RadiusM:0.0}m score={candidate.Score:0.00} routes={string.Join(',', candidate.RouteProgramIds)} | {candidate.Basis}"));
+        var jsonOptions = new JsonSerializerOptions();
+        data.SetDataList(27, package.Programs.Concat(package.NodePrograms).Concat(package.RoutePrograms).Select(program => JsonSerializer.Serialize(new
+        {
+            program.Id, program.Name, program.Ontology, program.SpatialBehavior, program.UserGroupIds,
+            program.TemporalProfile, program.SeasonalProfile, program.PerformanceAttributes,
+            program.Commercial, program.DuneCompatibility, program.PathDuneOperations
+        }, jsonOptions)));
+        data.SetDataList(28, package.UserProgramSuitability.Select(item => JsonSerializer.Serialize(item, jsonOptions)));
+        data.SetDataList(29, package.ParametricRelationships.Select(item => JsonSerializer.Serialize(item, jsonOptions)));
     }
 
     private static string RouteGisLayer(string programId) => programId switch
@@ -244,5 +279,9 @@ public sealed class DistributeSpacesComponent : GH_Component
     };
 
     private static bool IsCompatibilityNotice(string code) =>
-        code is "LEGACY_MANIFEST" or "GRID_EMPTY" or "RELATIONSHIPS_EMPTY";
+        code is "LEGACY_MANIFEST" or "GRID_EMPTY" or "RELATIONSHIPS_EMPTY"
+            or "PROGRAM_COVERAGE_UNRESOLVED" or "PROGRAM_AREA_UNRESOLVED";
+
+    private static bool IsPlanningNotice(string message) =>
+        message.StartsWith("All defined area programs are included.", StringComparison.Ordinal);
 }

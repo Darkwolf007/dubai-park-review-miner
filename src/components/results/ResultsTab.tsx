@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Feature, Polygon } from 'geojson';
-import { bbox as turfBbox } from '@turf/turf';
+import { area as turfArea, bbox as turfBbox } from '@turf/turf';
 import { Sparkles, Loader2, RefreshCw, Download, AlertTriangle } from 'lucide-react';
 import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
@@ -28,6 +28,8 @@ import type { MasterplanExportSettings } from '../../lib/gis/parkDesignPackage';
 import type { CompiledRuleEdge, UnresolvedApprovedRule } from '../../lib/results/approvedRuleCompiler';
 import { MasterplanExportSettingsPanel } from './MasterplanExportSettingsPanel';
 import { MovementGisOverlay } from './MovementGisOverlay';
+import { AreaReconciliationPanel } from './AreaReconciliationPanel';
+import { buildAreaReconciliation } from '../../lib/designPackage/areaReconciliation';
 
 const AL_SAFA_2_PLACE_ID = 'ChIJW2n2fB9tXz4R3Gqf-661oQE';
 // Same match used by PlaygroundTab to find Al Safa 2's own polygon within the 'parks' layer --
@@ -59,11 +61,27 @@ export function ResultsTab() {
   const [masterplanSettings, setMasterplanSettings] = useState<MasterplanExportSettings>({
     operationsAreaM2: null,
     dropOffAreaM2: null,
+    circulationAreaM2: null,
+    treeCanopyCoveragePercent: null,
+    nativePlantingCoveragePercent: null,
+    habitatCoveragePercent: null,
+    bioswaleCoveragePercent: null,
+    budgetTargetAed: null,
+    costContingencyPercent: null,
+    walkingPathLengthM: null,
+    walkingPathWidthM: null,
+    joggingPathWidthM: null,
+    cyclingPathWidthM: null,
+    servicePathLengthM: null,
+    servicePathWidthM: null,
+    treeCanopyAreaPerTreeM2: null,
+    treeUnitCostAed: null,
+    plantingCostAedPerM2: null,
     candidateSpacingM: 10,
     accessCatchmentRadiusM: 800,
     roadEdgeMaxDistanceM: 25,
     allPedestrianRoutesAccessible: false,
-    allowWalkingJoggingSharing: true,
+    allowWalkingJoggingSharing: false,
     allowServicePublicPathSharing: false
   });
 
@@ -150,6 +168,14 @@ export function ResultsTab() {
     return computeAllOpportunities(siteGrid, reviews, manifest?.roadStats ?? null);
   }, [siteGrid, reviews, manifest]);
 
+  const areaReconciliation = useMemo(() => buildAreaReconciliation({
+    briefGrossAreaM2: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.grossSiteAreaM2,
+    measuredBoundaryAreaM2: parkPolygon ? Math.round(turfArea(parkPolygon) * 100) / 100 : null,
+    maximumLeasableAreaPercent: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.maximumLeasableAreaPercent,
+    opportunities,
+    settings: masterplanSettings
+  }), [parkPolygon, opportunities, masterplanSettings]);
+
   const reviewSummary = useMemo(() => reviews.length ? buildReviewSummary(reviews) : null, [reviews]);
   const gisSummary = useMemo(() => {
     if (!facilities || hexes.length === 0 || opportunities.length === 0) return null;
@@ -208,7 +234,13 @@ export function ResultsTab() {
       buildings: oppBuildings,
       schools: facilities?.schools ?? [],
       busStops,
-      masterplanSettings
+      masterplanSettings,
+      climateSummary: AL_SAFA_2_CLIMATE_SUMMARY,
+      personaJourneys: result.persona_journeys,
+      roadEdgeRoles: [
+        { edge: 'northwest', role: 'road_facing', authority: 'competition_site_context' },
+        { edge: 'southwest', role: 'road_facing', authority: 'competition_site_context' }
+      ]
     });
     downloadZip(files, 'al_safa_2_park_design_package.zip');
   }
@@ -301,6 +333,10 @@ export function ResultsTab() {
       />
 
       <MasterplanExportSettingsPanel settings={masterplanSettings} onChange={setMasterplanSettings} />
+
+      {parkPolygon && opportunities.length > 0 && (
+        <AreaReconciliationPanel reconciliation={areaReconciliation} />
+      )}
 
       {parkPolygon && siteGrid.length > 0 && opportunities.length > 0 && (
         <MovementGisOverlay

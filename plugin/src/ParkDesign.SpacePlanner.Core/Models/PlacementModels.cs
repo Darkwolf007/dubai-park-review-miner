@@ -32,7 +32,8 @@ public sealed record RelationshipLine(
     Point2 Source,
     Point2 Target,
     string RelationshipType,
-    bool Mandatory);
+    bool Mandatory,
+    string Authority = "accepted_rule");
 
 public sealed class DistributionResult
 {
@@ -53,8 +54,11 @@ public sealed class LayoutScenarioResult
     public List<NodePlacement> Nodes { get; init; } = [];
     public List<RoutePlacement> Routes { get; init; } = [];
     public List<RelationshipLine> RelationshipLines { get; init; } = [];
+    public List<MorphologyAxisPlacement> MorphologyAxes { get; init; } = [];
+    public List<BarahaCandidate> BarahaCandidates { get; init; } = [];
     public List<string> Warnings { get; init; } = [];
     public double Score { get; set; }
+    public AreaSolverDiagnostics? SolverDiagnostics { get; init; }
 }
 
 public sealed class PlanningResult

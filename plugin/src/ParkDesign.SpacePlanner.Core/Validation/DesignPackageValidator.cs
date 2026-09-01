@@ -20,11 +20,15 @@ public static class DesignPackageValidator
         foreach (var duplicate in package.Programs.GroupBy(program => program.Id).Where(group => string.IsNullOrWhiteSpace(group.Key) || group.Count() > 1))
             messages.Add(new("PROGRAM_ID_INVALID", $"Program id '{duplicate.Key}' is blank or duplicated.", true));
 
-        foreach (var program in package.Programs.Where(program => program.Selected))
-        {
-            if (program.TargetAreaM2 is null or <= 0)
-                messages.Add(new("PROGRAM_AREA_UNRESOLVED", $"{program.Name} has no positive approved target area and will not be placed.", false));
-        }
+        var unresolved = package.Programs.Where(program => program.Selected && program.TargetAreaM2 is null or <= 0).ToList();
+        var landscapeOverlays = unresolved.Where(program => program.RepresentationStatus == "landscape_overlay_intent").ToList();
+        var areaIntents = unresolved.Where(program => program.RepresentationStatus != "landscape_overlay_intent").ToList();
+        if (landscapeOverlays.Count > 0)
+            messages.Add(new("PROGRAM_COVERAGE_UNRESOLVED",
+                $"{landscapeOverlays.Count} mandatory landscape systems are represented as overlay intent anchors until coverage targets are approved: {string.Join(", ", landscapeOverlays.Select(program => program.Name))}.", false));
+        if (areaIntents.Count > 0)
+            messages.Add(new("PROGRAM_AREA_UNRESOLVED",
+                $"{areaIntents.Count} mandatory programs are represented as area intent anchors until designer-approved extents are supplied: {string.Join(", ", areaIntents.Select(program => program.Name))}.", false));
 
         if (package.AdaptedFromLegacyManifest)
             messages.Add(new("LEGACY_MANIFEST", "Loaded the current compact Results manifest. It has no grid fields or accepted relationship graph.", false));

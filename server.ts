@@ -5,13 +5,17 @@ import { GoogleGenAI, Type } from '@google/genai';
 
 import { PRESEEDED_PARKS } from './src/lib/googlePlaces.js';
 import { analyzeReviewLocally } from './src/lib/nlpPlaceholders.js';
+import { registerDesignPackageApi } from './src/server/designPackageApi.js';
 import fs from 'fs';
 
 // Environment variables are loaded via the --env-file=.env flag (see package.json scripts),
 // not a userland package.
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// `tsx` executes this source as ESM while the production build emits CommonJS. Keep both runtime
+// paths valid; directly evaluating import.meta.url in the CommonJS bundle produces undefined.
+const serverDirectory = typeof __dirname !== 'undefined'
+  ? __dirname
+  : path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -20,6 +24,8 @@ const PARK_BRAIN_URL = (process.env.PARK_BRAIN_URL || 'http://127.0.0.1:8000').r
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+registerDesignPackageApi(app);
 
 // Park Brain stays an independent citation/rule service. The browser talks through this proxy so
 // deployment location and service credentials never become part of the frontend bundle. This route
@@ -104,8 +110,8 @@ const gisFileCache = new Map<string, any>();
 function resolveGisFile(filename: string): string | null {
   const candidates = [
     path.join(process.cwd(), 'dataset', 'gis', filename),
-    path.join(__dirname, '..', 'dataset', 'gis', filename),
-    path.join(__dirname, 'dataset', 'gis', filename)
+    path.join(serverDirectory, '..', 'dataset', 'gis', filename),
+    path.join(serverDirectory, 'dataset', 'gis', filename)
   ];
   return candidates.find(p => fs.existsSync(p)) || null;
 }
@@ -208,11 +214,11 @@ app.get('/api/gis/layer/:name', (req, res) => {
         console.log(`[Dataset Loader] Checking process.cwd path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
 
         if (!fs.existsSync(datasetPath)) {
-          datasetPath = path.join(__dirname, '..', 'dataset', APIFY_DATASETS[placeId as string].filename);
+        datasetPath = path.join(serverDirectory, '..', 'dataset', APIFY_DATASETS[placeId as string].filename);
           console.log(`[Dataset Loader] Checking __dirname parent path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
         }
         if (!fs.existsSync(datasetPath)) {
-          datasetPath = path.join(__dirname, 'dataset', APIFY_DATASETS[placeId as string].filename);
+        datasetPath = path.join(serverDirectory, 'dataset', APIFY_DATASETS[placeId as string].filename);
           console.log(`[Dataset Loader] Checking __dirname direct path: ${datasetPath} (exists: ${fs.existsSync(datasetPath)})`);
         }
 

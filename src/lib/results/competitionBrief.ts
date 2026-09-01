@@ -10,6 +10,19 @@ export type AestheticMateriality = 'EPDM_RUBBER' | 'HIGH_ALBEDO_PAVING' | 'NATUR
 export interface AlSafa2CompetitionBrief {
   siteName: string;
   totalSiteAreaM2Cap: number;
+  areaStatement: {
+    grossSiteAreaM2: number;
+    qualifier: 'approximately';
+    parkArchetype: 'neighborhood_park';
+    neighborhoodParkAreaRangesM2: {
+      highPopulationDensity: { minimum: number; maximum: number };
+      mediumPopulationDensity: { minimum: number; maximum: number };
+      lowPopulationDensity: { minimum: number; maximum: number };
+    };
+    maximumLeasableAreaPercent: number;
+    authority: string;
+    sources: Array<{ document: string; page: number; section: string }>;
+  };
   totalBudgetCapAed: number;
   crsProjection: string;
   accessibilityRules: string[];
@@ -21,6 +34,22 @@ export interface AlSafa2CompetitionBrief {
 export const AL_SAFA_2_COMPETITION_BRIEF: AlSafa2CompetitionBrief = {
   siteName: 'Al Safa 2 Neighborhood Park',
   totalSiteAreaM2Cap: 15000,
+  areaStatement: {
+    grossSiteAreaM2: 15000,
+    qualifier: 'approximately',
+    parkArchetype: 'neighborhood_park',
+    neighborhoodParkAreaRangesM2: {
+      highPopulationDensity: { minimum: 3000, maximum: 150000 },
+      mediumPopulationDensity: { minimum: 3500, maximum: 300000 },
+      lowPopulationDensity: { minimum: 4000, maximum: 500000 }
+    },
+    maximumLeasableAreaPercent: 15,
+    authority: 'competition_brief_and_dubai_municipality_neighborhood_park_overview',
+    sources: [
+      { document: 'AI Park Design Challenge - Design Brief & Scope of Work', page: 4, section: 'About The park' },
+      { document: 'Overview of Neighborhood Parks', page: 2, section: 'Summary / Area, SQM / Target Parameters' }
+    ]
+  },
   totalBudgetCapAed: 35000000,
   crsProjection: 'UTM Zone 40N / EPSG:32640',
   accessibilityRules: [

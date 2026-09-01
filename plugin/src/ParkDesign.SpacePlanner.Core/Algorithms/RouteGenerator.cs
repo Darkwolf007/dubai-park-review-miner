@@ -18,10 +18,12 @@ public static class RouteGenerator
         var anchors = areas.ToDictionary(item => item.ProgramId, item => item.Center);
         foreach (var areaAnchor in areaAnchors) anchors[areaAnchor.ProgramId] = areaAnchor.Point;
         foreach (var node in nodes) anchors[node.ProgramId] = node.Point;
-        var accepted = relationships.Where(item => item.Accepted).ToList();
+        var relationshipList = relationships.ToList();
+        var accepted = relationshipList.Where(item => item.Accepted).ToList();
         var relationshipLines = accepted
             .Where(item => anchors.ContainsKey(item.Source) && anchors.ContainsKey(item.Target))
-            .Select(item => new RelationshipLine(item.Id, item.Source, item.Target, anchors[item.Source], anchors[item.Target], item.Type, item.Mandatory))
+            .Select(item => new RelationshipLine(item.Id, item.Source, item.Target, anchors[item.Source], anchors[item.Target], item.Type, item.Mandatory,
+                item.Authority.Contains("designer_approved", StringComparison.OrdinalIgnoreCase) ? "designer_approved" : "accepted_rule"))
             .ToList();
 
         var routes = new List<RoutePlacement>();
@@ -35,20 +37,27 @@ public static class RouteGenerator
                 continue;
             }
 
-            var relatedIds = accepted
+            var relatedIds = relationshipList
+                .Where(item => item.Accepted || IsRouteGuidance(item))
                 .Where(item => item.Source == program.Id || item.Target == program.Id)
+                .Where(item => !item.Type.Contains("avoid", StringComparison.OrdinalIgnoreCase))
                 .Select(item => item.Source == program.Id ? item.Target : item.Source)
                 .Where(anchors.ContainsKey)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
-            var routeAnchors = (relatedIds.Count >= 2 ? relatedIds.Select(id => anchors[id]) : anchors.Values).Distinct().ToList();
+            if (relatedIds.Count < 2)
+                relatedIds.AddRange(FallbackAnchorIds(program.Id).Where(anchors.ContainsKey));
+            var routeAnchors = relatedIds.Distinct(StringComparer.Ordinal).Select(id => anchors[id]).Distinct().ToList();
+            if (routeAnchors.Count < 2)
+                routeAnchors = anchors.OrderBy(item => item.Key, StringComparer.Ordinal).Select(item => item.Value).Distinct().Take(6).ToList();
             if (routeAnchors.Count < 2)
             {
                 warnings.Add($"Route {program.Name} needs at least two placed anchors and was not generated.");
                 continue;
             }
 
-            if (string.Equals(program.GeometryType, "network", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(program.GeometryType, "network", StringComparison.OrdinalIgnoreCase)
+                || program.Id is "shadedCirculation")
             {
                 foreach (var (a, b) in MinimumSpanningTree(routeAnchors))
                     AddBoundarySafeRoute(routes, warnings, boundary, program, [a, b], "minimum_spanning_network");
@@ -60,6 +69,25 @@ public static class RouteGenerator
         }
         return (routes, relationshipLines);
     }
+
+    private static bool IsRouteGuidance(RelationshipDefinition relationship)
+    {
+        if (!relationship.Authority.Equals("advisory", StringComparison.OrdinalIgnoreCase)) return false;
+        return relationship.Type.Contains("preferred", StringComparison.OrdinalIgnoreCase)
+            || relationship.Type.Contains("movement", StringComparison.OrdinalIgnoreCase)
+            || relationship.Type.Contains("service", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<string> FallbackAnchorIds(string programId) => programId switch
+    {
+        "walkingPromenade" => ["mainEntrancePlaza", "secondaryEntrances", "communityPlaza", "inclusivePlayground", "quietGarden", "multipurposeLawn"],
+        "accessibleRoutes" => ["mainEntrancePlaza", "secondaryEntrances", "wayfindingNodes", "restrooms", "drinkingWater", "inclusivePlayground"],
+        "shadedCirculation" => ["mainEntrancePlaza", "toddlerPlay", "inclusivePlayground", "communityPlaza", "picnicArea", "quietGarden", "shadedSeating"],
+        "serviceAccess" => ["operationsArea", "wastePoints", "restrooms", "cafeKiosk"],
+        "irrigationEfficiency" => ["operationsArea", "treePlanting", "nativePlanting", "bioswale"],
+        "efficientLighting" => ["mainEntrancePlaza", "communityPlaza", "safetyPoint", "wayfindingNodes", "inclusivePlayground"],
+        _ => []
+    };
 
     private static List<Point2> CreateConceptualInsetLoop(IReadOnlyList<Point2> boundary, int loopIndex)
     {

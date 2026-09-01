@@ -35,6 +35,10 @@ export function MasterplanExportSettingsPanel({ settings, onChange }: Props) {
           <input className={numberClass} type="number" min="0" value={settings.dropOffAreaM2 ?? ''} placeholder="Unresolved" onChange={event => set('dropOffAreaM2', numericValue(event.target.value))} />
         </label>
         <label className={labelClass}>
+          Circulation target m²
+          <input className={numberClass} type="number" min="0" value={settings.circulationAreaM2 ?? ''} placeholder="Unresolved" onChange={event => set('circulationAreaM2', numericValue(event.target.value))} />
+        </label>
+        <label className={labelClass}>
           Candidate spacing m
           <input className={numberClass} type="number" min="1" value={settings.candidateSpacingM} onChange={event => set('candidateSpacingM', Math.max(1, Number(event.target.value) || 1))} />
         </label>
@@ -45,6 +49,24 @@ export function MasterplanExportSettingsPanel({ settings, onChange }: Props) {
         <label className={labelClass}>
           Road-edge distance m
           <input className={numberClass} type="number" min="0" value={settings.roadEdgeMaxDistanceM} onChange={event => set('roadEdgeMaxDistanceM', Math.max(0, Number(event.target.value) || 0))} />
+        </label>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <label className={labelClass}>
+          Tree canopy coverage %
+          <input className={numberClass} type="number" min="0" max="100" value={settings.treeCanopyCoveragePercent ?? ''} placeholder="Unresolved" onChange={event => set('treeCanopyCoveragePercent', numericValue(event.target.value))} />
+        </label>
+        <label className={labelClass}>
+          Native planting coverage %
+          <input className={numberClass} type="number" min="0" max="100" value={settings.nativePlantingCoveragePercent ?? ''} placeholder="Unresolved" onChange={event => set('nativePlantingCoveragePercent', numericValue(event.target.value))} />
+        </label>
+        <label className={labelClass}>
+          Habitat coverage %
+          <input className={numberClass} type="number" min="0" max="100" value={settings.habitatCoveragePercent ?? ''} placeholder="Unresolved" onChange={event => set('habitatCoveragePercent', numericValue(event.target.value))} />
+        </label>
+        <label className={labelClass}>
+          Bioswale coverage %
+          <input className={numberClass} type="number" min="0" max="100" value={settings.bioswaleCoveragePercent ?? ''} placeholder="Unresolved" onChange={event => set('bioswaleCoveragePercent', numericValue(event.target.value))} />
         </label>
       </div>
       <div className="mt-3 grid gap-2 text-[10px] text-slate-600 md:grid-cols-3">

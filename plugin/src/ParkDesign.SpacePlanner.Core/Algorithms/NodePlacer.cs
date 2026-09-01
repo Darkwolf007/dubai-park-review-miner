@@ -38,11 +38,22 @@ public static class NodePlacer
                 .Where(item => item.Suitability is not null && !occupiedCells.Contains(item.Cell.Id) && PolygonMath.Contains(boundary, item.Point))
                 .Select(item =>
                 {
-                    var penalty = SpatialScoring.RelationshipPenalty(program.Id, item.Point, anchors, relationships, siteScale, out var hardViolation);
-                    return (item.Cell, item.Point, Suitability: item.Suitability!.Value, Penalty: penalty, HardViolation: hardViolation);
+                    var penalty = SpatialScoring.RelationshipPenalty(program.Id, item.Point, anchors, relationships, siteScale,
+                        out var hardViolation, includeAdvisory: true);
+                    var nearestNodeDistance = result.Count == 0
+                        ? siteScale * 0.35
+                        : result.Min(node => PolygonMath.Distance(node.Point, item.Point));
+                    var distribution = Math.Clamp(nearestNodeDistance / Math.Max(1, siteScale * 0.55), 0, 1);
+                    var spatialRole = SpatialRoleScore(program.Id, boundary, item.Point, siteScale);
+                    var score = 0.45 * item.Suitability!.Value
+                        - 0.35 * penalty
+                        + 0.45 * distribution
+                        + 0.15 * spatialRole
+                        + SpatialScoring.SeedNoise(seed, program.Id, item.Cell.Id) * 0.03;
+                    return (item.Cell, item.Point, Suitability: item.Suitability.Value, Score: score, HardViolation: hardViolation);
                 })
                 .Where(item => !item.HardViolation)
-                .OrderByDescending(item => item.Suitability - item.Penalty + SpatialScoring.SeedNoise(seed, program.Id, item.Cell.Id) * 0.05)
+                .OrderByDescending(item => item.Score)
                 .ThenBy(item => item.Cell.Id, StringComparer.Ordinal)
                 .ToList();
 
@@ -57,5 +68,16 @@ public static class NodePlacer
             anchors[program.Id] = best.Point;
         }
         return result;
+    }
+
+    private static double SpatialRoleScore(string programId, IReadOnlyList<Point2> boundary, Point2 point, double siteScale)
+    {
+        var edgeProximity = 1 - Math.Clamp(PolygonMath.DistanceToBoundary(boundary, point) / Math.Max(1, siteScale * 0.3), 0, 1);
+        return programId switch
+        {
+            "secondaryEntrances" or "bicycleParking" => edgeProximity,
+            "safetyPoint" or "smartMonitoring" or "wayfindingNodes" => 0.35 + 0.65 * edgeProximity,
+            _ => 0.5
+        };
     }
 }

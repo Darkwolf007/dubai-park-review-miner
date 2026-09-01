@@ -51,6 +51,21 @@ public sealed class DesignPackage
 
     [JsonIgnore]
     public MasterplanSettingsDefinition MasterplanSettings { get; set; } = new();
+
+    [JsonIgnore]
+    public ClimateMorphologyDefinition ClimateMorphology { get; set; } = new();
+
+    [JsonIgnore]
+    public PlantingStrategyDefinition PlantingStrategy { get; set; } = new();
+
+    [JsonIgnore]
+    public List<UserGroupDefinition> UserGroups { get; set; } = [];
+
+    [JsonIgnore]
+    public List<UserProgramSuitabilityDefinition> UserProgramSuitability { get; set; } = [];
+
+    [JsonIgnore]
+    public List<ParametricRelationshipDefinition> ParametricRelationships { get; set; } = [];
 }
 
 public sealed class ProjectDefinition
@@ -136,11 +151,32 @@ public sealed class ProgramDefinition
     [JsonPropertyName("selected")]
     public bool Selected { get; set; } = true;
 
+    [JsonPropertyName("mandatory")]
+    public bool Mandatory { get; set; } = true;
+
+    [JsonPropertyName("spatial_mode")]
+    public string SpatialMode { get; set; } = "exclusive";
+
+    [JsonPropertyName("fragmentation_policy")]
+    public string FragmentationPolicy { get; set; } = "single_primary_territory";
+
+    [JsonPropertyName("decision_authority")]
+    public string DecisionAuthority { get; set; } = string.Empty;
+
+    [JsonPropertyName("synthesis_selected")]
+    public bool SynthesisSelected { get; set; }
+
     [JsonPropertyName("suitability_field")]
     public string? SuitabilityField { get; set; }
 
     [JsonPropertyName("area_status")]
     public string AreaStatus { get; set; } = "designer_approved";
+
+    [JsonPropertyName("representation_status")]
+    public string RepresentationStatus { get; set; } = string.Empty;
+
+    [JsonPropertyName("placement_status")]
+    public string PlacementStatus { get; set; } = string.Empty;
 
     [JsonPropertyName("attractors")]
     public List<string> Attractors { get; set; } = [];
@@ -150,6 +186,102 @@ public sealed class ProgramDefinition
 
     [JsonPropertyName("constraints")]
     public List<string> Constraints { get; set; } = [];
+
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = string.Empty;
+
+    [JsonPropertyName("primary_users")]
+    public List<string> PrimaryUsers { get; set; } = [];
+
+    [JsonPropertyName("evidence_sources")]
+    public List<string> EvidenceSources { get; set; } = [];
+
+    [JsonPropertyName("evidence")]
+    public List<string> Evidence { get; set; } = [];
+
+    [JsonPropertyName("scores")]
+    public Dictionary<string, double?> Scores { get; set; } = [];
+
+    [JsonPropertyName("ontology")]
+    public ProgramOntologyDefinition Ontology { get; set; } = new();
+
+    [JsonPropertyName("spatial_behavior")]
+    public string SpatialBehavior { get; set; } = string.Empty;
+
+    [JsonPropertyName("user_group_ids")]
+    public List<string> UserGroupIds { get; set; } = [];
+
+    [JsonPropertyName("temporal_profile")]
+    public Dictionary<string, double> TemporalProfile { get; set; } = [];
+
+    [JsonPropertyName("seasonal_profile")]
+    public Dictionary<string, double> SeasonalProfile { get; set; } = [];
+
+    [JsonPropertyName("performance_attributes")]
+    public Dictionary<string, double> PerformanceAttributes { get; set; } = [];
+
+    [JsonPropertyName("commercial")]
+    public Dictionary<string, double> Commercial { get; set; } = [];
+
+    [JsonPropertyName("dune_compatibility")]
+    public Dictionary<string, double> DuneCompatibility { get; set; } = [];
+
+    [JsonPropertyName("path_dune_operations")]
+    public List<string> PathDuneOperations { get; set; } = [];
+}
+
+public sealed class ProgramOntologyDefinition
+{
+    [JsonPropertyName("program_class")]
+    public string ProgramClass { get; set; } = string.Empty;
+    [JsonPropertyName("space_class")]
+    public string? SpaceClass { get; set; }
+    [JsonPropertyName("common_class")]
+    public string? CommonClass { get; set; }
+}
+
+public sealed class UserGroupDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("needs")]
+    public Dictionary<string, double> Needs { get; set; } = [];
+    [JsonPropertyName("peakPeriods")]
+    public List<string> PeakPeriods { get; set; } = [];
+    [JsonPropertyName("seasonalSensitivity")]
+    public Dictionary<string, double> SeasonalSensitivity { get; set; } = [];
+}
+
+public sealed class UserProgramSuitabilityDefinition
+{
+    [JsonPropertyName("userGroupId")]
+    public string UserGroupId { get; set; } = string.Empty;
+    [JsonPropertyName("programId")]
+    public string ProgramId { get; set; } = string.Empty;
+    [JsonPropertyName("weight")]
+    public double Weight { get; set; }
+    [JsonPropertyName("components")]
+    public Dictionary<string, double> Components { get; set; } = [];
+    [JsonPropertyName("reason")]
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed class ParametricRelationshipDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = string.Empty;
+    [JsonPropertyName("target")]
+    public string Target { get; set; } = string.Empty;
+    [JsonPropertyName("score")]
+    public double Score { get; set; }
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+    [JsonPropertyName("reason")]
+    public string Reason { get; set; } = string.Empty;
 }
 
 public sealed class RelationshipDefinition
@@ -186,4 +318,22 @@ public sealed class RelationshipDefinition
 
     [JsonPropertyName("numeric_parameter")]
     public string? NumericParameter { get; set; }
+
+    [JsonPropertyName("authority")]
+    public string Authority { get; set; } = "accepted_rule";
+
+    [JsonPropertyName("confidence")]
+    public double? Confidence { get; set; }
+
+    [JsonPropertyName("source_provenance")]
+    public string? SourceProvenance { get; set; }
+
+    [JsonPropertyName("compatibility_score")]
+    public double? CompatibilityScore { get; set; }
+
+    [JsonPropertyName("overlap_mode")]
+    public string? OverlapMode { get; set; }
+
+    [JsonPropertyName("reason")]
+    public string? Reason { get; set; }
 }
