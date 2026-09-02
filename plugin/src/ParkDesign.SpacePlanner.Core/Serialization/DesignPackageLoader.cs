@@ -65,11 +65,20 @@ public static class DesignPackageLoader
         package.MovementRequirements = ReadOptionalObject(readFile, "movement_requirements.json", new MovementRequirementsDefinition());
         package.TerrainRequirements = ReadOptionalObject(readFile, "terrain_requirements.json", new TerrainRequirementsDefinition());
         package.MasterplanSettings = ReadOptionalObject(readFile, "masterplan_settings.json", new MasterplanSettingsDefinition());
+        package.AreaReconciliation = ReadOptionalObject(readFile, "area_reconciliation.json", new AreaReconciliationDefinition());
+        package.DesignEstimate = ReadOptionalObject(readFile, "design_estimate.json", new DesignEstimateDefinition());
         package.ClimateMorphology = ReadOptionalObject(readFile, "climate_morphology.json", new ClimateMorphologyDefinition());
         package.PlantingStrategy = ReadOptionalObject(readFile, "planting_strategy.json", new PlantingStrategyDefinition());
         package.UserGroups = ReadOptionalList<UserGroupDefinition>(readFile, "user_program_suitability.json", "user_groups");
         package.UserProgramSuitability = ReadOptionalList<UserProgramSuitabilityDefinition>(readFile, "user_program_suitability.json", "suitability");
         package.ParametricRelationships = ReadOptionalList<ParametricRelationshipDefinition>(readFile, "parametric_relationships.json", "relationships");
+        var canonicalJson = TryReadOptional(readFile, "park_design_package.json");
+        if (canonicalJson is not null)
+        {
+            using var canonicalDocument = JsonDocument.Parse(canonicalJson);
+            if (canonicalDocument.RootElement.TryGetProperty("movement_demands", out var demands) && demands.ValueKind == JsonValueKind.Array)
+                package.MovementDemands = JsonSerializer.Deserialize<List<MovementDemandDefinition>>(demands.GetRawText(), Options) ?? [];
+        }
         Normalize(package);
         return package;
     }
@@ -225,9 +234,115 @@ public static class DesignPackageLoader
         var root = document.RootElement;
         if (root.TryGetProperty("program_spaces", out var legacyPrograms))
             return AdaptLegacyManifest(root, legacyPrograms);
+        if (root.TryGetProperty("program", out var canonicalPrograms)
+            && canonicalPrograms.ValueKind == JsonValueKind.Array
+            && root.TryGetProperty("site", out var canonicalSite))
+            return AdaptCanonicalPackage(root, canonicalPrograms, canonicalSite);
 
         var package = JsonSerializer.Deserialize<DesignPackage>(json, Options)
             ?? throw new InvalidDataException("The design package is empty.");
+        Normalize(package);
+        return package;
+    }
+
+    private static DesignPackage AdaptCanonicalPackage(JsonElement root, JsonElement programs, JsonElement site)
+    {
+        var project = root.TryGetProperty("project", out var projectElement) ? projectElement : default;
+        var package = new DesignPackage
+        {
+            SchemaVersion = ReadString(root, "schema_version") ?? ReadString(root, "version") ?? "1.4.0",
+            Project = new ProjectDefinition { SiteName = ReadString(project, "name") ?? ReadString(project, "site_name") ?? "Unknown site" },
+            CoordinateSystem = new CoordinateSystemDefinition
+            {
+                Crs = ReadString(site, "crs") ?? "EPSG:32640",
+                Units = ReadString(site, "units") ?? "meters"
+            }
+        };
+
+        if (site.TryGetProperty("boundary", out var boundary))
+            package.PackageBoundary = ReadPolygonBoundary(boundary, "Canonical site boundary");
+
+        foreach (var item in programs.EnumerateArray())
+        {
+            var provenance = item.TryGetProperty("provenance", out var provenanceElement) ? provenanceElement : default;
+            var spatialBehavior = item.TryGetProperty("spatial_behavior", out var spatialElement) ? spatialElement : default;
+            var program = new ProgramDefinition
+            {
+                Id = ReadString(item, "id") ?? string.Empty,
+                Name = ReadString(item, "name") ?? ReadString(item, "id") ?? string.Empty,
+                GeometryType = ReadString(item, "geometry_type") ?? "area",
+                TargetAreaM2 = ReadDouble(item, "target_area"),
+                MinimumAreaM2 = ReadDouble(item, "min_area"),
+                MaximumAreaM2 = ReadDouble(item, "max_area"),
+                Priority = ReadDouble(item, "priority") ?? .5,
+                Mandatory = ReadBoolean(item, "required"),
+                Selected = true,
+                Category = ReadString(item, "category") ?? string.Empty,
+                SuitabilityField = ReadString(item, "suitability_field"),
+                AreaStatus = ReadString(item, "area_authority") ?? string.Empty,
+                DecisionAuthority = ReadString(provenance, "decision_authority") ?? string.Empty,
+                SpatialMode = ReadString(provenance, "spatial_mode") ?? "exclusive",
+                RepresentationStatus = ReadString(provenance, "representation_status") ?? string.Empty,
+                PlacementStatus = ReadString(provenance, "placement_status") ?? string.Empty,
+                RouteTopology = ReadString(provenance, "route_topology"),
+                CoverageTargetPercent = ReadDouble(provenance, "coverage_target_percent"),
+                SpatialBehavior = ReadString(spatialBehavior, "role") ?? string.Empty,
+                UserGroupIds = ReadStringArray(item, "users"),
+                Evidence = ReadStringArray(item, "evidence"),
+                Constraints = ReadStringArray(item, "constraints"),
+                Ontology = new ProgramOntologyDefinition
+                {
+                    ProgramClass = ReadString(item, "program_class") ?? string.Empty,
+                    SpaceClass = ReadString(item, "space_class"),
+                    CommonClass = ReadString(item, "common_class")
+                }
+            };
+
+            if (program.GeometryType.Equals("point", StringComparison.OrdinalIgnoreCase)) package.NodePrograms.Add(program);
+            else if (program.GeometryType.Equals("linear", StringComparison.OrdinalIgnoreCase)
+                || program.GeometryType.Equals("network", StringComparison.OrdinalIgnoreCase)) package.RoutePrograms.Add(program);
+            else package.Programs.Add(program);
+        }
+
+        if (root.TryGetProperty("relationships", out var relationships) && relationships.ValueKind == JsonValueKind.Array)
+        foreach (var item in relationships.EnumerateArray())
+        {
+            var provenance = item.TryGetProperty("provenance", out var provenanceElement) ? provenanceElement : default;
+            package.Relationships.Add(new RelationshipDefinition
+            {
+                Id = ReadString(item, "id") ?? string.Empty,
+                Source = ReadString(item, "source") ?? string.Empty,
+                Target = ReadString(item, "target") ?? string.Empty,
+                Type = ReadString(item, "type") ?? "preferred",
+                Mandatory = ReadBoolean(item, "mandatory"),
+                Accepted = !string.Equals(ReadString(item, "authority"), "advisory", StringComparison.OrdinalIgnoreCase),
+                Authority = ReadString(item, "authority") ?? "advisory",
+                Confidence = ReadDouble(item, "weight"),
+                CompatibilityScore = ReadDouble(item, "weight"),
+                NumericValue = ReadDouble(item, "maximum_distance") ?? ReadDouble(item, "minimum_distance"),
+                NumericUnit = (ReadDouble(item, "maximum_distance") ?? ReadDouble(item, "minimum_distance")) is null ? null : "m",
+                NumericParameter = ReadDouble(item, "maximum_distance") is not null ? "maximum_distance" : ReadDouble(item, "minimum_distance") is not null ? "minimum_distance" : null,
+                OverlapMode = ReadString(provenance, "overlap_mode"),
+                Reason = ReadString(provenance, "reason"),
+                SourceProvenance = ReadString(provenance, "source_provenance")
+            });
+        }
+
+        if (root.TryGetProperty("movement_demands", out var movementDemands) && movementDemands.ValueKind == JsonValueKind.Array)
+            package.MovementDemands = JsonSerializer.Deserialize<List<MovementDemandDefinition>>(movementDemands.GetRawText(), Options) ?? [];
+
+        if (root.TryGetProperty("constraints", out var constraints))
+        {
+            if (constraints.TryGetProperty("movement", out var movement))
+                package.MovementRequirements = JsonSerializer.Deserialize<MovementRequirementsDefinition>(movement.GetRawText(), Options) ?? new();
+            if (constraints.TryGetProperty("terrain", out var terrain))
+                package.TerrainRequirements = JsonSerializer.Deserialize<TerrainRequirementsDefinition>(terrain.GetRawText(), Options) ?? new();
+            if (constraints.TryGetProperty("area_reconciliation", out var reconciliation))
+                package.AreaReconciliation = JsonSerializer.Deserialize<AreaReconciliationDefinition>(reconciliation.GetRawText(), Options) ?? new();
+            if (constraints.TryGetProperty("design_estimate", out var estimate))
+                package.DesignEstimate = JsonSerializer.Deserialize<DesignEstimateDefinition>(estimate.GetRawText(), Options) ?? new();
+        }
+
         Normalize(package);
         return package;
     }
@@ -279,11 +394,14 @@ public static class DesignPackageLoader
         package.MovementRequirements ??= new MovementRequirementsDefinition();
         package.TerrainRequirements ??= new TerrainRequirementsDefinition();
         package.MasterplanSettings ??= new MasterplanSettingsDefinition();
+        package.AreaReconciliation ??= new AreaReconciliationDefinition();
+        package.DesignEstimate ??= new DesignEstimateDefinition();
         package.ClimateMorphology ??= new ClimateMorphologyDefinition();
         package.PlantingStrategy ??= new PlantingStrategyDefinition();
         package.UserGroups ??= [];
         package.UserProgramSuitability ??= [];
         package.ParametricRelationships ??= [];
+        package.MovementDemands ??= [];
 
         foreach (var program in package.Programs)
         {
@@ -299,14 +417,73 @@ public static class DesignPackageLoader
                     ? "place_as_area_territory"
                     : program.SpatialMode == "overlay" ? "represent_as_overlapping_landscape_system" : "represent_as_ranked_intent_anchor";
         }
+
+        foreach (var program in package.RoutePrograms)
+        {
+            var estimate = package.DesignEstimate.Paths.Systems.FirstOrDefault(item => item.Id == program.Id);
+            program.TargetLengthM ??= estimate?.LengthM ?? RouteTargetLength(package.MovementRequirements, program.Id);
+            program.TargetWidthM ??= estimate?.WidthM ?? RouteTargetWidth(package.MovementRequirements, program.Id);
+            program.RouteTopology ??= estimate?.Role ?? RouteTopology(package.MovementRequirements, program.Id);
+        }
     }
 
+    private static double? RouteTargetLength(MovementRequirementsDefinition movement, string id) => id switch
+    {
+        "walkingPromenade" => movement.Walking.TargetLengthM,
+        "joggingLoop" => movement.Jogging.TargetLengthM,
+        "exerciseCyclingLoop" => movement.ExerciseCycling.TargetLengthM,
+        "serviceAccess" => movement.Service.TargetLengthM,
+        _ => null
+    };
+
+    private static double? RouteTargetWidth(MovementRequirementsDefinition movement, string id) => id switch
+    {
+        "walkingPromenade" => movement.Walking.WidthM,
+        "joggingLoop" => movement.Jogging.WidthM,
+        "exerciseCyclingLoop" => movement.ExerciseCycling.WidthM,
+        "serviceAccess" => movement.Service.WidthM,
+        _ => null
+    };
+
+    private static string? RouteTopology(MovementRequirementsDefinition movement, string id) => id switch
+    {
+        "walkingPromenade" => movement.Walking.RouteType,
+        "joggingLoop" => movement.Jogging.RouteType,
+        "exerciseCyclingLoop" => movement.ExerciseCycling.RouteType,
+        "serviceAccess" => movement.Service.RouteType,
+        "accessibleRoutes" => "walking_network_attribute",
+        "shadedCirculation" => "walking_network_attribute",
+        _ => null
+    };
+
+    private static List<Point2> ReadPolygonBoundary(JsonElement geometry, string label)
+    {
+        if (!geometry.TryGetProperty("coordinates", out var rings)
+            || rings.ValueKind != JsonValueKind.Array || rings.GetArrayLength() == 0)
+            throw new InvalidDataException($"{label} has no polygon coordinates.");
+        var boundary = new List<Point2>();
+        foreach (var coordinate in rings[0].EnumerateArray())
+        {
+            if (coordinate.ValueKind != JsonValueKind.Array || coordinate.GetArrayLength() < 2) continue;
+            boundary.Add(new Point2(coordinate[0].GetDouble(), coordinate[1].GetDouble()));
+        }
+        if (boundary.Count > 1 && boundary[0] == boundary[^1]) boundary.RemoveAt(boundary.Count - 1);
+        if (boundary.Count < 3) throw new InvalidDataException($"{label} requires at least three distinct points.");
+        return boundary;
+    }
+
+    private static List<string> ReadStringArray(JsonElement item, string name) =>
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty(name, out var values) && values.ValueKind == JsonValueKind.Array
+            ? values.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.String).Select(value => value.GetString()!).ToList()
+            : [];
+
     private static string? ReadString(JsonElement item, string name) =>
-        item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     private static double? ReadDouble(JsonElement item, string name) =>
-        item.TryGetProperty(name, out var value) && value.TryGetDouble(out var number) ? number : null;
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) ? number : null;
 
     private static bool ReadBoolean(JsonElement item, string name) =>
-        item.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False && value.GetBoolean();
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False && value.GetBoolean();
 }

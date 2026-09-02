@@ -202,8 +202,20 @@ public sealed class CyclingRequirements : RouteRequirements
 
 public sealed class ServiceRequirements
 {
+    [JsonPropertyName("route_type")]
+    public string RouteType { get; set; } = string.Empty;
+
+    [JsonPropertyName("entrance_count")]
+    public int EntranceCount { get; set; } = 1;
+
     [JsonPropertyName("must_connect_program_id")]
     public string MustConnectProgramId { get; set; } = "operationsArea";
+
+    [JsonPropertyName("target_length_m")]
+    public double? TargetLengthM { get; set; }
+
+    [JsonPropertyName("width_m")]
+    public double? WidthM { get; set; }
 
     [JsonPropertyName("may_share_public_paths")]
     public bool MaySharePublicPaths { get; set; }

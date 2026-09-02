@@ -16,7 +16,7 @@ Rhino 8 / Grasshopper plugin foundation for deterministic, evidence-aware park-s
 
 The ZIP keeps geometry types separate. `area_programs.json` drives area-correct bubbles, `node_programs.json` drives grid-ranked point placement, and `route_programs.json` drives conceptual linear or network centerlines. The package also carries the site, suitability grid, accepted and designer-approved relationship graphs, climate morphology, planting governance, unresolved decisions, and a human-readable README.
 
-As of package schema v1.4, `park_design_package.json` is the canonical cross-application contract. The role-specific files above remain compatibility views for this plugin until its Phase 2 canonical importer is introduced.
+As of package schema v1.4, `park_design_package.json` is the canonical cross-application contract and is imported directly. The role-specific files remain supported compatibility views.
 
 The component validates metre units and EPSG:32640 and runs five deterministic stages:
 
@@ -29,6 +29,16 @@ The component validates metre units and EPSG:32640 and runs five deterministic s
 The original Bubbles, Centers, Names, Warnings, and Summary outputs are unchanged. Additional outputs expose Nodes, Node Names, Routes, Route Names, governed Relationship lines, Relationship Names, Scenario summaries, climate-axis curves, axis metadata, baraha points, and baraha scoring data.
 
 `ParkBubbles` also exposes `Route Program IDs`, `Route GIS Layers`, `Loop Routes`, and `Loop Names`. Conceptual jogging and exercise-cycling loops use separate radial inset bands so they remain visible in Rhino; these are planning geometry, not surveyed construction offsets. Connect `Routes`, `Route Names`, and `Route GIS Layers` to `BakeRoutes`, then pulse its Bake input to create color-coded Rhino layers beneath `PARK_DESIGN_GIS`.
+
+Schema v1.4 quantities are exposed without inventing construction standards. `Area Reconciliation` and `Design Estimate` return the exported JSON statements, while `Area Proxy Data` and `Route Proxy Data` match the generated geometry by stable program ID. Route records include topology, generated and target length, approved/default width, approximate footprint, and the exported early-stage system cost. Walking remains an interior connector network; jogging and exercise cycling remain distinct loops; service access remains an entrance-to-operations spur.
+
+The walking network is a deterministic minimum-cost connector graph whose edge costs combine geometric distance with the canonical persona OD weights. Connectors terminate at area-proxy edges and add boundary-safe detour vertices around unrelated area bubbles where feasible. Accessibility and shade are stored as attributes on walking segments rather than duplicated centerlines. `Route Corridor Edges` offsets physical centerlines by half the exported width; `Route Corridor Data` reports the associated footprint, source length, layer, and stable program ID. These are width-aware planning proxies, not detailed pavement geometry.
+
+For a readable zoning view, use `Exclusive Territories` together with `Shared Territories` instead of previewing the legacy `Bubbles` output. Approved temporal/shared-footprint relationships consolidate eight shared programs into six physical proxies for the current package; each JSON record preserves its member IDs, nominal demand, compatibility, host, and estimated occupied footprint. `Landscape Overlays` separately exposes the four coverage-equivalent canopy, native planting, habitat, and bioswale circles. `Territory Reconciliation` keeps these non-additive overlay and shared assumptions explicit.
+
+For the clean Rhino handoff, connect `Clean Geometry`, `Clean Geometry Names`, and `Clean Geometry Layers` to `BakePark`. The flattened stream includes the resolved site boundary, consolidated exclusive/shared territories, separate landscape overlays, movement centerlines and width-aware corridor edges, clipped dune morphology guides, and governed Baraha candidate footprints. It deliberately excludes relationship lines and solver diagnostics. `BakePark` creates a `PARK_DESIGN` layer hierarchy and can replace only the objects it previously baked.
+
+Baraha footprints are alternative candidates and may overlap each other; they are isolated on `PARK_DESIGN::05_MORPHOLOGY::Baraha Alternatives` and must not be read as simultaneous built clearings. `Dune Morphology Data` identifies the primary sikka and ventilation cuts as planar guides and carries the package terrain rules. The plugin does not invent dune widths, ridge surfaces, hollows, or elevations. Those geometries remain unresolved until the authoritative terrain mesh is supplied to the Terrain components.
 
 The component stops with `GRID_BOUNDARY_MISMATCH` when no exported grid centroid lies inside the selected boundary. It never translates or stretches the grid to make a mismatched boundary appear valid. `Resolved Boundary` exposes the exact polygon used by the engines.
 
@@ -89,6 +99,6 @@ The access evaluator uses exported pair metrics and does not invent service/publ
 
 `CADGrid` in `Park Design > GIS` reads closed curves and hatch boundaries directly from named Rhino layers and exports EPSG:32640 plus EPSG:4326 GeoJSON without AutoCAD. Connect the UTM result to the optional `ParkBubbles.CAD Grid GeoJSON` input to replace the package-generated analysis grid. See [docs/cad-grid-workflow.md](docs/cad-grid-workflow.md).
 
-## Terrain optimization components
+## Terrain and dune-generation components
 
-The `Park Design > Terrain` panel contains `TerrainGrid`, `RouteTerrain`, and `CutFill`. They sample an authoritative terrain mesh, evaluate walking/jogging/exercise-cycling routes, and compare existing/proposed grading meshes with raw numeric outputs suitable for Wallacei. See [docs/terrain-optimization.md](docs/terrain-optimization.md) for the Grasshopper wiring and objective contract.
+The `Park Design > Terrain` panel contains `SelectBaraha`, `DuneTerrain`, `TerrainGrid`, `RouteTerrain`, and `CutFill`. `SelectBaraha` converts ranked overlapping alternatives into a boundary-safe, mutually separated shortlist. `DuneTerrain` creates a preliminary proposed mesh with paired ridges beside low/open sikka and ventilation axes, protected Baraha interiors, optional protected program territories, boundary fade, smoothing, and visible cut/fill-balancing strength. The evaluation components then sample terrain, evaluate walking/jogging/exercise-cycling routes, and compare existing/proposed grading meshes with raw numeric outputs suitable for Wallacei. See [docs/terrain-optimization.md](docs/terrain-optimization.md) for the Grasshopper wiring and objective contract.

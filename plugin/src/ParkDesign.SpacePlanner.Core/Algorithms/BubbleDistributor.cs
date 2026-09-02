@@ -19,16 +19,20 @@ public static class BubbleDistributor
         var area = Math.Abs(PolygonMath.SignedArea(boundary));
         var placeable = programs
             .Where(program => program.Selected && program.TargetAreaM2 is > 0)
-            .OrderByDescending(program => program.TargetAreaM2)
+            .OrderBy(program => string.Equals(program.SpatialMode, "exclusive", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenByDescending(program => program.TargetAreaM2)
             .ThenBy(program => program.Id, StringComparer.Ordinal)
             .ToList();
         var requestedArea = placeable.Sum(program => program.TargetAreaM2!.Value);
+        var exclusiveRequestedArea = placeable
+            .Where(program => string.Equals(program.SpatialMode, "exclusive", StringComparison.OrdinalIgnoreCase))
+            .Sum(program => program.TargetAreaM2!.Value);
         var result = new DistributionResult { BoundaryAreaM2 = area, RequestedProgramAreaM2 = requestedArea };
         var relationList = relationships?.Where(item => item.Accepted).ToList() ?? [];
         var weights = SpatialScoring.Weights(strategy);
 
-        if (requestedArea > area)
-            result.Warnings.Add($"Requested program area ({requestedArea:0} m2) exceeds boundary area ({area:0} m2).");
+        if (exclusiveRequestedArea > area)
+            result.Warnings.Add($"Requested exclusive program area ({exclusiveRequestedArea:0} m2) exceeds boundary area ({area:0} m2). Shared and overlay demand is excluded from this capacity check.");
 
         var minX = boundary.Min(point => point.X);
         var maxX = boundary.Max(point => point.X);
@@ -85,7 +89,13 @@ public static class BubbleDistributor
                 if (!PolygonMath.Contains(boundary, candidate)) continue;
                 var clearance = PolygonMath.DistanceToBoundary(boundary, candidate);
                 if (clearance + 1e-7 < radius) continue;
-                if (result.Placements.Any(other => PolygonMath.Distance(candidate, other.Center) + 1e-7 < RequiredSeparation(program.Id, radius, other.ProgramId, other.Radius, relationList))) continue;
+                var overlapPenalty = result.Placements.Sum(other =>
+                {
+                    var otherProgram = placeable.First(item => item.Id == other.ProgramId);
+                    var required = RequiredSeparation(program, radius, otherProgram, other.Radius, relationList);
+                    var overlap = Math.Max(0, required - PolygonMath.Distance(candidate, other.Center));
+                    return Math.Pow(overlap / Math.Max(1, radius + other.Radius), 2);
+                });
 
                 var relationshipPenalty = SpatialScoring.RelationshipPenalty(program.Id, candidate, placedById, relationList, siteScale, out var hardViolation);
                 if (hardViolation) continue;
@@ -93,6 +103,7 @@ public static class BubbleDistributor
                 var score = weights.Zone * zonePenalty
                     + weights.Suitability * (1 - suitability)
                     + weights.Relationships * relationshipPenalty
+                    + 20 * overlapPenalty
                     + SpatialScoring.SeedNoise(seed, program.Id, candidateId) * 0.1;
                 if (score >= bestScore) continue;
                 best = candidate;
@@ -109,7 +120,7 @@ public static class BubbleDistributor
 
             result.Placements.Add(new BubblePlacement(
                 program.Id, program.Name, best.Value, radius, targetArea,
-                program.LocationZone, bestSuitability, bestRelationshipPenalty));
+                program.LocationZone, bestSuitability, bestRelationshipPenalty, program.SpatialMode));
         }
 
         if (result.Placements.Count > 0)
@@ -126,15 +137,19 @@ public static class BubbleDistributor
         return candidates.OrderBy(candidate => PolygonMath.Distance(point, candidate.Point)).First().Suitability ?? 0;
     }
 
-    private static double RequiredSeparation(string programId, double radius, string otherId, double otherRadius,
+    private static double RequiredSeparation(ProgramDefinition program, double radius, ProgramDefinition other, double otherRadius,
         IReadOnlyList<RelationshipDefinition> relationships)
     {
-        var compatibility = relationships
+        var explicitCompatibility = relationships
             .Where(item => item.Accepted && item.Type.Contains("overlap", StringComparison.OrdinalIgnoreCase)
-                && ((item.Source == programId && item.Target == otherId) || (item.Source == otherId && item.Target == programId)))
+                && ((item.Source == program.Id && item.Target == other.Id) || (item.Source == other.Id && item.Target == program.Id)))
             .Select(item => Math.Clamp(item.CompatibilityScore ?? 0, 0, 1))
-            .DefaultIfEmpty(0)
+            .DefaultIfEmpty(-1)
             .Max();
+        var compatibility = explicitCompatibility >= 0
+            ? explicitCompatibility
+            : string.Equals(program.SpatialMode, "shared", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(other.SpatialMode, "shared", StringComparison.OrdinalIgnoreCase) ? .5 : 0;
         return (radius + otherRadius) * (1 - compatibility);
     }
 

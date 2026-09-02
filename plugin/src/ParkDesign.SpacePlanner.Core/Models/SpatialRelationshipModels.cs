@@ -65,7 +65,8 @@ public sealed class SpatialRelationshipCompilationResult
 
 public sealed record AreaAgent(string ProgramId, string ProgramName, Point2 Position, double TargetAreaM2,
     double? MinimumAreaM2, double? MaximumAreaM2, double EffectiveAreaM2, double Radius, double Priority,
-    bool Selected, string? SuitabilityField, AreaConstraintMode ConstraintMode = AreaConstraintMode.Free);
+    bool Selected, string? SuitabilityField, AreaConstraintMode ConstraintMode = AreaConstraintMode.Free,
+    string SpatialMode = "exclusive");
 
 public sealed record EnergyBreakdown(double Total, double Suitability, double Overlap, double Boundary,
     double Preferred, double Avoid, double Accepted, double Area);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Feature, Polygon } from 'geojson';
-import { area as turfArea, bbox as turfBbox } from '@turf/turf';
+import { bbox as turfBbox } from '@turf/turf';
 import { Sparkles, Loader2, RefreshCw, Download, AlertTriangle } from 'lucide-react';
 import { PRESEEDED_PARKS, fetchParkDetails } from '../../lib/googlePlaces';
 import { analyzeReviewsLocally, type NLPAnalyzedReview } from '../../lib/nlpPlaceholders';
@@ -24,7 +24,7 @@ import { SpaceJourneyGraph } from './SpaceJourneyGraph';
 import { ParkBrainKnowledgeGuide } from './ParkBrainKnowledgeGuide';
 import { ApprovedRuleCompilerPanel } from './ApprovedRuleCompilerPanel';
 import { buildParkDesignPackageFiles } from '../../lib/gis/parkDesignPackage';
-import type { MasterplanExportSettings } from '../../lib/gis/parkDesignPackage';
+import { DEFAULT_MASTERPLAN_EXPORT_SETTINGS, measureSiteBoundaryAreaM2, type MasterplanExportSettings } from '../../lib/gis/parkDesignPackage';
 import type { CompiledRuleEdge, UnresolvedApprovedRule } from '../../lib/results/approvedRuleCompiler';
 import { MasterplanExportSettingsPanel } from './MasterplanExportSettingsPanel';
 import { MovementGisOverlay } from './MovementGisOverlay';
@@ -58,33 +58,7 @@ export function ResultsTab() {
   const [runError, setRunError] = useState<string | null>(null);
   const [acceptedRuleEdges, setAcceptedRuleEdges] = useState<CompiledRuleEdge[]>([]);
   const [unresolvedRules, setUnresolvedRules] = useState<UnresolvedApprovedRule[]>([]);
-  const [masterplanSettings, setMasterplanSettings] = useState<MasterplanExportSettings>({
-    operationsAreaM2: null,
-    dropOffAreaM2: null,
-    circulationAreaM2: null,
-    treeCanopyCoveragePercent: null,
-    nativePlantingCoveragePercent: null,
-    habitatCoveragePercent: null,
-    bioswaleCoveragePercent: null,
-    budgetTargetAed: null,
-    serviceAccessCount: 1,
-    costContingencyPercent: null,
-    walkingPathLengthM: null,
-    walkingPathWidthM: null,
-    joggingPathWidthM: null,
-    cyclingPathWidthM: null,
-    servicePathLengthM: null,
-    servicePathWidthM: null,
-    treeCanopyAreaPerTreeM2: null,
-    treeUnitCostAed: null,
-    plantingCostAedPerM2: null,
-    candidateSpacingM: 10,
-    accessCatchmentRadiusM: 800,
-    roadEdgeMaxDistanceM: 25,
-    allPedestrianRoutesAccessible: false,
-    allowWalkingJoggingSharing: false,
-    allowServicePublicPathSharing: false
-  });
+  const [masterplanSettings, setMasterplanSettings] = useState<MasterplanExportSettings>(() => ({ ...DEFAULT_MASTERPLAN_EXPORT_SETTINGS }));
 
   useEffect(() => {
     let cancelled = false;
@@ -171,7 +145,7 @@ export function ResultsTab() {
 
   const areaReconciliation = useMemo(() => buildAreaReconciliation({
     briefGrossAreaM2: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.grossSiteAreaM2,
-    measuredBoundaryAreaM2: parkPolygon ? Math.round(turfArea(parkPolygon) * 100) / 100 : null,
+    measuredBoundaryAreaM2: parkPolygon ? measureSiteBoundaryAreaM2(parkPolygon) : null,
     maximumLeasableAreaPercent: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.maximumLeasableAreaPercent,
     opportunities,
     settings: masterplanSettings

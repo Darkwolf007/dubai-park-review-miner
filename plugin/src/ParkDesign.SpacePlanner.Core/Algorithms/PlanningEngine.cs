@@ -29,16 +29,24 @@ public static class PlanningEngine
             areas.Placements.AddRange(solved.Agents.Select(agent => new BubblePlacement(agent.ProgramId, agent.ProgramName,
                 agent.Position, agent.Radius, agent.EffectiveAreaM2, allocation.Programs.First(p => p.Id == agent.ProgramId).LocationZone,
                 solved.Diagnostics.Programs.First(p => p.ProgramId == agent.ProgramId).Suitability,
-                solved.Diagnostics.Programs.First(p => p.ProgramId == agent.ProgramId).RelationshipPenalty)));
+                solved.Diagnostics.Programs.First(p => p.ProgramId == agent.ProgramId).RelationshipPenalty,
+                allocation.Programs.First(p => p.Id == agent.ProgramId).SpatialMode)));
             areas.AverageSuitability = solved.Diagnostics.AverageSuitability;
             areas.RelationshipPenalty = 1 - solved.Diagnostics.RelationshipSatisfactionRatio;
-            if (!solved.Diagnostics.Valid) warnings.Add($"Area solver result is invalid: {solved.Diagnostics.HardViolationCount} hard violation(s).");
+            if (!solved.Diagnostics.Valid)
+            {
+                var failedIds = solved.Diagnostics.Edges.Where(edge => !edge.Satisfied).Select(edge => edge.EdgeId).Take(8);
+                warnings.Add($"Area solver result is invalid: {solved.Diagnostics.HardViolationCount} hard violation(s): {string.Join(", ", failedIds)}.");
+            }
             var allPointPrograms = unresolvedAreaPrograms.Concat(package.NodePrograms).ToList();
             var placedPoints = NodePlacer.Place(boundary, package.Grid, allPointPrograms, areas.Placements, package.Relationships, includeOptional: true, seed: seed, warnings: warnings);
             var unresolvedIds = unresolvedAreaPrograms.Select(program => program.Id).ToHashSet(StringComparer.Ordinal);
             var areaAnchors = placedPoints.Where(point => unresolvedIds.Contains(point.ProgramId)).ToList();
             var nodes = placedPoints.Where(point => !unresolvedIds.Contains(point.ProgramId)).ToList();
-            var (routes, relationshipLines) = RouteGenerator.Generate(boundary, package.RoutePrograms, areas.Placements, areaAnchors, nodes, package.Relationships, includeOptional: true, warnings);
+            var sharedTerritories = TerritoryConsolidator.ConsolidateShared(package.Programs, areas.Placements, package.Relationships);
+            var landscapeOverlays = TerritoryConsolidator.BuildLandscapeOverlays(package.Programs, areaAnchors, package.AreaReconciliation);
+            var (routes, relationshipLines) = RouteGenerator.Generate(boundary, package.RoutePrograms, areas.Placements, areaAnchors, nodes,
+                package.Relationships, includeOptional: true, warnings, package.MovementDemands);
             var morphologyAxes = DuneMorphologyGenerator.GenerateAxes(boundary, package.ClimateMorphology);
             var barahaCandidates = DuneMorphologyGenerator.GenerateBaraha(routes, areas.Placements, package.ClimateMorphology.BarahaRules);
             var pointById = areas.Placements.Select(p => (p.ProgramId, p.Center))
@@ -54,6 +62,7 @@ public static class PlanningEngine
             scenarios.Add(new LayoutScenarioResult
             {
                 Strategy = strategy.ToString(), AreaSizingMode = allocation.Mode, Areas = areas, AreaAnchors = areaAnchors, Nodes = nodes, Routes = routes,
+                SharedTerritories = sharedTerritories, LandscapeOverlays = landscapeOverlays,
                 RelationshipLines = relationshipLines, MorphologyAxes = morphologyAxes, BarahaCandidates = barahaCandidates,
                 Warnings = warnings, Score = score, SolverDiagnostics = solved.Diagnostics
             });

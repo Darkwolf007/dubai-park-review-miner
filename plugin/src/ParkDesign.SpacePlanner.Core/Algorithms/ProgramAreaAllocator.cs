@@ -11,12 +11,15 @@ public static class ProgramAreaAllocator
         var resolved = source.Where(program => program.TargetAreaM2 is > 0).ToList();
         var targetTotal = resolved.Sum(program => program.TargetAreaM2!.Value);
         var minimumTotal = resolved.Sum(program => program.MinimumAreaM2 ?? program.TargetAreaM2!.Value);
-        var useMinimum = targetTotal > boundaryAreaM2 && minimumTotal <= boundaryAreaM2;
+        var exclusive = resolved.Where(program => string.Equals(program.SpatialMode, "exclusive", StringComparison.OrdinalIgnoreCase)).ToList();
+        var exclusiveTargetTotal = exclusive.Sum(program => program.TargetAreaM2!.Value);
+        var exclusiveMinimumTotal = exclusive.Sum(program => program.MinimumAreaM2 ?? program.TargetAreaM2!.Value);
+        var useMinimum = exclusiveTargetTotal > boundaryAreaM2 && exclusiveMinimumTotal <= boundaryAreaM2;
         var warnings = new List<string>();
         if (useMinimum)
-            warnings.Add($"All defined area programs are included. Their target total ({targetTotal:0} m2) exceeds the boundary ({boundaryAreaM2:0} m2), so documented minimum areas are used ({minimumTotal:0} m2). No area was scaled below its exported minimum.");
-        else if (minimumTotal > boundaryAreaM2)
-            warnings.Add($"The documented minimum program total ({minimumTotal:0} m2) exceeds the boundary ({boundaryAreaM2:0} m2). All minimums are retained; infeasible placements will remain explicit.");
+            warnings.Add($"All defined area programs are included. Their exclusive target total ({exclusiveTargetTotal:0} m2) exceeds the boundary ({boundaryAreaM2:0} m2), so documented minimum areas are used. Shared and overlay demand remains nominal and may overlap compatible territories. No area was scaled below its exported minimum.");
+        else if (exclusiveMinimumTotal > boundaryAreaM2)
+            warnings.Add($"The documented exclusive minimum program total ({exclusiveMinimumTotal:0} m2) exceeds the boundary ({boundaryAreaM2:0} m2). All minimums are retained; infeasible placements will remain explicit.");
 
         var programs = resolved.Select(program => Clone(program, useMinimum ? program.MinimumAreaM2 ?? program.TargetAreaM2 : program.TargetAreaM2)).ToList();
         return new ProgramAreaAllocation(programs, useMinimum ? "documented_minimums" : "exported_targets", warnings);

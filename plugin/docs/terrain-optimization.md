@@ -4,6 +4,23 @@ The terrain workflow uses an authoritative Rhino mesh. XY and Z must both be in 
 
 ## Components
 
+### Select Baraha Candidates (`SelectBaraha`)
+
+Connect `ParkBubbles.Resolved Boundary`, `Baraha Candidate Footprints`, and `Baraha Candidate Data`. The component preserves the score order and greedily selects boundary-safe footprints that do not overlap at the supplied clearance. `Maximum Count` and `Clearance` are visible designer decisions. Rejected footprints and an audit record remain available for review.
+
+### Generate Dune Terrain (`DuneTerrain`)
+
+Connect the authoritative existing mesh, `ParkBubbles.Resolved Boundary`, `Dune Morphology Axes`, `Dune Axis Names`, and `SelectBaraha.Selected Footprints`. Optionally connect consolidated program/route footprints to `Protected Territories`, and explicit zones to `Architectural Ridge Zones`.
+
+The component treats the primary sikka and wind-erosion passages as low/open valley axes. It generates smooth parallel landscape ridges on both sides, keeps selected Baraha interiors and protected territories near existing grade, creates a protective Baraha berm, fades displacement to zero at the site boundary, smooths the displacement field, and optionally applies a mean-displacement correction for early cut/fill balance.
+
+Default heights are the midpoints of the exported governed ranges:
+
+- landscape ridge: 1.2 m within the exported 0.6-1.8 m range;
+- architectural ridge: 3.25 m within the exported 2.5-4.0 m range, used only inside explicit Architectural Ridge Zones.
+
+`Ridge Offset`, `Ridge Half Width`, `Baraha Berm Width`, `Balance Strength`, and `Smoothing Passes` are visible computational settings, not hidden standards. Connect `Proposed Terrain` to `CutFill` and route curves to `RouteTerrain` before accepting a result. `Ridge Crest Guides` are planar control guides; the output mesh is the proposed 3D morphology.
+
 ### Sample Park Terrain (`TerrainGrid`)
 
 Inputs: terrain mesh, grid spacing and Run. Outputs vertically sampled points with elevation, local slope percentage and downslope aspect. Use these fields to visualize terrain or feed later route and landscape-region generators.
@@ -39,4 +56,3 @@ Suggested objective directions:
 Do not maximize route length alone: an optimizer will create loops, wiggles and repeated segments. Pair length with self-intersection, curvature, repeated-edge, conflict and useful-coverage penalties.
 
 The walking-accessibility Boolean determines which curves enter the hard slope check: either every pedestrian route or only the primary accessible network. A service-sharing Boolean belongs in the movement-network generator; terrain evaluation remains mode-neutral.
-

@@ -53,6 +53,12 @@ public sealed class DesignPackage
     public MasterplanSettingsDefinition MasterplanSettings { get; set; } = new();
 
     [JsonIgnore]
+    public AreaReconciliationDefinition AreaReconciliation { get; set; } = new();
+
+    [JsonIgnore]
+    public DesignEstimateDefinition DesignEstimate { get; set; } = new();
+
+    [JsonIgnore]
     public ClimateMorphologyDefinition ClimateMorphology { get; set; } = new();
 
     [JsonIgnore]
@@ -66,6 +72,27 @@ public sealed class DesignPackage
 
     [JsonIgnore]
     public List<ParametricRelationshipDefinition> ParametricRelationships { get; set; } = [];
+
+    [JsonIgnore]
+    public List<MovementDemandDefinition> MovementDemands { get; set; } = [];
+}
+
+public sealed class MovementDemandDefinition
+{
+    [JsonPropertyName("origin")]
+    public string Origin { get; set; } = string.Empty;
+
+    [JsonPropertyName("destination")]
+    public string Destination { get; set; } = string.Empty;
+
+    [JsonPropertyName("weight")]
+    public double Weight { get; set; }
+
+    [JsonPropertyName("persona_ids")]
+    public List<string> PersonaIds { get; set; } = [];
+
+    [JsonPropertyName("journey_ids")]
+    public List<string> JourneyIds { get; set; } = [];
 }
 
 public sealed class ProjectDefinition
@@ -228,6 +255,18 @@ public sealed class ProgramDefinition
 
     [JsonPropertyName("path_dune_operations")]
     public List<string> PathDuneOperations { get; set; } = [];
+
+    [JsonPropertyName("route_topology")]
+    public string? RouteTopology { get; set; }
+
+    [JsonPropertyName("target_length_m")]
+    public double? TargetLengthM { get; set; }
+
+    [JsonPropertyName("target_width_m")]
+    public double? TargetWidthM { get; set; }
+
+    [JsonPropertyName("coverage_target_percent")]
+    public double? CoverageTargetPercent { get; set; }
 }
 
 public sealed class ProgramOntologyDefinition

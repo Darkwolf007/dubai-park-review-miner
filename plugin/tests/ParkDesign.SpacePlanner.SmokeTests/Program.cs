@@ -167,11 +167,69 @@ if (args.Length > 0)
         "The parametric model must provide every unordered relationship in the 44-program matrix.");
     Require(!realValidation.Any(message => message.Message.Contains("will not be placed", StringComparison.OrdinalIgnoreCase)),
         "Mandatory unresolved programs must be described as represented intent anchors, not omitted placements.");
-    Require(realValidation.Count(message => message.Code is "PROGRAM_COVERAGE_UNRESOLVED" or "PROGRAM_AREA_UNRESOLVED") == 2,
-        "Unresolved landscape coverage and area extents must be consolidated into two informational notices.");
+    var unresolvedAreaNotices = realValidation.Count(message => message.Code is "PROGRAM_COVERAGE_UNRESOLVED" or "PROGRAM_AREA_UNRESOLVED");
+    Require(unresolvedAreaNotices <= 2,
+        "Unresolved landscape coverage and area extents must remain consolidated informational notices.");
+    Require(realPackage.AreaReconciliation.Status != "complete"
+        || realValidation.All(message => message.Code != "PROGRAM_COVERAGE_UNRESOLVED"),
+        "Quantified coverage targets in a complete reconciliation must not be reported as unresolved.");
+    Require(realPackage.AreaReconciliation.BriefGrossAreaM2 == 15000
+        && realPackage.AreaReconciliation.ExclusiveProgramAreaM2 == 7525
+        && realPackage.AreaReconciliation.CirculationAreaM2 == 6000,
+        "The Rhino importer must preserve the brief area statement and circulation reconciliation.");
+    Require(realPackage.DesignEstimate.Scores.OverallReadiness is > 0
+        && realPackage.DesignEstimate.Paths.Systems.Count == 4
+        && realPackage.DesignEstimate.Plants.ApproximateTreeCount is > 0,
+        "The Rhino importer must preserve readiness, path, planting, and cost estimates.");
+    Require(realPackage.MovementDemands.Count == 50 && realPackage.MovementDemands.All(demand => demand.Weight > 0),
+        "The importer must preserve the aggregated persona OD movement weights.");
+    Require(realPackage.RoutePrograms.Single(program => program.Id == "walkingPromenade").TargetLengthM == 650
+        && realPackage.RoutePrograms.Single(program => program.Id == "serviceAccess").TargetWidthM == 4,
+        "Route proxy dimensions must load from the v1.4 package.");
+
+    var canonicalPath = Path.Combine(args[0], "park_design_package.json");
+    if (File.Exists(canonicalPath))
+    {
+        var canonical = DesignPackageLoader.LoadFile(canonicalPath);
+        Require(canonical.PackageBoundary.Count >= 3 && canonical.Programs.Count == 22
+            && canonical.NodePrograms.Count == 14 && canonical.RoutePrograms.Count == 8,
+            "The canonical v1.4 JSON must adapt into area, node, and route proxy collections without split files.");
+        Require(canonical.AreaReconciliation.Status == "complete"
+            && canonical.DesignEstimate.Paths.Systems.Count == 4,
+            "Canonical constraints must carry reconciliation and estimate data.");
+    }
     var realPlan = PlanningEngine.Generate(realPackage.PackageBoundary, realPackage, seed: 1, strategyName: "AUTO", includeOptionalNodesAndRoutes: true);
     var best = realPlan.Best;
+    Require(best.AreaSizingMode == "exported_targets", "The reconciled package must not fall back to minimums merely because shared demand overlaps exclusive areas.");
+    Require(best.Areas.Placements.Count == realPackage.Programs.Count(program => program.TargetAreaM2 is > 0),
+        "Every quantified area program must receive a proxy placement.");
+    Require(best.SolverDiagnostics?.Valid == true,
+        "The final proxy layout must satisfy boundary, exclusive separation, shared compatibility, and accepted hard constraints.");
+    Require(best.SharedTerritories.Count == 6
+        && best.SharedTerritories.SelectMany(territory => territory.ProgramIds)
+            .Where(id => realPackage.Programs.Single(program => program.Id == id).SpatialMode == "shared")
+            .Distinct(StringComparer.Ordinal).Count() == 8,
+        "All eight shared programs must consolidate into six non-duplicated physical territory proxies.");
+    var lawnTerritory = best.SharedTerritories.Single(territory => territory.ProgramIds.Contains("flexibleEventLawn"));
+    Require(lawnTerritory.ProgramIds.Count == 3 && lawnTerritory.ApproximateFootprintM2 < lawnTerritory.NominalDemandM2,
+        "The approved lawn/recreation group must retain nominal demand while reducing its physical proxy footprint.");
+    Require(best.LandscapeOverlays.Count == 4 && best.LandscapeOverlays.All(overlay => overlay.CoveragePercent > 0),
+        "The four quantified landscape systems must generate separate non-additive overlay proxies.");
     var routePrograms = best.Routes.Select(route => route.ProgramId).Distinct(StringComparer.Ordinal).Count();
+    var walkingRoutes = best.Routes.Where(route => route.ProgramId == "walkingPromenade").ToList();
+    Require(walkingRoutes.Count > 1 && walkingRoutes.All(route => route.Attributes?.Contains("accessible") == true
+        && route.Attributes.Contains("shade_priority") && route.SourceAnchorId is not null && route.TargetAnchorId is not null),
+        "Walking must be a traceable OD-weighted connector network with accessibility and shade attributes.");
+    var exclusiveIds = realPackage.Programs.Where(program => program.SpatialMode == "exclusive")
+        .Select(program => program.Id).ToHashSet(StringComparer.Ordinal);
+    var obstructedWalkingRoutes = walkingRoutes.Where(route => !RouteAvoidsUnrelatedExclusiveBubbles(route, best.Areas.Placements, exclusiveIds)).ToList();
+    Require(obstructedWalkingRoutes.Count == 0,
+        $"Walking connectors must terminate at program edges and avoid unrelated exclusive bubble interiors: {string.Join(", ", obstructedWalkingRoutes.Select(route => $"{route.SourceAnchorId}->{route.TargetAnchorId}"))}.");
+    Require(best.Routes.Count(route => route.ProgramId == "serviceAccess") == 1
+        && best.Routes.Single(route => route.ProgramId == "serviceAccess").Points.Count == 2,
+        "Service access must be one boundary-to-operations spur.");
+    Require(best.Routes.All(route => route.ProgramId is not "accessibleRoutes" and not "shadedCirculation"),
+        "Accessibility and shade must not be emitted as duplicate physical centerlines.");
     var nodeSpanX = best.Nodes.Max(node => node.Point.X) - best.Nodes.Min(node => node.Point.X);
     var nodeSpanY = best.Nodes.Max(node => node.Point.Y) - best.Nodes.Min(node => node.Point.Y);
     var boundarySpanX = realPackage.PackageBoundary.Max(point => point.X) - realPackage.PackageBoundary.Min(point => point.X);
@@ -181,6 +239,12 @@ if (args.Length > 0)
         .Distinct(StringComparer.Ordinal).Count();
     Require(nodeSpanX / boundarySpanX >= .6 && nodeSpanY / boundarySpanY >= .6, "Point programs must occupy the park in both axes rather than clustering on one edge.");
     Require(routeFingerprints >= 6, "Movement programs must not collapse onto one shared route geometry.");
+    Require(best.MorphologyAxes.Count > 0 && best.MorphologyAxes.All(axis => axis.Points.Count >= 2),
+        "Dune morphology must remain a set of non-degenerate, site-clipped guide axes.");
+    Require(best.BarahaCandidates.All(candidate =>
+            candidate.RadiusM >= realPackage.ClimateMorphology.BarahaRules.MinimumRadiusM
+            && candidate.RadiusM <= realPackage.ClimateMorphology.BarahaRules.MaximumRadiusM),
+        "Every Baraha candidate footprint must retain the governed minimum/maximum radius range.");
     Console.WriteLine($"REAL_PACKAGE strategy={best.Strategy} area_bubbles={best.Areas.Placements.Count}/{realPackage.Programs.Count(program => program.TargetAreaM2 is > 0)} area_anchors={best.AreaAnchors.Count}/{realPackage.Programs.Count(program => program.TargetAreaM2 is null or <= 0)} nodes={best.Nodes.Count}/{realPackage.NodePrograms.Count} node_span={nodeSpanX / boundarySpanX:P0}x{nodeSpanY / boundarySpanY:P0} route_programs={routePrograms}/{realPackage.RoutePrograms.Count} route_curves={best.Routes.Count} morphology_axes={best.MorphologyAxes.Count} baraha={best.BarahaCandidates.Count} area_m2={best.Areas.RequestedProgramAreaM2:0}/{best.Areas.BoundaryAreaM2:0}");
     foreach (var warning in best.Warnings) Console.WriteLine($"REAL_WARNING {warning}");
 }
@@ -195,6 +259,22 @@ static void AddEntry(ZipArchive archive, string name, string content)
 static void Require(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
+}
+
+static bool RouteAvoidsUnrelatedExclusiveBubbles(RoutePlacement route, IReadOnlyList<BubblePlacement> bubbles,
+    IReadOnlySet<string> exclusiveIds)
+{
+    foreach (var bubble in bubbles.Where(bubble => exclusiveIds.Contains(bubble.ProgramId)
+        && bubble.ProgramId != route.SourceAnchorId && bubble.ProgramId != route.TargetAnchorId))
+    for (var index = 0; index < route.Points.Count - 1; index++)
+    {
+        var a = route.Points[index]; var b = route.Points[index + 1];
+        var dx = b.X - a.X; var dy = b.Y - a.Y; var lengthSquared = dx * dx + dy * dy;
+        var t = lengthSquared <= 1e-12 ? 0 : Math.Clamp(((bubble.Center.X - a.X) * dx + (bubble.Center.Y - a.Y) * dy) / lengthSquared, 0, 1);
+        var closest = new Point2(a.X + dx * t, a.Y + dy * t);
+        if (PolygonMath.Distance(closest, bubble.Center) < bubble.Radius - .1) return false;
+    }
+    return true;
 }
 
 static void RelationshipCompilerAndSolverTests()

@@ -1,4 +1,4 @@
-import { area as turfArea, centroid as turfCentroid } from '@turf/turf';
+import { centroid as turfCentroid } from '@turf/turf';
 import type { Feature, Polygon } from 'geojson';
 import type { SiteGridCell } from './siteGrid';
 import type { OpportunityResult } from './opportunityEngine';
@@ -28,6 +28,35 @@ export interface MasterplanExportSettings extends AreaPlanningInputs, DesignEsti
   allowWalkingJoggingSharing: boolean;
   allowServicePublicPathSharing: boolean;
 }
+
+/** Preliminary scenario values for early-stage estimation only. They are not approved standards. */
+export const DEFAULT_MASTERPLAN_EXPORT_SETTINGS: MasterplanExportSettings = {
+  operationsAreaM2: 300,
+  dropOffAreaM2: 250,
+  circulationAreaM2: 5000,
+  treeCanopyCoveragePercent: 30,
+  nativePlantingCoveragePercent: 20,
+  habitatCoveragePercent: 10,
+  bioswaleCoveragePercent: 5,
+  serviceAccessCount: 1,
+  budgetTargetAed: 35000000,
+  costContingencyPercent: 10,
+  walkingPathLengthM: 300,
+  walkingPathWidthM: 3,
+  joggingPathWidthM: 2.5,
+  cyclingPathWidthM: 2.5,
+  servicePathLengthM: 60,
+  servicePathWidthM: 4,
+  treeCanopyAreaPerTreeM2: 50,
+  treeUnitCostAed: 3000,
+  plantingCostAedPerM2: 120,
+  candidateSpacingM: 10,
+  accessCatchmentRadiusM: 800,
+  roadEdgeMaxDistanceM: 25,
+  allPedestrianRoutesAccessible: false,
+  allowWalkingJoggingSharing: false,
+  allowServicePublicPathSharing: false
+};
 
 interface BuildParkDesignPackageInput {
   siteName: string;
@@ -100,6 +129,41 @@ function ringPerimeterM(ring: number[][]): number {
   return Math.round(total * 100) / 100;
 }
 
+function ringAreaM2(ring: number[][]): number | null {
+  if (ring.length < 3) return null;
+  let twiceArea = 0;
+  for (let index = 0; index < ring.length; index++) {
+    const next = ring[(index + 1) % ring.length];
+    twiceArea += ring[index][0] * next[1] - next[0] * ring[index][1];
+  }
+  const area = Math.abs(twiceArea) / 2;
+  return Number.isFinite(area) && area > 0 ? Math.round(area * 100) / 100 : null;
+}
+
+function routeTargetLength(id: string, settings: MasterplanExportSettings, sitePerimeterM: number): number | null {
+  if (id === 'walkingPromenade') return settings.walkingPathLengthM;
+  if (id === 'joggingLoop') return 1000;
+  if (id === 'exerciseCyclingLoop') return sitePerimeterM;
+  if (id === 'serviceAccess') return settings.servicePathLengthM;
+  return null;
+}
+
+function routeTargetWidth(id: string, settings: MasterplanExportSettings): number | null {
+  if (id === 'walkingPromenade') return settings.walkingPathWidthM;
+  if (id === 'joggingLoop') return settings.joggingPathWidthM;
+  if (id === 'exerciseCyclingLoop') return settings.cyclingPathWidthM;
+  if (id === 'serviceAccess') return settings.servicePathWidthM;
+  return null;
+}
+
+export function measureSiteBoundaryAreaM2(boundary: Feature<Polygon>): number | null {
+  const ring = boundary.geometry.coordinates[0]?.map(([lng, lat]) => {
+    const point = toUtm40N(lng, lat);
+    return [point.x, point.y];
+  }) ?? [];
+  return ringAreaM2(ring);
+}
+
 function jsonFile(path: string, data: unknown): ZipTextFile {
   return { path, content: JSON.stringify(data, null, 2) };
 }
@@ -146,6 +210,10 @@ function baseProgram(opportunity: OpportunityResult, selected: Set<string>, para
 
 export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput): ZipTextFile[] {
   const generatedAt = new Date().toISOString();
+  const boundaryWgs84 = input.siteBoundary.geometry.coordinates;
+  const boundaryUtm = boundaryWgs84.map(ring => utmRing(ring as number[][]));
+  const measuredBoundaryAreaM2 = ringAreaM2(boundaryUtm[0] ?? []);
+  const sitePerimeterM = ringPerimeterM(boundaryUtm[0] ?? []);
   const selected = new Set(Object.keys(input.selectedProgramZones));
   const ontologyInputs = opportunityOntologyInputs(input.opportunities);
   const parametricPrograms = buildParametricProgramDefinitions(ontologyInputs);
@@ -196,8 +264,8 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       ...baseProgram(opportunity, selected, parametricById.get(opportunity.type)!),
       placement_status: 'generate_after_area_layout',
       route_topology: routeTopology(opportunity.type),
-      target_length_m: null,
-      target_width_m: null
+      target_length_m: routeTargetLength(opportunity.type, input.masterplanSettings, sitePerimeterM),
+      target_width_m: routeTargetWidth(opportunity.type, input.masterplanSettings)
     }));
 
   const access = buildAccessCandidatePackage({
@@ -258,7 +326,8 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       perimeter_loop_required: false,
       accessibility_scope: input.masterplanSettings.allPedestrianRoutesAccessible ? 'all_pedestrian_routes' : 'primary_accessible_network',
       may_share_with_jogging: input.masterplanSettings.allowWalkingJoggingSharing,
-      width_m: null,
+      target_length_m: input.masterplanSettings.walkingPathLengthM,
+      width_m: input.masterplanSettings.walkingPathWidthM,
       maximum_slope_percent: null,
       requirement_authority: 'unresolved_pending_park_brain_or_designer_approval'
     },
@@ -267,9 +336,9 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       distinct_alignment_required: true,
       full_coincidence_with_walking_forbidden: true,
       length_objective: 'maximize_feasible_useful_length',
-      target_length_m: null,
+      target_length_m: 1000,
       may_share_with_walking: input.masterplanSettings.allowWalkingJoggingSharing,
-      width_m: null,
+      width_m: input.masterplanSettings.joggingPathWidthM,
       maximum_slope_percent: null,
       requirement_authority: 'unresolved_pending_park_brain_or_designer_approval'
     },
@@ -280,9 +349,9 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       full_coincidence_with_walking_or_jogging_forbidden: true,
       alignment_policy: 'separate_alignment_except_controlled_crossings_or_explicitly_approved_short_shared_segments',
       length_objective: 'maximize_feasible_useful_length',
-      target_length_m: null,
+      target_length_m: sitePerimeterM,
       pedestrian_sharing: 'conditional_on_terrain_slope_curvature_width_and_conflict',
-      width_m: null,
+      width_m: input.masterplanSettings.cyclingPathWidthM,
       maximum_slope_percent: null,
       minimum_turning_radius_m: null,
       requirement_authority: 'unresolved_pending_park_brain_or_designer_approval'
@@ -303,6 +372,8 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       entrance_count: input.masterplanSettings.serviceAccessCount,
       eligible_edges: 'road_facing_only',
       must_connect_program_id: 'operationsArea',
+      target_length_m: input.masterplanSettings.servicePathLengthM,
+      width_m: input.masterplanSettings.servicePathWidthM,
       may_share_public_paths: input.masterplanSettings.allowServicePublicPathSharing,
       full_coincidence_with_public_network_forbidden: !input.masterplanSettings.allowServicePublicPathSharing
     },
@@ -404,8 +475,6 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     };
   });
 
-  const boundaryWgs84 = input.siteBoundary.geometry.coordinates;
-  const boundaryUtm = boundaryWgs84.map(ring => utmRing(ring as number[][]));
   const principalAxisAzimuthDeg = principalAxisAzimuthFromNorth(boundaryUtm[0]);
   const climateMorphology = {
     schema_version: '1.2.0',
@@ -533,7 +602,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
 
   const areaReconciliation = buildAreaReconciliation({
     briefGrossAreaM2: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.grossSiteAreaM2,
-    measuredBoundaryAreaM2: Math.round(turfArea(input.siteBoundary) * 100) / 100,
+    measuredBoundaryAreaM2,
     maximumLeasableAreaPercent: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.maximumLeasableAreaPercent,
     opportunities: input.opportunities,
     settings: input.masterplanSettings
@@ -567,7 +636,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
   const designEstimate = buildApproximateDesignEstimate({
     pkg: canonicalPackage,
     areaReconciliation,
-    sitePerimeterM: ringPerimeterM(boundaryUtm[0] ?? []),
+    sitePerimeterM,
     budgetCapAed: AL_SAFA_2_COMPETITION_BRIEF.totalBudgetCapAed,
     costRatesAedPerM2: AL_SAFA_2_COMPETITION_BRIEF.costRateGuidanceAedPerM2,
     settings: input.masterplanSettings
@@ -598,7 +667,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     jsonFile('program_ontology.json', { schema_version: '1.3.0', dune_types: DUNE_TYPES, programs: parametricPrograms }),
     jsonFile('user_program_suitability.json', { schema_version: '1.3.0', user_groups: USER_GROUPS, suitability: userProgramSuitability }),
     jsonFile('parametric_relationships.json', { schema_version: '1.3.0', scale: '-1_repulsion_to_1_attraction', authority: 'computed_advisory', relationships: parametricRelationships }),
-    jsonFile('masterplan_settings.json', { schema_version: '1.3.0', ...input.masterplanSettings }),
+    jsonFile('masterplan_settings.json', { schema_version: '1.3.0', authority: 'preliminary_scenario_defaults_designer_review_required', ...input.masterplanSettings }),
     jsonFile('area_reconciliation.json', canonicalPackage.constraints.area_reconciliation),
     jsonFile('design_estimate.json', designEstimate),
     jsonFile('grid.json', { schema_version: '1.2.0', cells }),

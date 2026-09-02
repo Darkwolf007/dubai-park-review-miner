@@ -10,6 +10,7 @@ import {
 import { buildAreaReconciliation } from '../src/lib/designPackage/areaReconciliation';
 import type { OpportunityResult } from '../src/lib/gis/opportunityEngine';
 import { buildApproximateDesignEstimate } from '../src/lib/designPackage/designEstimate';
+import { DEFAULT_MASTERPLAN_EXPORT_SETTINGS } from '../src/lib/gis/parkDesignPackage';
 
 function rawProgram(id: string, target = 100) {
   return {
@@ -222,4 +223,16 @@ test('design estimate reports variable counts, lengths, costs and scenario budge
   assert.equal(estimate.plants.approximate_tree_count, 118);
   assert.equal(estimate.budget.scenario_factor_of_cap, 0.5);
   assert.equal(estimate.budget.estimate_status, 'complete_approximation');
+});
+
+test('preliminary masterplan defaults are complete and budget is stored in AED', () => {
+  const settings = DEFAULT_MASTERPLAN_EXPORT_SETTINGS;
+  assert.equal(settings.budgetTargetAed, 35000000);
+  assert.equal(settings.serviceAccessCount, 1);
+  assert.equal(settings.operationsAreaM2, 300);
+  assert.equal(settings.dropOffAreaM2, 250);
+  assert.equal(settings.circulationAreaM2, 5000);
+  for (const value of [settings.walkingPathLengthM, settings.walkingPathWidthM, settings.joggingPathWidthM, settings.cyclingPathWidthM, settings.servicePathLengthM, settings.servicePathWidthM, settings.treeCanopyAreaPerTreeM2, settings.treeUnitCostAed, settings.plantingCostAedPerM2]) {
+    assert.ok(typeof value === 'number' && value > 0);
+  }
 });

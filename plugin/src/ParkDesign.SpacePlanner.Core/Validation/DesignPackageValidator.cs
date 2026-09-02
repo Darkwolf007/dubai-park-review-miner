@@ -21,7 +21,11 @@ public static class DesignPackageValidator
             messages.Add(new("PROGRAM_ID_INVALID", $"Program id '{duplicate.Key}' is blank or duplicated.", true));
 
         var unresolved = package.Programs.Where(program => program.Selected && program.TargetAreaM2 is null or <= 0).ToList();
-        var landscapeOverlays = unresolved.Where(program => program.RepresentationStatus == "landscape_overlay_intent").ToList();
+        var quantifiedCoverageIds = package.AreaReconciliation.CoverageTargets
+            .Where(target => target.Percent > 0 && target.EquivalentAreaM2 > 0)
+            .Select(target => target.ProgramId).ToHashSet(StringComparer.Ordinal);
+        var landscapeOverlays = unresolved.Where(program => program.RepresentationStatus == "landscape_overlay_intent"
+            && program.CoverageTargetPercent is not > 0 && !quantifiedCoverageIds.Contains(program.Id)).ToList();
         var areaIntents = unresolved.Where(program => program.RepresentationStatus != "landscape_overlay_intent").ToList();
         if (landscapeOverlays.Count > 0)
             messages.Add(new("PROGRAM_COVERAGE_UNRESOLVED",

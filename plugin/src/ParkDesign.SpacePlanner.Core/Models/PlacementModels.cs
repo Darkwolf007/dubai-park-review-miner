@@ -10,7 +10,8 @@ public sealed record BubblePlacement(
     double TargetAreaM2,
     string LocationZone,
     double SuitabilityScore = 0,
-    double RelationshipPenalty = 0);
+    double RelationshipPenalty = 0,
+    string SpatialMode = "exclusive");
 
 public sealed record NodePlacement(
     string ProgramId,
@@ -23,7 +24,10 @@ public sealed record RoutePlacement(
     string ProgramName,
     IReadOnlyList<Point2> Points,
     bool Closed,
-    string Basis);
+    string Basis,
+    IReadOnlyList<string>? Attributes = null,
+    string? SourceAnchorId = null,
+    string? TargetAnchorId = null);
 
 public sealed record RelationshipLine(
     string RelationshipId,
@@ -34,6 +38,26 @@ public sealed record RelationshipLine(
     string RelationshipType,
     bool Mandatory,
     string Authority = "accepted_rule");
+
+public sealed record SharedTerritoryPlacement(
+    string TerritoryId,
+    string Name,
+    IReadOnlyList<string> ProgramIds,
+    Point2 Center,
+    double Radius,
+    double ApproximateFootprintM2,
+    double NominalDemandM2,
+    double AverageCompatibility,
+    string OverlapMode,
+    string? ExclusiveHostProgramId);
+
+public sealed record LandscapeOverlayPlacement(
+    string ProgramId,
+    string Name,
+    Point2 Center,
+    double Radius,
+    double CoveragePercent,
+    double EquivalentAreaM2);
 
 public sealed class DistributionResult
 {
@@ -53,6 +77,8 @@ public sealed class LayoutScenarioResult
     public List<NodePlacement> AreaAnchors { get; init; } = [];
     public List<NodePlacement> Nodes { get; init; } = [];
     public List<RoutePlacement> Routes { get; init; } = [];
+    public List<SharedTerritoryPlacement> SharedTerritories { get; init; } = [];
+    public List<LandscapeOverlayPlacement> LandscapeOverlays { get; init; } = [];
     public List<RelationshipLine> RelationshipLines { get; init; } = [];
     public List<MorphologyAxisPlacement> MorphologyAxes { get; init; } = [];
     public List<BarahaCandidate> BarahaCandidates { get; init; } = [];

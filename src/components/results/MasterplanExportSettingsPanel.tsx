@@ -23,7 +23,7 @@ export function MasterplanExportSettingsPanel({ settings, onChange }: Props) {
   return (
     <SectionCard icon={SlidersHorizontal} title="Masterplan Export Settings">
       <p className="mb-3 text-[10px] leading-relaxed text-slate-500">
-        These values are exported with provenance as designer inputs or visible computational settings. Empty design dimensions remain unresolved; the exporter does not invent standards.
+        Values start from a preliminary estimation scenario and remain editable. They are exported as unverified designer assumptions—not competition-brief requirements or approved standards.
       </p>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <label className={labelClass}>
@@ -72,7 +72,7 @@ export function MasterplanExportSettingsPanel({ settings, onChange }: Props) {
       <p className="mt-4 mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Approximation and budget assumptions</p>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <label className={labelClass}>Service access count<select className={numberClass} value={settings.serviceAccessCount} onChange={event => set('serviceAccessCount', Number(event.target.value) === 2 ? 2 : 1)}><option value={1}>1 spur</option><option value={2}>2 spurs</option></select></label>
-        <label className={labelClass}>Scenario budget AED<input className={numberClass} type="number" min="0" value={settings.budgetTargetAed ?? ''} placeholder="Uses AED 35M cap" onChange={event => set('budgetTargetAed', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Scenario budget million AED<input className={numberClass} type="number" min="0" step="0.1" value={settings.budgetTargetAed === null ? '' : settings.budgetTargetAed / 1_000_000} placeholder="35" onChange={event => { const value = numericValue(event.target.value); set('budgetTargetAed', value === null ? null : value * 1_000_000); }} /></label>
         <label className={labelClass}>Contingency %<input className={numberClass} type="number" min="0" value={settings.costContingencyPercent ?? ''} placeholder="0" onChange={event => set('costContingencyPercent', numericValue(event.target.value))} /></label>
         <label className={labelClass}>Walking length m<input className={numberClass} type="number" min="0" value={settings.walkingPathLengthM ?? ''} placeholder="After layout" onChange={event => set('walkingPathLengthM', numericValue(event.target.value))} /></label>
         <label className={labelClass}>Walking width m<input className={numberClass} type="number" min="0" value={settings.walkingPathWidthM ?? ''} placeholder="Unresolved" onChange={event => set('walkingPathWidthM', numericValue(event.target.value))} /></label>
