@@ -9,6 +9,7 @@ import {
 } from '../src/lib/designPackage/contract';
 import { buildAreaReconciliation } from '../src/lib/designPackage/areaReconciliation';
 import type { OpportunityResult } from '../src/lib/gis/opportunityEngine';
+import { buildApproximateDesignEstimate } from '../src/lib/designPackage/designEstimate';
 
 function rawProgram(id: string, target = 100) {
   return {
@@ -168,4 +169,57 @@ test('area reconciliation separates exclusive, shared and overlay commitments', 
   assert.equal(reconciliation.shared_demand_area_m2, 2000);
   assert.equal(reconciliation.coverage_targets.find(target => target.program_id === 'treePlanting')?.equivalent_area_m2, 5894.8);
   assert.equal(reconciliation.maximum_leasable_area_m2, 2250);
+});
+
+test('design estimate reports variable counts, lengths, costs and scenario budget', () => {
+  const pkg = packageFixture();
+  const reconciliation = {
+    status: 'complete' as const,
+    brief_gross_area_m2: 15000,
+    measured_boundary_area_m2: 14736.99,
+    measured_to_brief_variance_m2: -263.01,
+    exclusive_program_area_m2: 200,
+    operations_area_m2: 300,
+    drop_off_area_m2: 200,
+    circulation_area_m2: 2500,
+    exclusive_committed_area_m2: 3200,
+    remaining_area_m2: 11536.99,
+    shared_demand_area_m2: 2000,
+    overlay_target_area_m2: 0,
+    maximum_leasable_area_m2: 2250,
+    maximum_leasable_area_percent: 15,
+    unresolved_exclusive_program_ids: [],
+    unresolved_coverage_program_ids: [],
+    coverage_targets: [
+      { program_id: 'treePlanting', label: 'Tree canopy', percent: 40, equivalent_area_m2: 5894.8 },
+      { program_id: 'nativePlanting', label: 'Native planting', percent: 20, equivalent_area_m2: 2947.4 }
+    ],
+    notes: []
+  };
+  const estimate = buildApproximateDesignEstimate({
+    pkg,
+    areaReconciliation: reconciliation,
+    sitePerimeterM: 500,
+    budgetCapAed: 35000000,
+    costRatesAedPerM2: { EPDM_RUBBER: 950, HIGH_ALBEDO_PAVING: 650, NATURAL_GRAVEL: 280, TURF: 180 },
+    settings: {
+      serviceAccessCount: 2,
+      budgetTargetAed: 17500000,
+      costContingencyPercent: 10,
+      walkingPathLengthM: 500,
+      walkingPathWidthM: 3,
+      joggingPathWidthM: 2.5,
+      cyclingPathWidthM: 3,
+      servicePathLengthM: 50,
+      servicePathWidthM: 4,
+      treeCanopyAreaPerTreeM2: 50,
+      treeUnitCostAed: 3000,
+      plantingCostAedPerM2: 120
+    }
+  });
+  assert.equal(estimate.paths.systems.find(path => path.id === 'serviceAccess')?.count, 2);
+  assert.equal(estimate.paths.known_approximate_length_m, 2050);
+  assert.equal(estimate.plants.approximate_tree_count, 118);
+  assert.equal(estimate.budget.scenario_factor_of_cap, 0.5);
+  assert.equal(estimate.budget.estimate_status, 'complete_approximation');
 });

@@ -92,6 +92,14 @@ function routeTopology(id: string): string {
   return 'route_pending_topology';
 }
 
+function ringPerimeterM(ring: number[][]): number {
+  if (ring.length < 2) return 0;
+  let total = 0;
+  for (let index = 1; index < ring.length; index++) total += Math.hypot(ring[index][0] - ring[index - 1][0], ring[index][1] - ring[index - 1][1]);
+  if (ring[0][0] !== ring.at(-1)?.[0] || ring[0][1] !== ring.at(-1)?.[1]) total += Math.hypot(ring[0][0] - ring.at(-1)![0], ring[0][1] - ring.at(-1)![1]);
+  return Math.round(total * 100) / 100;
+}
+
 function jsonFile(path: string, data: unknown): ZipTextFile {
   return { path, content: JSON.stringify(data, null, 2) };
 }
@@ -292,7 +300,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     },
     service: {
       route_type: 'entrance_to_operations_spur',
-      entrance_count: 1,
+      entrance_count: input.masterplanSettings.serviceAccessCount,
       eligible_edges: 'road_facing_only',
       must_connect_program_id: 'operationsArea',
       may_share_public_paths: input.masterplanSettings.allowServicePublicPathSharing,
@@ -493,6 +501,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       parametric_relationships: 'parametric_relationships.json',
       masterplan_settings: 'masterplan_settings.json',
       area_reconciliation: 'area_reconciliation.json',
+      design_estimate: 'design_estimate.json',
       grid: 'grid.json',
       relationships: 'relationships.json',
       unresolved: 'unresolved.json'
@@ -522,6 +531,13 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     }
   };
 
+  const areaReconciliation = buildAreaReconciliation({
+    briefGrossAreaM2: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.grossSiteAreaM2,
+    measuredBoundaryAreaM2: Math.round(turfArea(input.siteBoundary) * 100) / 100,
+    maximumLeasableAreaPercent: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.maximumLeasableAreaPercent,
+    opportunities: input.opportunities,
+    settings: input.masterplanSettings
+  });
   const canonicalPackage = buildCanonicalParkDesignPackage({
     siteName: input.siteName,
     generatedAt,
@@ -546,14 +562,17 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     roadEdgeRoles: input.roadEdgeRoles,
     generationSeed: input.generationSeed,
     briefAreaStatement: AL_SAFA_2_COMPETITION_BRIEF.areaStatement,
-    areaReconciliation: buildAreaReconciliation({
-      briefGrossAreaM2: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.grossSiteAreaM2,
-      measuredBoundaryAreaM2: Math.round(turfArea(input.siteBoundary) * 100) / 100,
-      maximumLeasableAreaPercent: AL_SAFA_2_COMPETITION_BRIEF.areaStatement.maximumLeasableAreaPercent,
-      opportunities: input.opportunities,
-      settings: input.masterplanSettings
-    })
+    areaReconciliation
   });
+  const designEstimate = buildApproximateDesignEstimate({
+    pkg: canonicalPackage,
+    areaReconciliation,
+    sitePerimeterM: ringPerimeterM(boundaryUtm[0] ?? []),
+    budgetCapAed: AL_SAFA_2_COMPETITION_BRIEF.totalBudgetCapAed,
+    costRatesAedPerM2: AL_SAFA_2_COMPETITION_BRIEF.costRateGuidanceAedPerM2,
+    settings: input.masterplanSettings
+  });
+  canonicalPackage.constraints.design_estimate = designEstimate;
   const canonicalValidation = validateParkDesignPackage(canonicalPackage);
 
   return [
@@ -581,6 +600,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     jsonFile('parametric_relationships.json', { schema_version: '1.3.0', scale: '-1_repulsion_to_1_attraction', authority: 'computed_advisory', relationships: parametricRelationships }),
     jsonFile('masterplan_settings.json', { schema_version: '1.3.0', ...input.masterplanSettings }),
     jsonFile('area_reconciliation.json', canonicalPackage.constraints.area_reconciliation),
+    jsonFile('design_estimate.json', designEstimate),
     jsonFile('grid.json', { schema_version: '1.2.0', cells }),
     jsonFile('relationships.json', {
       schema_version: '1.3.0',
@@ -602,6 +622,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
         'park_design_package.json is the canonical machine-readable contract; role-specific files remain compatibility views for the current Grasshopper loader.',
         'Area programs, landscape systems, point nodes, and routes are separated by geometry role.',
         'area_reconciliation.json distinguishes brief gross area, measured boundary, exclusive commitments, shared demand, circulation, and landscape coverage overlays.',
+        'design_estimate.json provides early-stage readiness scores, approximate counts/areas/lengths, and scenario-budget cost estimates with explicit unresolved assumptions.',
         'Access candidates and pair metrics are evidence inputs for Grasshopper/Wallacei optimization.',
         'Terrain is supplied as an authoritative Rhino mesh; cut/fill metrics compare existing and proposed meshes.',
         'Climate morphology carries the EPW/CFD lineage, primary sikka axis, ventilation cuts, terrain rules, and baraha-generation settings.',

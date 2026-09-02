@@ -3,6 +3,7 @@ import type { AreaReconciliation } from './areaReconciliation';
 import type { AestheticMateriality } from '../results/competitionBrief';
 
 export interface DesignEstimateSettings {
+  serviceAccessCount: 1 | 2;
   budgetTargetAed: number | null;
   costContingencyPercent: number | null;
   walkingPathLengthM: number | null;
@@ -18,6 +19,7 @@ export interface DesignEstimateSettings {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const valid = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+const positive = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 
 function materialityForProgram(id: string, name: string): AestheticMateriality {
   const value = `${id} ${name}`.toLowerCase();
@@ -45,10 +47,10 @@ export function buildApproximateDesignEstimate(input: {
 
   const pathRate = input.costRatesAedPerM2.HIGH_ALBEDO_PAVING;
   const pathInputs = [
-    { id: 'walkingPromenade', count: 1, role: 'weighted_program_network', length: valid(input.settings.walkingPathLengthM), width: valid(input.settings.walkingPathWidthM), source: 'designer_assumption_required' },
-    { id: 'joggingLoop', count: 1, role: 'closed_loop', length: 1000, width: valid(input.settings.joggingPathWidthM), source: 'competition_brief_approximate_1_km' },
-    { id: 'exerciseCyclingLoop', count: 1, role: 'distinct_closed_loop', length: round(input.sitePerimeterM), width: valid(input.settings.cyclingPathWidthM), source: 'measured_site_perimeter_proxy' },
-    { id: 'serviceAccess', count: { minimum: 1, maximum: 2 }, role: 'entrance_to_operations_spur', length: valid(input.settings.servicePathLengthM), width: valid(input.settings.servicePathWidthM), source: 'designer_assumption_required' }
+    { id: 'walkingPromenade', count: 1, role: 'weighted_program_network', length: positive(input.settings.walkingPathLengthM), width: positive(input.settings.walkingPathWidthM), source: 'designer_assumption_required' },
+    { id: 'joggingLoop', count: 1, role: 'closed_loop', length: 1000, width: positive(input.settings.joggingPathWidthM), source: 'competition_brief_approximate_1_km' },
+    { id: 'exerciseCyclingLoop', count: 1, role: 'distinct_closed_loop', length: round(input.sitePerimeterM), width: positive(input.settings.cyclingPathWidthM), source: 'measured_site_perimeter_proxy' },
+    { id: 'serviceAccess', count: input.settings.serviceAccessCount, role: 'entrance_to_operations_spur', length: positive(input.settings.servicePathLengthM), width: positive(input.settings.servicePathWidthM), source: 'designer_assumption_required' }
   ].map(path => {
     const surfaceArea = path.length === null || path.width === null ? null : round(path.length * path.width);
     return { ...path, approximate_area_m2: surfaceArea, approximate_cost_aed: surfaceArea === null ? null : round(surfaceArea * pathRate), cost_rate_aed_per_m2: pathRate };
@@ -57,12 +59,16 @@ export function buildApproximateDesignEstimate(input: {
 
   const treeCoverage = input.areaReconciliation.coverage_targets.find(target => target.program_id === 'treePlanting')?.equivalent_area_m2 ?? null;
   const nativeCoverage = input.areaReconciliation.coverage_targets.find(target => target.program_id === 'nativePlanting')?.equivalent_area_m2 ?? null;
-  const canopyPerTree = valid(input.settings.treeCanopyAreaPerTreeM2);
+  const canopyPerTree = positive(input.settings.treeCanopyAreaPerTreeM2);
   const treeCount = treeCoverage === null || !canopyPerTree ? null : Math.ceil(treeCoverage / canopyPerTree);
   const treeCost = treeCount === null || valid(input.settings.treeUnitCostAed) === null ? null : round(treeCount * Number(input.settings.treeUnitCostAed));
   const plantingCost = nativeCoverage === null || valid(input.settings.plantingCostAedPerM2) === null ? null : round(nativeCoverage * Number(input.settings.plantingCostAedPerM2));
 
   const relationshipsWithWeight = input.pkg.relationships.filter(relationship => valid(relationship.weight) !== null).length;
+  const relationshipCountByType = input.pkg.relationships.reduce<Record<string, number>>((counts, relationship) => {
+    counts[relationship.type] = (counts[relationship.type] ?? 0) + 1;
+    return counts;
+  }, {});
   const spacesScore = exclusivePrograms.length ? round(100 * quantifiedExclusive.length / exclusivePrograms.length) : 0;
   const pathsScore = round(100 * pathInputs.filter(path => path.length !== null && path.width !== null).length / pathInputs.length);
   const adjacencyScore = input.pkg.relationships.length ? round(100 * relationshipsWithWeight / input.pkg.relationships.length) : 0;
@@ -72,7 +78,8 @@ export function buildApproximateDesignEstimate(input: {
   const knownBaseCost = spacesCost + knownPathCosts.reduce((sum, value) => sum + value, 0) + (treeCost ?? 0) + (plantingCost ?? 0);
   const contingencyPercent = valid(input.settings.costContingencyPercent) ?? 0;
   const knownCostWithContingency = round(knownBaseCost * (1 + contingencyPercent / 100));
-  const budgetTarget = valid(input.settings.budgetTargetAed) ?? input.budgetCapAed;
+  const requestedBudgetTarget = valid(input.settings.budgetTargetAed) ?? input.budgetCapAed;
+  const budgetTarget = Math.min(requestedBudgetTarget, input.budgetCapAed);
   const estimateComplete = knownPathCosts.length === pathInputs.length && treeCost !== null && plantingCost !== null;
 
   return {
@@ -86,7 +93,11 @@ export function buildApproximateDesignEstimate(input: {
       overall_readiness: round((spacesScore + pathsScore + adjacencyScore + plantsScore) / 4)
     },
     spaces: {
+      total_space_program_count: input.pkg.program.filter(program => program.program_class === 'SPACE').length,
+      area_program_count: areaPrograms.length,
       required_exclusive_count: exclusivePrograms.length,
+      shared_program_count: areaPrograms.filter(program => String(program.provenance?.spatial_mode) === 'shared').length,
+      overlay_program_count: areaPrograms.filter(program => String(program.provenance?.spatial_mode) === 'overlay').length,
       quantified_exclusive_count: quantifiedExclusive.length,
       approximate_exclusive_area_m2: input.areaReconciliation.exclusive_committed_area_m2,
       shared_nominal_area_m2: input.areaReconciliation.shared_demand_area_m2,
@@ -96,6 +107,7 @@ export function buildApproximateDesignEstimate(input: {
     },
     paths: {
       physical_system_count: 4,
+      approximate_centerline_count: 3 + input.settings.serviceAccessCount,
       modifier_layer_count: 2,
       systems: pathInputs,
       known_approximate_length_m: round(pathInputs.reduce((sum, path) => sum + (path.length ?? 0), 0)),
@@ -106,10 +118,13 @@ export function buildApproximateDesignEstimate(input: {
       relationship_count: input.pkg.relationships.length,
       weighted_relationship_count: relationshipsWithWeight,
       mandatory_relationship_count: input.pkg.relationships.filter(relationship => relationship.mandatory).length,
+      approximate_count_by_type: relationshipCountByType,
       status: 'scores_are_definition_completeness_until_geometry_exists'
     },
     plants: {
       planting_zone_count: input.pkg.planting_requirements.length,
+      coverage_target_count: input.areaReconciliation.coverage_targets.length,
+      resolved_coverage_target_count: input.areaReconciliation.coverage_targets.filter(target => target.percent !== null).length,
       tree_canopy_area_m2: treeCoverage,
       native_planting_area_m2: nativeCoverage,
       approximate_tree_count: treeCount,
@@ -119,6 +134,7 @@ export function buildApproximateDesignEstimate(input: {
     },
     budget: {
       competition_cap_aed: input.budgetCapAed,
+      requested_scenario_target_aed: requestedBudgetTarget,
       scenario_target_aed: budgetTarget,
       scenario_factor_of_cap: round(budgetTarget / input.budgetCapAed),
       contingency_percent: contingencyPercent,

@@ -69,6 +69,21 @@ export function MasterplanExportSettingsPanel({ settings, onChange }: Props) {
           <input className={numberClass} type="number" min="0" max="100" value={settings.bioswaleCoveragePercent ?? ''} placeholder="Unresolved" onChange={event => set('bioswaleCoveragePercent', numericValue(event.target.value))} />
         </label>
       </div>
+      <p className="mt-4 mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Approximation and budget assumptions</p>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <label className={labelClass}>Service access count<select className={numberClass} value={settings.serviceAccessCount} onChange={event => set('serviceAccessCount', Number(event.target.value) === 2 ? 2 : 1)}><option value={1}>1 spur</option><option value={2}>2 spurs</option></select></label>
+        <label className={labelClass}>Scenario budget AED<input className={numberClass} type="number" min="0" value={settings.budgetTargetAed ?? ''} placeholder="Uses AED 35M cap" onChange={event => set('budgetTargetAed', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Contingency %<input className={numberClass} type="number" min="0" value={settings.costContingencyPercent ?? ''} placeholder="0" onChange={event => set('costContingencyPercent', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Walking length m<input className={numberClass} type="number" min="0" value={settings.walkingPathLengthM ?? ''} placeholder="After layout" onChange={event => set('walkingPathLengthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Walking width m<input className={numberClass} type="number" min="0" value={settings.walkingPathWidthM ?? ''} placeholder="Unresolved" onChange={event => set('walkingPathWidthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Jogging width m<input className={numberClass} type="number" min="0" value={settings.joggingPathWidthM ?? ''} placeholder="Unresolved" onChange={event => set('joggingPathWidthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Cycling width m<input className={numberClass} type="number" min="0" value={settings.cyclingPathWidthM ?? ''} placeholder="Unresolved" onChange={event => set('cyclingPathWidthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Service length m<input className={numberClass} type="number" min="0" value={settings.servicePathLengthM ?? ''} placeholder="After operations placement" onChange={event => set('servicePathLengthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Service width m<input className={numberClass} type="number" min="0" value={settings.servicePathWidthM ?? ''} placeholder="Unresolved" onChange={event => set('servicePathWidthM', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Canopy area / tree m²<input className={numberClass} type="number" min="0" value={settings.treeCanopyAreaPerTreeM2 ?? ''} placeholder="Designer assumption" onChange={event => set('treeCanopyAreaPerTreeM2', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Tree unit cost AED<input className={numberClass} type="number" min="0" value={settings.treeUnitCostAed ?? ''} placeholder="Designer estimate" onChange={event => set('treeUnitCostAed', numericValue(event.target.value))} /></label>
+        <label className={labelClass}>Planting cost AED/m²<input className={numberClass} type="number" min="0" value={settings.plantingCostAedPerM2 ?? ''} placeholder="Designer estimate" onChange={event => set('plantingCostAedPerM2', numericValue(event.target.value))} /></label>
+      </div>
       <div className="mt-3 grid gap-2 text-[10px] text-slate-600 md:grid-cols-3">
         <label className="flex items-center gap-2 rounded border border-slate-100 bg-slate-50 p-2">
           <input type="checkbox" checked={settings.allPedestrianRoutesAccessible} onChange={event => set('allPedestrianRoutesAccessible', event.target.checked)} />

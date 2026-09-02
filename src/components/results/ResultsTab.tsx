@@ -67,6 +67,7 @@ export function ResultsTab() {
     habitatCoveragePercent: null,
     bioswaleCoveragePercent: null,
     budgetTargetAed: null,
+    serviceAccessCount: 1,
     costContingencyPercent: null,
     walkingPathLengthM: null,
     walkingPathWidthM: null,
