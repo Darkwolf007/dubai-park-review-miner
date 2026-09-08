@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.4.0",
+  "generation_order": [
+    "place_program_spaces",
+    "build_weighted_walking_connector_network_from_persona_od",
+    "designate_accessible_and_shade_priority_segments",
+    "generate_distinct_jogging_loop",
+    "generate_distinct_cycling_loop",
+    "generate_service_spur",
+    "resolve_crossings_and_shared_segments"
+  ],
+  "public_entrances": {
+    "count": 2,
+    "eligible_edges": "road_facing_only",
+    "school_facing_edges": "hard_exclusion",
+    "building_facing_edges": "hard_exclusion"
+  },
+  "loops_connect_both_public_entrances": true,
+  "walking": {
+    "route_type": "weighted_program_connector_network",
+    "anchor_source": "program_centroids_entrances_and_persona_od_matrix",
+    "edge_weight_source": "movement_demands_plus_accessibility_shade_and_conflict_costs",
+    "must_connect_program_spaces": true,
+    "perimeter_loop_required": false,
+    "accessibility_scope": "primary_accessible_network",
+    "may_share_with_jogging": false,
+    "target_length_m": 650,
+    "width_m": 3,
+    "maximum_slope_percent": null,
+    "requirement_authority": "unresolved_pending_park_brain_or_designer_approval"
+  },
+  "jogging": {
+    "route_type": "closed_loop",
+    "distinct_alignment_required": true,
+    "full_coincidence_with_walking_forbidden": true,
+    "length_objective": "maximize_feasible_useful_length",
+    "target_length_m": 1000,
+    "may_share_with_walking": false,
+    "width_m": 2.5,
+    "maximum_slope_percent": null,
+    "requirement_authority": "unresolved_pending_park_brain_or_designer_approval"
+  },
+  "exercise_cycling": {
+    "program_id": "exerciseCyclingLoop",
+    "route_type": "closed_loop",
+    "distinct_alignment_required": true,
+    "full_coincidence_with_walking_or_jogging_forbidden": true,
+    "alignment_policy": "separate_alignment_except_controlled_crossings_or_explicitly_approved_short_shared_segments",
+    "length_objective": "maximize_feasible_useful_length",
+    "target_length_m": 508.58,
+    "pedestrian_sharing": "conditional_on_terrain_slope_curvature_width_and_conflict",
+    "width_m": 2.5,
+    "maximum_slope_percent": null,
+    "minimum_turning_radius_m": null,
+    "requirement_authority": "unresolved_pending_park_brain_or_designer_approval"
+  },
+  "accessible_network": {
+    "route_type": "designation_on_walking_network",
+    "independent_parallel_path_required": false,
+    "must_connect": [
+      "public_entrances",
+      "required_program_spaces",
+      "amenities"
+    ],
+    "geometry_constraints": [
+      "approved_width",
+      "approved_slope",
+      "continuous_barrier_free_route"
+    ]
+  },
+  "shaded_network": {
+    "route_type": "performance_attribute_on_walking_and_dwell_connections",
+    "independent_parallel_path_required": false,
+    "prioritization": "persona_demand_times_heat_exposure_times_dwell_and_route_frequency"
+  },
+  "service": {
+    "route_type": "entrance_to_operations_spur",
+    "entrance_count": 1,
+    "eligible_edges": "road_facing_only",
+    "must_connect_program_id": "operationsArea",
+    "target_length_m": 60,
+    "width_m": 4,
+    "may_share_public_paths": false,
+    "full_coincidence_with_public_network_forbidden": true
+  },
+  "route_conflict_rules": {
+    "all_routes_on_one_alignment_forbidden": true,
+    "jogging_and_cycling_require_distinct_closed_loops": true,
+    "cycling_pedestrian_intersections": "controlled_crossings_only",
+    "accessible_and_shaded_are_network_attributes_not_duplicate_centerlines": true,
+    "shared_segments_require_explicit_mode_compatibility": true
+  }
+}

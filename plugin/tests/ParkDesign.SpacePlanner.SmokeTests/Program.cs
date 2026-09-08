@@ -49,6 +49,31 @@ var conceptualLoops = RouteGenerator.Generate(
     [], [], [], [], true, []).Routes;
 Require(conceptualLoops.Count == 2 && conceptualLoops.All(route => route.Closed), "Jogging and cycling conceptual loops must both be generated.");
 Require(conceptualLoops[0].Points[0] != conceptualLoops[1].Points[0], "Conceptual loop layers must be visibly separated rather than coincident.");
+Require(conceptualLoops.All(route => route.Points.Count > boundary.Count + 1), "Conceptual park loops must round boundary corners instead of reproducing a hard-edged scaled polygon.");
+
+var hierarchicalWalking = RouteGenerator.Generate(
+    boundary,
+    [new ProgramDefinition { Id = "walkingPromenade", Name = "Walking Promenade", GeometryType = "linear", Selected = true }],
+    [
+        new BubblePlacement("play", "Play", new(500050, 2780080), 5, 80, "INNER_BUFFER"),
+        new BubblePlacement("cafe", "Cafe", new(500050, 2780020), 5, 80, "INNER_BUFFER")
+    ],
+    [],
+    [
+        new NodePlacement("mainEntrancePlaza", "Main Entrance", new(500005, 2780050), 1),
+        new NodePlacement("secondaryEntrances", "Secondary Entrance", new(500095, 2780050), 1)
+    ],
+    [], true, [],
+    [new MovementDemandDefinition { Origin = "mainEntrancePlaza", Destination = "play", Weight = 5 }]).Routes;
+var primarySpine = hierarchicalWalking.Single(route => route.Basis.StartsWith("curvilinear_primary_spine", StringComparison.Ordinal));
+var feederBranches = hierarchicalWalking.Where(route => route.Basis.StartsWith("hierarchical_spine_branch", StringComparison.Ordinal)).ToList();
+Require(primarySpine.SourceAnchorId == "mainEntrancePlaza" && primarySpine.TargetAnchorId == "secondaryEntrances",
+    "Walking hierarchy must use the two public entrances as primary-spine endpoints when both exist.");
+Require(feederBranches.Count == 1 && feederBranches.All(route => route.Attributes?.Contains("secondary") == true),
+    "Every area not already served by the spine must receive one traceable secondary branch instead of arbitrary area-to-area chords.");
+Require(feederBranches.All(branch => primarySpine.Points.Zip(primarySpine.Points.Skip(1),
+        (a, b) => DistanceToTestSegment(branch.Points[^1], a, b)).Min() < 0.001),
+    "Every walking branch must terminate on the primary spine.");
 
 var geographic = CoordinateTransforms.Utm40NToWgs84(new Point2(320785, 2783369));
 Require(Math.Abs(geographic.Longitude - 55.22) < 0.02 && Math.Abs(geographic.Latitude - 25.15) < 0.02, "EPSG:32640 must convert to the expected Al Safa WGS84 location.");
@@ -275,6 +300,15 @@ static bool RouteAvoidsUnrelatedExclusiveBubbles(RoutePlacement route, IReadOnly
         if (PolygonMath.Distance(closest, bubble.Center) < bubble.Radius - .1) return false;
     }
     return true;
+}
+
+static double DistanceToTestSegment(Point2 point, Point2 a, Point2 b)
+{
+    var dx = b.X - a.X;
+    var dy = b.Y - a.Y;
+    var lengthSquared = dx * dx + dy * dy;
+    var t = lengthSquared <= 1e-12 ? 0 : Math.Clamp(((point.X - a.X) * dx + (point.Y - a.Y) * dy) / lengthSquared, 0, 1);
+    return PolygonMath.Distance(point, new Point2(a.X + dx * t, a.Y + dy * t));
 }
 
 static void RelationshipCompilerAndSolverTests()

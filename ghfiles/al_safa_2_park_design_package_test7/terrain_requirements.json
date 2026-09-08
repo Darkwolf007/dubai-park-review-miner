@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.2.0",
+  "authoritative_input": "rhino_mesh",
+  "horizontal_crs": "EPSG:32640",
+  "horizontal_units": "meters",
+  "vertical_units": "meters",
+  "vertical_datum": null,
+  "optimizer_may_modify_terrain": true,
+  "required_comparison": [
+    "cut_volume_m3",
+    "fill_volume_m3",
+    "net_volume_m3",
+    "total_earthwork_m3",
+    "disturbed_area_m2",
+    "maximum_cut_depth_m",
+    "maximum_fill_depth_m",
+    "balance_ratio"
+  ],
+  "external_optional_inputs": {
+    "existing_trees": "points_with_optional_canopy_radius",
+    "existing_buildings": "closed_curves_or_meshes",
+    "drainage": "curves",
+    "utilities": "points_with_optional_exclusion_radius"
+  }
+}

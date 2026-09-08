@@ -51,7 +51,8 @@ public static class RouteGenerator
         var demandList = movementDemands.ToList();
         var demandedIds = demandList.SelectMany(demand => new[] { demand.Origin, demand.Destination }).ToHashSet(StringComparer.Ordinal);
         var requiredIds = areas.Select(area => area.ProgramId).Concat(anchors.Keys.Where(demandedIds.Contains))
-            .Distinct(StringComparer.Ordinal).Where(anchors.ContainsKey).ToList();
+            .Concat(new[] { "mainEntrancePlaza", "secondaryEntrances" }.Where(anchors.ContainsKey))
+            .Distinct(StringComparer.Ordinal).Where(anchors.ContainsKey).OrderBy(id => id, StringComparer.Ordinal).ToList();
         if (requiredIds.Count < 2)
         {
             warnings.Add("Walking Promenade needs at least two placed program or amenity anchors and was not generated.");
@@ -60,33 +61,163 @@ public static class RouteGenerator
         var demandWeights = demandList.Where(demand => anchors.ContainsKey(demand.Origin) && anchors.ContainsKey(demand.Destination))
             .GroupBy(demand => PairKey(demand.Origin, demand.Destination), StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.Sum(item => Math.Max(0, item.Weight)), StringComparer.Ordinal);
-        var maximumDemand = demandWeights.Values.DefaultIfEmpty(0).Max();
-        return WeightedMinimumSpanningTree(requiredIds, anchors, demandWeights, maximumDemand)
-            .Select(edge => new RoutePlacement(program.Id, program.Name,
-                BuildSpaceEdgeRoute(boundary, edge.A, edge.B, anchors, areas), false,
-                $"persona_od_weighted_program_connector:{edge.DemandWeight:0.##}", ["accessible", "shade_priority"], edge.A, edge.B))
-            .ToList();
+        var (spineStartId, spineEndId) = SelectSpineEndpoints(requiredIds, anchors);
+        var centralDestinationId = SelectCentralDestination(requiredIds, anchors, spineStartId, spineEndId, boundary);
+        var spineRaw = centralDestinationId is null
+            ? BuildSpaceEdgeRoute(boundary, spineStartId, spineEndId, anchors, areas)
+            : JoinRoutes(
+                BuildSpaceEdgeRoute(boundary, spineStartId, centralDestinationId, anchors, areas),
+                BuildSpaceEdgeRoute(boundary, centralDestinationId, spineEndId, anchors, areas));
+        var spineObstacles = areas.Where(area => area.SpatialMode == "exclusive"
+            && area.ProgramId != spineStartId && area.ProgramId != spineEndId
+            && area.ProgramId != centralDestinationId).ToList();
+        var spine = ShapeParkPath(boundary, spineRaw, spineObstacles, $"{spineStartId}|{spineEndId}");
+        var routes = new List<RoutePlacement>
+        {
+            new(program.Id, program.Name, spine, false,
+                centralDestinationId is null ? "curvilinear_primary_spine" : $"curvilinear_primary_spine_via:{centralDestinationId}",
+                ["accessible", "shade_priority", "primary"], spineStartId, spineEndId)
+        };
+
+        var anchorDemand = requiredIds.ToDictionary(id => id,
+            id => demandList.Where(demand => demand.Origin == id || demand.Destination == id)
+                .Sum(demand => Math.Max(0, demand.Weight)), StringComparer.Ordinal);
+        foreach (var sourceId in requiredIds.Where(id => id != spineStartId && id != spineEndId && id != centralDestinationId)
+                     .OrderByDescending(id => anchorDemand[id]).ThenBy(id => id, StringComparer.Ordinal))
+        {
+            var attachment = ClosestPointOnPolyline(spine, anchors[sourceId]);
+            var obstacles = areas.Where(area => area.SpatialMode == "exclusive" && area.ProgramId != sourceId).ToList();
+            var start = AccessibleBubbleEdge(sourceId, anchors[sourceId], attachment, areas, obstacles, boundary);
+            var branchRaw = ShortestVisibilityPath(boundary, start, attachment, obstacles);
+            var branch = ShapeParkPath(boundary, branchRaw, obstacles, sourceId);
+            var targetId = PolygonMath.Distance(attachment, anchors[spineStartId])
+                <= PolygonMath.Distance(attachment, anchors[spineEndId]) ? spineStartId : spineEndId;
+            routes.Add(new(program.Id, program.Name, branch, false,
+                $"hierarchical_spine_branch:persona_od_weight={anchorDemand[sourceId]:0.##}",
+                ["accessible", "shade_priority", "secondary"], sourceId, targetId));
+        }
+        return routes;
     }
 
-    private static List<(string A, string B, double DemandWeight)> WeightedMinimumSpanningTree(IReadOnlyList<string> ids,
-        IReadOnlyDictionary<string, Point2> anchors, IReadOnlyDictionary<string, double> demandWeights, double maximumDemand)
+    private static (string Start, string End) SelectSpineEndpoints(IReadOnlyList<string> ids,
+        IReadOnlyDictionary<string, Point2> anchors)
     {
-        var connected = new HashSet<string>(StringComparer.Ordinal) { ids.OrderBy(id => id, StringComparer.Ordinal).First() };
-        var edges = new List<(string A, string B, double DemandWeight)>();
-        while (connected.Count < ids.Count)
+        const string mainEntrance = "mainEntrancePlaza";
+        const string secondaryEntrance = "secondaryEntrances";
+        if (ids.Contains(mainEntrance, StringComparer.Ordinal) && ids.Contains(secondaryEntrance, StringComparer.Ordinal))
+            return (mainEntrance, secondaryEntrance);
+        if (ids.Contains(mainEntrance, StringComparer.Ordinal))
+            return (mainEntrance, ids.Where(id => id != mainEntrance)
+                .OrderByDescending(id => PolygonMath.Distance(anchors[mainEntrance], anchors[id]))
+                .ThenBy(id => id, StringComparer.Ordinal).First());
+
+        var pair = ids.SelectMany((a, index) => ids.Skip(index + 1).Select(b =>
+                (A: a, B: b, Distance: PolygonMath.Distance(anchors[a], anchors[b]))))
+            .OrderByDescending(item => item.Distance).ThenBy(item => item.A, StringComparer.Ordinal)
+            .ThenBy(item => item.B, StringComparer.Ordinal).First();
+        return (pair.A, pair.B);
+    }
+
+    private static Point2 ClosestPointOnPolyline(IReadOnlyList<Point2> points, Point2 point)
+    {
+        var best = points[0];
+        var bestDistance = double.PositiveInfinity;
+        for (var index = 0; index < points.Count - 1; index++)
         {
-            var candidates = connected.SelectMany(a => ids.Where(b => !connected.Contains(b)).Select(b =>
-            {
-                var demand = demandWeights.GetValueOrDefault(PairKey(a, b));
-                var normalizedDemand = maximumDemand <= 0 ? 0 : demand / maximumDemand;
-                return (A: a, B: b, Demand: demand,
-                    Cost: PolygonMath.Distance(anchors[a], anchors[b]) / (1 + 3 * normalizedDemand));
-            })).OrderBy(item => item.Cost).ThenByDescending(item => item.Demand)
-                .ThenBy(item => item.A, StringComparer.Ordinal).ThenBy(item => item.B, StringComparer.Ordinal).ToList();
-            if (candidates.Count == 0) break;
-            var best = candidates[0]; connected.Add(best.B); edges.Add((best.A, best.B, best.Demand));
+            var a = points[index];
+            var b = points[index + 1];
+            var t = Math.Clamp(ProjectionParameter(point, a, b), 0, 1);
+            var candidate = new Point2(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t);
+            var distance = PolygonMath.Distance(point, candidate);
+            if (distance >= bestDistance) continue;
+            best = candidate;
+            bestDistance = distance;
         }
-        return edges;
+        return best;
+    }
+
+    private static string? SelectCentralDestination(IReadOnlyList<string> ids,
+        IReadOnlyDictionary<string, Point2> anchors, string startId, string endId, IReadOnlyList<Point2> boundary)
+    {
+        foreach (var preferred in new[] { "communityPlaza", "flexibleEventLawn", "cafeKiosk" })
+            if (ids.Contains(preferred, StringComparer.Ordinal) && preferred != startId && preferred != endId)
+                return preferred;
+
+        var centroid = PolygonMath.Centroid(boundary);
+        return ids.Where(id => id != startId && id != endId)
+            .OrderBy(id => PolygonMath.Distance(anchors[id], centroid))
+            .ThenBy(id => id, StringComparer.Ordinal).FirstOrDefault();
+    }
+
+    private static IReadOnlyList<Point2> JoinRoutes(IReadOnlyList<Point2> first, IReadOnlyList<Point2> second)
+    {
+        if (first.Count == 0) return second;
+        if (second.Count == 0) return first;
+        var joined = first.ToList();
+        if (PolygonMath.Distance(joined[^1], second[0]) > 1e-6) joined.Add(second[0]);
+        joined.AddRange(second.Skip(1));
+        return joined;
+    }
+
+    private static IReadOnlyList<Point2> ShapeParkPath(IReadOnlyList<Point2> boundary, IReadOnlyList<Point2> raw,
+        IReadOnlyList<BubblePlacement> obstacles, string stableKey)
+    {
+        if (raw.Count < 2) return raw;
+        var shaped = raw.ToList();
+        if (shaped.Count == 2)
+        {
+            var a = shaped[0];
+            var b = shaped[1];
+            var length = PolygonMath.Distance(a, b);
+            if (length > 12)
+            {
+                var offset = Math.Min(6, length * .08);
+                var dx = (b.X - a.X) / length;
+                var dy = (b.Y - a.Y) / length;
+                var sign = StableSign(stableKey);
+                foreach (var candidateSign in new[] { sign, -sign })
+                {
+                    var midpoint = new Point2((a.X + b.X) / 2 - dy * offset * candidateSign,
+                        (a.Y + b.Y) / 2 + dx * offset * candidateSign);
+                    if (!SegmentClear(boundary, a, midpoint, obstacles) || !SegmentClear(boundary, midpoint, b, obstacles)) continue;
+                    shaped = [a, midpoint, b];
+                    break;
+                }
+            }
+        }
+
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var candidate = ChaikinOpen(shaped);
+            if (!RouteClear(boundary, candidate, obstacles)) break;
+            shaped = candidate;
+        }
+        return shaped;
+    }
+
+    private static List<Point2> ChaikinOpen(IReadOnlyList<Point2> points)
+    {
+        if (points.Count < 3) return points.ToList();
+        var result = new List<Point2> { points[0] };
+        for (var index = 0; index < points.Count - 1; index++)
+        {
+            var a = points[index];
+            var b = points[index + 1];
+            result.Add(new(a.X * .75 + b.X * .25, a.Y * .75 + b.Y * .25));
+            result.Add(new(a.X * .25 + b.X * .75, a.Y * .25 + b.Y * .75));
+        }
+        result.Add(points[^1]);
+        return result;
+    }
+
+    private static bool RouteClear(IReadOnlyList<Point2> boundary, IReadOnlyList<Point2> points,
+        IReadOnlyList<BubblePlacement> obstacles) =>
+        points.Zip(points.Skip(1), (a, b) => SegmentClear(boundary, a, b, obstacles)).All(clear => clear);
+
+    private static int StableSign(string value)
+    {
+        var checksum = value.Aggregate(17, (current, character) => unchecked(current * 31 + character));
+        return (checksum & 1) == 0 ? 1 : -1;
     }
 
     private static IReadOnlyList<Point2> BuildSpaceEdgeRoute(IReadOnlyList<Point2> boundary, string sourceId, string targetId,
@@ -231,7 +362,22 @@ public static class RouteGenerator
         var factor = Math.Max(.55, 1 - insetM / minimumRadius);
         var inset = boundary.Select(point => new Point2(centroid.X + (point.X - centroid.X) * factor,
             centroid.Y + (point.Y - centroid.Y) * factor)).ToList();
-        inset.Add(inset[0]); return inset;
+        for (var pass = 0; pass < 2; pass++) inset = ChaikinClosed(inset);
+        inset.Add(inset[0]);
+        return inset;
+    }
+
+    private static List<Point2> ChaikinClosed(IReadOnlyList<Point2> points)
+    {
+        var result = new List<Point2>(points.Count * 2);
+        for (var index = 0; index < points.Count; index++)
+        {
+            var a = points[index];
+            var b = points[(index + 1) % points.Count];
+            result.Add(new(a.X * .75 + b.X * .25, a.Y * .75 + b.Y * .25));
+            result.Add(new(a.X * .25 + b.X * .75, a.Y * .25 + b.Y * .75));
+        }
+        return result;
     }
 
     private static List<(string A, string B)> MinimumSpanningTree(IReadOnlyList<string> ids, IReadOnlyDictionary<string, Point2> anchors)

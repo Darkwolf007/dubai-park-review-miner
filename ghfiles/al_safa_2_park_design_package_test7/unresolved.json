@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.2.0",
+  "rules": [],
+  "area_programs_without_recommendation": [
+    "biodiversityHabitat",
+    "nativePlanting",
+    "treePlanting",
+    "bioswale"
+  ]
+}

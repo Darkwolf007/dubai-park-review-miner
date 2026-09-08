@@ -1,0 +1,904 @@
+{
+  "schema_version": "1.3.0",
+  "programs": [
+    {
+      "id": "walkingPromenade",
+      "name": "Walking Promenade",
+      "category": "Movement",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.74,
+      "scores": {
+        "opportunity": 74,
+        "demand": 49,
+        "suitability": 84,
+        "feasibility": 100,
+        "confidence": 80,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "seniors",
+        "families",
+        "residents"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "movement-driven",
+        "population-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 49/100 across 186 H3 cells.",
+        "No review category applies to this program type -- demand is population/site-signal driven only.",
+        "Site suitability score: 84/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "route_directness_ratio",
+      "attractors": [
+        "Program-space anchors",
+        "Low heat exposure",
+        "Low barrier severity"
+      ],
+      "repellers": [
+        "High heat exposure",
+        "Program-space conflicts"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "older_adults",
+        "families",
+        "social_groups"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "program_connector_network",
+      "target_length_m": 650,
+      "target_width_m": 3
+    },
+    {
+      "id": "accessibleRoutes",
+      "name": "Universal Accessible Routes",
+      "category": "Arrival / Access",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.7,
+      "scores": {
+        "opportunity": 70,
+        "demand": 39,
+        "suitability": 84,
+        "feasibility": 100,
+        "confidence": 82,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "seniors",
+        "families",
+        "residents"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "accessibility-driven",
+        "review-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 39/100 across 186 H3 cells.",
+        "1 review mention(s) of \"accessibility\" (0% negative sentiment) -- population-weighted REDISTRIBUTION across cells, not measured per-cell review activity.",
+        "Site suitability score: 84/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "route_directness_ratio",
+      "attractors": [
+        "Accessibility deficit",
+        "Low barrier severity",
+        "Program-space connections"
+      ],
+      "repellers": [
+        "High barrier severity",
+        "Inaccessible terrain"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "older_adults",
+        "families",
+        "social_groups"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "walking_network_attribute",
+      "target_length_m": null,
+      "target_width_m": null
+    },
+    {
+      "id": "exerciseCyclingLoop",
+      "name": "Exercise Cycling Loop",
+      "category": "Movement",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.68,
+      "scores": {
+        "opportunity": 68,
+        "demand": 29,
+        "suitability": 91,
+        "feasibility": 100,
+        "confidence": 100,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "Exercise cyclists",
+        "Adults",
+        "Residents"
+      ],
+      "evidence_sources": [
+        "brief-optional",
+        "movement-driven",
+        "designer-assumption"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 29/100 across 186 H3 cells.",
+        "18 review mention(s) of \"sports facilities\" (0% negative sentiment) -- population-weighted REDISTRIBUTION across cells, not measured per-cell review activity.",
+        "Sports-facilities mentions are only a demand proxy. Terrain slope, curvature, width, and mode-sharing feasibility are evaluated later in Rhino from an authoritative mesh and approved requirements.",
+        "Site suitability score: 91/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "exercise_cycling_route_suitability",
+      "attractors": [
+        "Both public entrances",
+        "Perimeter continuity",
+        "Low slope from Rhino terrain mesh"
+      ],
+      "repellers": [
+        "High slope",
+        "Tight curvature",
+        "High pedestrian conflict"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "active_users",
+        "young_adults",
+        "social_groups"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "closed_loop",
+      "target_length_m": 508.58,
+      "target_width_m": 2.5
+    },
+    {
+      "id": "joggingLoop",
+      "name": "Jogging Loop",
+      "category": "Movement",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.67,
+      "scores": {
+        "opportunity": 67,
+        "demand": 25,
+        "suitability": 92,
+        "feasibility": 100,
+        "confidence": 100,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "joggers",
+        "residents"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "movement-driven",
+        "review-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 25/100 across 186 H3 cells.",
+        "18 review mention(s) of \"sports facilities\" (0% negative sentiment) -- population-weighted REDISTRIBUTION across cells, not measured per-cell review activity.",
+        "No review category maps directly to \"jogging loop\" -- sports-facilities mentions are used as the closest available proxy.",
+        "Site suitability score: 92/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "jogging_route_suitability",
+      "attractors": [
+        "Perimeter/boundary continuity",
+        "Low barrier severity",
+        "Outdoor fitness access"
+      ],
+      "repellers": [
+        "Broken loop continuity",
+        "Program-space conflicts"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "active_users",
+        "social_groups"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "closed_loop",
+      "target_length_m": 1000,
+      "target_width_m": 2.5
+    },
+    {
+      "id": "irrigationEfficiency",
+      "name": "Irrigation / Water Efficiency Zone",
+      "category": "Landscape / Environment",
+      "geometry_type": "network",
+      "scale": "site-wide",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.64,
+      "scores": {
+        "opportunity": 64,
+        "demand": 52,
+        "suitability": 52,
+        "feasibility": 100,
+        "confidence": 80,
+        "grasshopper_readiness": 50
+      },
+      "primary_users": [
+        "Operations / maintenance staff"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "operations-driven",
+        "environment-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 52/100 across 186 H3 cells.",
+        "No review category applies to this program type -- demand is population/site-signal driven only.",
+        "Site suitability score: 52/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "green_coverage_pct",
+      "attractors": [
+        "Existing green/irrigated coverage"
+      ],
+      "repellers": [],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "operations_staff"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.45,
+        "heatMitigationValue": 0.75,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.75,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 1
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "route_pending_topology",
+      "target_length_m": null,
+      "target_width_m": null
+    },
+    {
+      "id": "shadedCirculation",
+      "name": "Shaded Internal Circulation",
+      "category": "Movement",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.63,
+      "scores": {
+        "opportunity": 63,
+        "demand": 24,
+        "suitability": 81,
+        "feasibility": 100,
+        "confidence": 92,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "All visitors"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "environment-driven",
+        "review-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 24/100 across 186 H3 cells.",
+        "6 review mention(s) of \"shade / heat comfort\" (17% negative sentiment) -- population-weighted REDISTRIBUTION across cells, not measured per-cell review activity.",
+        "Site suitability score: 81/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 100/100 among eligible cells."
+      ],
+      "suitability_field": "shade_score",
+      "attractors": [
+        "Heat exposure",
+        "Walking-network demand",
+        "Green coverage"
+      ],
+      "repellers": [
+        "Unshadeable conflicts"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "all_visitors"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.925,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "walking_network_attribute",
+      "target_length_m": null,
+      "target_width_m": null
+    },
+    {
+      "id": "efficientLighting",
+      "name": "Efficient Lighting Zone",
+      "category": "Smart / Operations",
+      "geometry_type": "network",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.53,
+      "scores": {
+        "opportunity": 53,
+        "demand": 24,
+        "suitability": 60,
+        "feasibility": 91,
+        "confidence": 84,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "All visitors",
+        "Evening users"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "operations-driven",
+        "review-driven"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 24/100 across 186 H3 cells.",
+        "2 review mention(s) of \"lighting\" (0% negative sentiment) -- population-weighted REDISTRIBUTION across cells, not measured per-cell review activity.",
+        "Site suitability score: 60/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "65 of 186 cells pass hard constraints; feasibility score: 91/100 among eligible cells."
+      ],
+      "suitability_field": "environmental_constraint_score",
+      "attractors": [
+        "Existing path network",
+        "Evening safety demand"
+      ],
+      "repellers": [
+        "Sparse path network"
+      ],
+      "constraints": [
+        "Under 1,000 m/km² real path density -- no existing circulation to light."
+      ],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "all_visitors",
+        "social_groups"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "route_pending_topology",
+      "target_length_m": null,
+      "target_width_m": null
+    },
+    {
+      "id": "serviceAccess",
+      "name": "Service / Maintenance Access",
+      "category": "Movement",
+      "geometry_type": "linear",
+      "scale": "route",
+      "selected": true,
+      "mandatory": true,
+      "decision_authority": "competition_scope_and_designer_confirmation",
+      "spatial_mode": "exclusive",
+      "fragmentation_policy": "single_primary_territory",
+      "synthesis_selected": false,
+      "priority": 0.43,
+      "scores": {
+        "opportunity": 43,
+        "demand": 50,
+        "suitability": 45,
+        "feasibility": 29,
+        "confidence": 80,
+        "grasshopper_readiness": 75
+      },
+      "primary_users": [
+        "Operations / maintenance staff"
+      ],
+      "evidence_sources": [
+        "brief-required",
+        "operations-driven",
+        "designer-assumption"
+      ],
+      "evidence": [
+        "Population-weighted demand score: 50/100 across 186 H3 cells.",
+        "No review category applies to this program type -- demand is population/site-signal driven only.",
+        "Site suitability score: 45/100 (heat, safety, walkability, and site-condition factors -- see Score Breakdown).",
+        "186 of 186 cells pass hard constraints; feasibility score: 29/100 among eligible cells."
+      ],
+      "suitability_field": "environmental_constraint_score",
+      "attractors": [
+        "Boundary/edge location",
+        "Existing path network"
+      ],
+      "repellers": [
+        "Full interior cell"
+      ],
+      "constraints": [],
+      "ontology": {
+        "program_class": "PATH",
+        "space_class": null,
+        "common_class": null
+      },
+      "spatial_behavior": "EDGE",
+      "user_group_ids": [
+        "operations_staff"
+      ],
+      "temporal_profile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonal_profile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performance_attributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "dune_compatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "path_dune_operations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "placement_status": "generate_after_area_layout",
+      "route_topology": "entrance_to_operations_spur",
+      "target_length_m": 60,
+      "target_width_m": 4
+    }
+  ]
+}

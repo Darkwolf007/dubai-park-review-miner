@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.2.0",
+  "systems": [
+    {
+      "id": "biodiversityHabitat",
+      "name": "Biodiversity Habitat",
+      "geometry_role": "overlay_region",
+      "measurement": "coverage_area_or_percent",
+      "target": null,
+      "mandatory": true,
+      "representation_status": "landscape_overlay_system",
+      "extent_status": "designer_coverage_target_pending",
+      "overlap_policy": "may_overlap_program_areas",
+      "suitability_field": "biodiversity_score",
+      "authority": "unresolved_requires_designer_or_approved_standard",
+      "objective": "grow_contiguous_high_suitability_regions"
+    },
+    {
+      "id": "nativePlanting",
+      "name": "Native / Climate-Adapted Planting",
+      "geometry_role": "overlay_region",
+      "measurement": "coverage_area_or_percent",
+      "target": null,
+      "mandatory": true,
+      "representation_status": "landscape_overlay_system",
+      "extent_status": "designer_coverage_target_pending",
+      "overlap_policy": "may_overlap_program_areas",
+      "suitability_field": "tree_planting_suitability",
+      "authority": "unresolved_requires_designer_or_approved_standard",
+      "objective": "grow_contiguous_high_suitability_regions"
+    },
+    {
+      "id": "treePlanting",
+      "name": "Tree Planting / Canopy",
+      "geometry_role": "overlay_region",
+      "measurement": "canopy_coverage_percent",
+      "target": null,
+      "mandatory": true,
+      "representation_status": "landscape_overlay_system",
+      "extent_status": "designer_coverage_target_pending",
+      "overlap_policy": "may_overlap_program_areas",
+      "suitability_field": "tree_planting_suitability",
+      "authority": "unresolved_requires_designer_or_approved_standard",
+      "objective": "grow_contiguous_high_suitability_regions"
+    },
+    {
+      "id": "bioswale",
+      "name": "Water-Sensitive Landscape / Bioswale",
+      "geometry_role": "environmental_network_region",
+      "measurement": "coverage_area_or_percent",
+      "target": null,
+      "mandatory": true,
+      "representation_status": "landscape_overlay_system",
+      "extent_status": "designer_coverage_target_pending",
+      "overlap_policy": "may_cross_compatible_landscape_regions",
+      "suitability_field": "water_score",
+      "authority": "unresolved_requires_designer_or_approved_standard",
+      "objective": "grow_contiguous_high_suitability_regions"
+    }
+  ]
+}

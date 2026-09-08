@@ -1,0 +1,2881 @@
+{
+  "schema_version": "1.3.0",
+  "dune_types": [
+    {
+      "id": "D0",
+      "name": "Flat datum",
+      "role": "courts, lawns and universally accessible clear ground"
+    },
+    {
+      "id": "D1",
+      "name": "Earth dune",
+      "role": "grading, enclosure, screening and movement guidance"
+    },
+    {
+      "id": "D2",
+      "name": "Planted dune",
+      "role": "shade, habitat, dust filtering and thermal buffering"
+    },
+    {
+      "id": "D3",
+      "name": "Seating dune",
+      "role": "terraces, benches, steps and inhabitable edges"
+    },
+    {
+      "id": "D4",
+      "name": "Shade dune",
+      "role": "lightweight solar-responsive canopy"
+    },
+    {
+      "id": "D5",
+      "name": "Play dune",
+      "role": "integrated slopes, climbing, sliding and sensory play"
+    },
+    {
+      "id": "D6",
+      "name": "Cooling dune",
+      "role": "protected canopy-rich microclimate hollow"
+    },
+    {
+      "id": "D7",
+      "name": "Architectural dune",
+      "role": "gateway, pavilion, cafe or landmark"
+    },
+    {
+      "id": "D8",
+      "name": "Sikka valley",
+      "role": "shaded primary movement corridor between ridges"
+    },
+    {
+      "id": "D9",
+      "name": "Baraha clearing",
+      "role": "social clearing at movement convergence"
+    },
+    {
+      "id": "D10",
+      "name": "Ecological swale",
+      "role": "drainage, hydrozone and biodiversity corridor"
+    }
+  ],
+  "programs": [
+    {
+      "id": "digitalExperience",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "young_children",
+        "teenagers",
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "viewingPoints",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "EXPERIENCE"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 1,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "biodiversityHabitat",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "all_visitors",
+        "ecology"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.8,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.15,
+        "activityIntensity": 0.35,
+        "quietDemand": 1,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.45,
+        "heatMitigationValue": 0.75,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.033,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.65,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 1
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "walkingPromenade",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "older_adults",
+        "families",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "toddlerPlay",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_children",
+        "families",
+        "people_of_determination",
+        "caregivers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 1,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.75,
+        "D3": 0.65,
+        "D4": 0.9,
+        "D5": 1,
+        "D6": 0.9,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 640,
+        "target": 875,
+        "maximum": 1250
+      }
+    },
+    {
+      "id": "smallEventZone",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "EXPERIENCE"
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "social_groups",
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.725,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.9,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.55,
+        "revenuePotential": 0.495,
+        "spendingPowerSensitivity": 0.44
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.9,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 600,
+        "target": 1000,
+        "maximum": 1800
+      }
+    },
+    {
+      "id": "sportsCourt",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "teenagers",
+        "young_adults"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.9,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 1,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.55,
+        "revenuePotential": 0.261,
+        "spendingPowerSensitivity": 0.44
+      },
+      "duneCompatibility": {
+        "D0": 0.95,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 400,
+        "target": 600,
+        "maximum": 900
+      }
+    },
+    {
+      "id": "socialSeating",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "families",
+        "caregivers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.9,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.07,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 1,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.575,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.9,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "communityPlaza",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "social_groups",
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.725,
+        "transition": 0.9,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.9,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 1,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.55,
+        "revenuePotential": 0.495,
+        "spendingPowerSensitivity": 0.44
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.9,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 600,
+        "target": 1000,
+        "maximum": 1800
+      }
+    },
+    {
+      "id": "accessibleRoutes",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "older_adults",
+        "families",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "inclusivePlayground",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_children",
+        "families",
+        "people_of_determination"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 1,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.75,
+        "D3": 0.65,
+        "D4": 0.9,
+        "D5": 1,
+        "D6": 0.9,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 1200,
+        "target": 1600,
+        "maximum": 2200
+      }
+    },
+    {
+      "id": "olderChildrenPlay",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_children",
+        "families",
+        "people_of_determination"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 1,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.75,
+        "D3": 0.65,
+        "D4": 0.9,
+        "D5": 1,
+        "D6": 0.9,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 1200,
+        "target": 1600,
+        "maximum": 2200
+      }
+    },
+    {
+      "id": "exerciseCyclingLoop",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "active_users",
+        "young_adults",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "nativePlanting",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.8,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.45,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 1,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.75,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 1
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "joggingLoop",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "active_users",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "flexibleRecreation",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_adults",
+        "working_adults",
+        "teenagers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.9,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 1,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 300,
+        "target": 475,
+        "maximum": 750
+      }
+    },
+    {
+      "id": "flexibleEventLawn",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "EXPERIENCE"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "families",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.725,
+        "transition": 0.9,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.9,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.75,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 1,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.55,
+        "revenuePotential": 0.495,
+        "spendingPowerSensitivity": 0.44
+      },
+      "duneCompatibility": {
+        "D0": 0.95,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.9,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 1200,
+        "target": 2000,
+        "maximum": 3500
+      }
+    },
+    {
+      "id": "secondaryEntrances",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "social_groups",
+        "active_users"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.95,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "outdoorFitness",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_adults",
+        "working_adults"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 200,
+        "target": 350,
+        "maximum": 600
+      }
+    },
+    {
+      "id": "multipurposeLawn",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "families",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.9,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.75,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 1,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.95,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 1200,
+        "target": 2000,
+        "maximum": 3500
+      }
+    },
+    {
+      "id": "treePlanting",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "all_visitors",
+        "active_users"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.8,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.75,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 1,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.75,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "quietGarden",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "older_adults",
+        "working_adults"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.9,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.15,
+        "activityIntensity": 0.35,
+        "quietDemand": 1,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.45,
+        "heatMitigationValue": 0.75,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.033,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.825,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 250,
+        "target": 500,
+        "maximum": 900
+      }
+    },
+    {
+      "id": "irrigationEfficiency",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.45,
+        "heatMitigationValue": 0.75,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.75,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 1
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "shadedCirculation",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.925,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "sensoryGarden",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "people_of_determination",
+        "young_children",
+        "older_adults",
+        "caregivers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.9,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 1,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.75,
+        "heatMitigationValue": 0.75,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.825,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 200,
+        "target": 400,
+        "maximum": 700
+      }
+    },
+    {
+      "id": "bioswale",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "FIELD",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.825,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.9,
+        "waterDemand": 0.75,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.7,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.75,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 1
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "shadedSeating",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "families",
+        "caregivers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.95,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 1,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.925,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "naturePlay",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "young_children",
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 1,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.8,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.75,
+        "D3": 0.65,
+        "D4": 0.9,
+        "D5": 1,
+        "D6": 0.9,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 500,
+        "target": 900,
+        "maximum": 1500
+      }
+    },
+    {
+      "id": "familySeatingPlay",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "families",
+        "caregivers"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 1,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.15,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.063,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.75,
+        "D3": 1,
+        "D4": 0.9,
+        "D5": 1,
+        "D6": 0.9,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "wellnessZone",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "USER_SPECIFIC",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "older_adults"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.575,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 200,
+        "target": 350,
+        "maximum": 600
+      }
+    },
+    {
+      "id": "operationsArea",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.8,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.15,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.033,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.95,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "picnicArea",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "OBJECT",
+      "userGroupIds": [
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.9,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.7,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.9,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.9,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.07,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.9,
+        "D5": 0.05,
+        "D6": 0.575,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.9,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 500,
+        "target": 900,
+        "maximum": 1500
+      }
+    },
+    {
+      "id": "cafeKiosk",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "COMMERCIAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "families",
+        "working_adults",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.725,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.65,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 1,
+        "revenuePotential": 0.825,
+        "spendingPowerSensitivity": 0.8
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.95,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "mainEntrancePlaza",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "social_groups",
+        "families"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 1
+      },
+      "seasonalProfile": {
+        "summer": 0.725,
+        "transition": 0.9,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.75,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 1,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.55,
+        "revenuePotential": 0.454,
+        "spendingPowerSensitivity": 0.44
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.95,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": 600,
+        "target": 1000,
+        "maximum": 1800
+      }
+    },
+    {
+      "id": "drinkingWater",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "wayfindingNodes",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "COMMON",
+        "commonClass": "GENERAL"
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "bicycleParking",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "active_users",
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "efficientLighting",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "all_visitors",
+        "social_groups"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.825,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.9
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.068,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "wastePoints",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors",
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "restrooms",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 1,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "safetyPoint",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "all_visitors",
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "serviceAccess",
+      "ontology": {
+        "programClass": "PATH",
+        "spaceClass": null,
+        "commonClass": null
+      },
+      "spatialBehavior": "EDGE",
+      "userGroupIds": [
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.9,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.9,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.625,
+        "transition": 0.738,
+        "winter": 0.875
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.75,
+        "accessibilityDemand": 0.85,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.9,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.35,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.7,
+        "D2": 0.65,
+        "D3": 0.25,
+        "D4": 0.75,
+        "D5": 0.05,
+        "D6": 0.5,
+        "D7": 0.1,
+        "D8": 1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [
+        "follow_valley",
+        "cut_ridge_at_saddle",
+        "widen_at_baraha",
+        "increase_shade_on_summer_segments",
+        "preserve_accessible_gradient"
+      ],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "dropOffZone",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "families",
+        "all_visitors"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.9,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.95,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    },
+    {
+      "id": "smartMonitoring",
+      "ontology": {
+        "programClass": "SPACE",
+        "spaceClass": "UTILITY",
+        "commonClass": null
+      },
+      "spatialBehavior": "NODE",
+      "userGroupIds": [
+        "operations_staff"
+      ],
+      "temporalProfile": {
+        "weekday_early_morning": 0.3,
+        "weekday_day": 0.35,
+        "weekday_evening": 0.55,
+        "weekend_morning": 0.55,
+        "weekend_evening": 0.6
+      },
+      "seasonalProfile": {
+        "summer": 0.525,
+        "transition": 0.738,
+        "winter": 0.738
+      },
+      "performanceAttributes": {
+        "shadeDemand": 0.55,
+        "accessibilityDemand": 0.65,
+        "safetySensitivity": 0.65,
+        "socialIntensity": 0.45,
+        "activityIntensity": 0.35,
+        "quietDemand": 0.45,
+        "ecologicalValue": 0.2,
+        "waterDemand": 0.2,
+        "heatMitigationValue": 0.25,
+        "operationalLoad": 0.8,
+        "flexibility": 0.35,
+        "eveningSuitability": 0.5
+      },
+      "commercial": {
+        "applicability": 0.1,
+        "revenuePotential": 0.048,
+        "spendingPowerSensitivity": 0.08
+      },
+      "duneCompatibility": {
+        "D0": 0.25,
+        "D1": 0.35,
+        "D2": 0.35,
+        "D3": 0.25,
+        "D4": 0.55,
+        "D5": 0.05,
+        "D6": 0.4,
+        "D7": 0.1,
+        "D8": 0.1,
+        "D9": 0.1,
+        "D10": 0.05
+      },
+      "pathDuneOperations": [],
+      "areaRangeM2": {
+        "minimum": null,
+        "target": null,
+        "maximum": null
+      }
+    }
+  ]
+}

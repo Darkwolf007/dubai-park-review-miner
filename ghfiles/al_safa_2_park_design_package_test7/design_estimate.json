@@ -1,0 +1,121 @@
+{
+  "schema_version": "0.1.0",
+  "estimate_nature": "early_stage_approximation_not_bill_of_quantities",
+  "scores_0_to_100": {
+    "spaces": 100,
+    "paths": 100,
+    "adjacency": 83.36,
+    "plants": 100,
+    "overall_readiness": 95.84
+  },
+  "spaces": {
+    "total_space_program_count": 36,
+    "area_program_count": 22,
+    "required_exclusive_count": 10,
+    "shared_program_count": 8,
+    "overlay_program_count": 4,
+    "quantified_exclusive_count": 10,
+    "approximate_exclusive_area_m2": 14275,
+    "shared_nominal_area_m2": 8025,
+    "approximate_cost_aed": 6063750,
+    "cost_scope": "quantified_exclusive_program_targets_only",
+    "cost_method": "target_area_times_competition_brief_material_rate_guidance"
+  },
+  "paths": {
+    "physical_system_count": 4,
+    "approximate_centerline_count": 4,
+    "modifier_layer_count": 2,
+    "systems": [
+      {
+        "id": "walkingPromenade",
+        "count": 1,
+        "role": "weighted_program_network",
+        "length": 650,
+        "width": 3,
+        "source": "designer_assumption_required",
+        "approximate_area_m2": 1950,
+        "approximate_cost_aed": 1267500,
+        "cost_rate_aed_per_m2": 650
+      },
+      {
+        "id": "joggingLoop",
+        "count": 1,
+        "role": "closed_loop",
+        "length": 1000,
+        "width": 2.5,
+        "source": "competition_brief_approximate_1_km",
+        "approximate_area_m2": 2500,
+        "approximate_cost_aed": 1625000,
+        "cost_rate_aed_per_m2": 650
+      },
+      {
+        "id": "exerciseCyclingLoop",
+        "count": 1,
+        "role": "distinct_closed_loop",
+        "length": 508.58,
+        "width": 2.5,
+        "source": "measured_site_perimeter_proxy",
+        "approximate_area_m2": 1271.45,
+        "approximate_cost_aed": 826442.5,
+        "cost_rate_aed_per_m2": 650
+      },
+      {
+        "id": "serviceAccess",
+        "count": 1,
+        "role": "entrance_to_operations_spur",
+        "length": 60,
+        "width": 4,
+        "source": "designer_assumption_required",
+        "approximate_area_m2": 240,
+        "approximate_cost_aed": 156000,
+        "cost_rate_aed_per_m2": 650
+      }
+    ],
+    "known_approximate_length_m": 2218.58,
+    "approximate_cost_aed": 3874942.5,
+    "unresolved_system_ids": []
+  },
+  "adjacency": {
+    "relationship_count": 1160,
+    "weighted_relationship_count": 967,
+    "mandatory_relationship_count": 0,
+    "approximate_count_by_type": {
+      "overlap_compatible": 21,
+      "preferred": 105,
+      "avoid": 54,
+      "movement": 29,
+      "service": 5,
+      "neutral": 247,
+      "avoidance": 371,
+      "preferred_adjacency": 328
+    },
+    "status": "scores_are_definition_completeness_until_geometry_exists"
+  },
+  "plants": {
+    "planting_zone_count": 4,
+    "coverage_target_count": 4,
+    "resolved_coverage_target_count": 4,
+    "tree_canopy_area_m2": 4421.1,
+    "native_planting_area_m2": 2947.4,
+    "approximate_tree_count": 89,
+    "approximate_tree_cost_aed": 267000,
+    "approximate_native_planting_cost_aed": 353688,
+    "count_method": "tree_canopy_coverage_area_divided_by_designer_canopy_area_per_tree"
+  },
+  "budget": {
+    "competition_cap_aed": 35000000,
+    "requested_scenario_target_aed": 35000000,
+    "scenario_target_aed": 35000000,
+    "scenario_factor_of_cap": 1,
+    "contingency_percent": 10,
+    "known_cost_subtotal_aed": 10559380.5,
+    "known_cost_with_contingency_aed": 11615318.55,
+    "estimate_status": "complete_approximation",
+    "target_status": "within_target"
+  },
+  "caveats": [
+    "Accessible coverage and shade priority are attributes on the walking network, not additional physical path counts.",
+    "Shared program areas and planting overlays may overlap and are not blindly summed into construction area.",
+    "Unknown dimensions or unit rates remain null; the estimator does not invent missing standards."
+  ]
+}

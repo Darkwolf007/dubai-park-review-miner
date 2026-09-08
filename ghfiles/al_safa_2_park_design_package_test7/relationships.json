@@ -1,0 +1,2060 @@
+{
+  "schema_version": "1.3.0",
+  "accepted_rule_edges": [],
+  "designer_relationships": [
+    {
+      "id": "designer:overlap:flexibleEventLawn:multipurposeLawn",
+      "source": "flexibleEventLawn",
+      "target": "multipurposeLawn",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.95,
+      "overlap_mode": "temporal_shared_footprint",
+      "reason": "The same open turf supports daily recreation and scheduled events.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:flexibleRecreation:multipurposeLawn",
+      "source": "flexibleRecreation",
+      "target": "multipurposeLawn",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.8,
+      "overlap_mode": "temporal_shared_footprint",
+      "reason": "Flexible recreation can occupy the multipurpose lawn outside programmed events.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:flexibleRecreation:flexibleEventLawn",
+      "source": "flexibleRecreation",
+      "target": "flexibleEventLawn",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.65,
+      "overlap_mode": "temporal_shared_footprint",
+      "reason": "Event and recreation demand occur at different times.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:smallEventZone:communityPlaza",
+      "source": "smallEventZone",
+      "target": "communityPlaza",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.75,
+      "overlap_mode": "baraha_shared_footprint",
+      "reason": "Small gatherings can occupy a defined part of the community baraha.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:picnicArea:treePlanting",
+      "source": "picnicArea",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.95,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Picnic occupation depends on canopy rather than a separate unplanted parcel.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:picnicArea:nativePlanting",
+      "source": "picnicArea",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.75,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Native planting can form the enclosure and buffer of picnic pockets.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:quietGarden:sensoryGarden",
+      "source": "quietGarden",
+      "target": "sensoryGarden",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.7,
+      "overlap_mode": "distributed_pockets",
+      "reason": "Sensory pockets can form part of a larger quiet garden.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:sensoryGarden:nativePlanting",
+      "source": "sensoryGarden",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.85,
+      "overlap_mode": "landscape_overlay",
+      "reason": "The sensory garden is implemented through climate-adapted planting.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:naturePlay:nativePlanting",
+      "source": "naturePlay",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.9,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Nature play and native planting share terrain and vegetation.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:naturePlay:biodiversityHabitat",
+      "source": "naturePlay",
+      "target": "biodiversityHabitat",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.75,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Controlled nature play can overlap robust habitat edges.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:wellnessZone:treePlanting",
+      "source": "wellnessZone",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.7,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Wellness stations require shaded planted pockets.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:outdoorFitness:treePlanting",
+      "source": "outdoorFitness",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.55,
+      "overlap_mode": "edge_canopy",
+      "reason": "Tree canopy may overlap fitness edges while preserving equipment clearances.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:inclusivePlayground:treePlanting",
+      "source": "inclusivePlayground",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.55,
+      "overlap_mode": "edge_canopy",
+      "reason": "Canopy overlaps play edges subject to root and safety review.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:toddlerPlay:treePlanting",
+      "source": "toddlerPlay",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.6,
+      "overlap_mode": "edge_canopy",
+      "reason": "Toddler play requires strong shade with supervised clear zones.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:olderChildrenPlay:treePlanting",
+      "source": "olderChildrenPlay",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.55,
+      "overlap_mode": "edge_canopy",
+      "reason": "Canopy overlaps play edges subject to activity clearances.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:communityPlaza:treePlanting",
+      "source": "communityPlaza",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.45,
+      "overlap_mode": "edge_canopy",
+      "reason": "The civic clearing retains a partially planted shaded edge.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:bioswale:nativePlanting",
+      "source": "bioswale",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.9,
+      "overlap_mode": "landscape_overlay",
+      "reason": "The bioswale is a planted water-sensitive landscape system.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:bioswale:biodiversityHabitat",
+      "source": "bioswale",
+      "target": "biodiversityHabitat",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.9,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Water-sensitive corridors contribute to habitat connectivity.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:treePlanting:nativePlanting",
+      "source": "treePlanting",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 1,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Native planting and canopy systems are nested landscape layers.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:biodiversityHabitat:nativePlanting",
+      "source": "biodiversityHabitat",
+      "target": "nativePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.95,
+      "overlap_mode": "landscape_overlay",
+      "reason": "Habitat is implemented primarily through native planting communities.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    },
+    {
+      "id": "designer:overlap:mainEntrancePlaza:treePlanting",
+      "source": "mainEntrancePlaza",
+      "target": "treePlanting",
+      "type": "overlap_compatible",
+      "graph_layer": "territory_overlap",
+      "mandatory": false,
+      "accepted": true,
+      "directed": false,
+      "authority": "designer_approved_competition_input",
+      "compatibility_score": 0.35,
+      "overlap_mode": "edge_canopy",
+      "reason": "Gateway canopy shades plaza edges while retaining arrival visibility.",
+      "source_provenance": "Competition scope + designer-confirmed mandatory program; compatibility scored by the design system for human review."
+    }
+  ],
+  "advisory_relationships": [
+    {
+      "id": "advisory:digitalExperience:preferred:communityPlaza",
+      "source": "digitalExperience",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:digitalExperience:preferred:cafeKiosk",
+      "source": "digitalExperience",
+      "target": "cafeKiosk",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:digitalExperience:avoid:quietGarden",
+      "source": "digitalExperience",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:viewingPoints:preferred:quietGarden",
+      "source": "viewingPoints",
+      "target": "quietGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:viewingPoints:preferred:naturePlay",
+      "source": "viewingPoints",
+      "target": "naturePlay",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:biodiversityHabitat:preferred:nativePlanting",
+      "source": "biodiversityHabitat",
+      "target": "nativePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:biodiversityHabitat:preferred:quietGarden",
+      "source": "biodiversityHabitat",
+      "target": "quietGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:biodiversityHabitat:avoid:sportsCourt",
+      "source": "biodiversityHabitat",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:preferred:accessibleRoutes",
+      "source": "walkingPromenade",
+      "target": "accessibleRoutes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:preferred:shadedCirculation",
+      "source": "walkingPromenade",
+      "target": "shadedCirculation",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:movement:joggingLoop",
+      "source": "walkingPromenade",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:movement:exerciseCyclingLoop",
+      "source": "walkingPromenade",
+      "target": "exerciseCyclingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:movement:accessibleRoutes",
+      "source": "walkingPromenade",
+      "target": "accessibleRoutes",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:movement:shadedCirculation",
+      "source": "walkingPromenade",
+      "target": "shadedCirculation",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:walkingPromenade:movement:mainEntrancePlaza",
+      "source": "walkingPromenade",
+      "target": "mainEntrancePlaza",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:toddlerPlay:preferred:inclusivePlayground",
+      "source": "toddlerPlay",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:toddlerPlay:preferred:familySeatingPlay",
+      "source": "toddlerPlay",
+      "target": "familySeatingPlay",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:toddlerPlay:avoid:sportsCourt",
+      "source": "toddlerPlay",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:toddlerPlay:avoid:serviceAccess",
+      "source": "toddlerPlay",
+      "target": "serviceAccess",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:smallEventZone:preferred:communityPlaza",
+      "source": "smallEventZone",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:smallEventZone:avoid:quietGarden",
+      "source": "smallEventZone",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sportsCourt:preferred:outdoorFitness",
+      "source": "sportsCourt",
+      "target": "outdoorFitness",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sportsCourt:preferred:flexibleRecreation",
+      "source": "sportsCourt",
+      "target": "flexibleRecreation",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sportsCourt:avoid:quietGarden",
+      "source": "sportsCourt",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sportsCourt:avoid:wellnessZone",
+      "source": "sportsCourt",
+      "target": "wellnessZone",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sportsCourt:avoid:sensoryGarden",
+      "source": "sportsCourt",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:socialSeating:preferred:communityPlaza",
+      "source": "socialSeating",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:socialSeating:preferred:cafeKiosk",
+      "source": "socialSeating",
+      "target": "cafeKiosk",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:socialSeating:avoid:sportsCourt",
+      "source": "socialSeating",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:communityPlaza:preferred:cafeKiosk",
+      "source": "communityPlaza",
+      "target": "cafeKiosk",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:communityPlaza:preferred:mainEntrancePlaza",
+      "source": "communityPlaza",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:communityPlaza:preferred:flexibleEventLawn",
+      "source": "communityPlaza",
+      "target": "flexibleEventLawn",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:communityPlaza:avoid:quietGarden",
+      "source": "communityPlaza",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:communityPlaza:avoid:sensoryGarden",
+      "source": "communityPlaza",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:preferred:mainEntrancePlaza",
+      "source": "accessibleRoutes",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:preferred:secondaryEntrances",
+      "source": "accessibleRoutes",
+      "target": "secondaryEntrances",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:preferred:wayfindingNodes",
+      "source": "accessibleRoutes",
+      "target": "wayfindingNodes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:movement:walkingPromenade",
+      "source": "accessibleRoutes",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:movement:shadedCirculation",
+      "source": "accessibleRoutes",
+      "target": "shadedCirculation",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:accessibleRoutes:movement:joggingLoop",
+      "source": "accessibleRoutes",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:preferred:familySeatingPlay",
+      "source": "inclusivePlayground",
+      "target": "familySeatingPlay",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:preferred:restrooms",
+      "source": "inclusivePlayground",
+      "target": "restrooms",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:preferred:drinkingWater",
+      "source": "inclusivePlayground",
+      "target": "drinkingWater",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:preferred:shadedSeating",
+      "source": "inclusivePlayground",
+      "target": "shadedSeating",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:avoid:serviceAccess",
+      "source": "inclusivePlayground",
+      "target": "serviceAccess",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:avoid:sportsCourt",
+      "source": "inclusivePlayground",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:inclusivePlayground:avoid:operationsArea",
+      "source": "inclusivePlayground",
+      "target": "operationsArea",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:olderChildrenPlay:preferred:inclusivePlayground",
+      "source": "olderChildrenPlay",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:olderChildrenPlay:preferred:sportsCourt",
+      "source": "olderChildrenPlay",
+      "target": "sportsCourt",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:olderChildrenPlay:avoid:quietGarden",
+      "source": "olderChildrenPlay",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:preferred:outdoorFitness",
+      "source": "exerciseCyclingLoop",
+      "target": "outdoorFitness",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:preferred:walkingPromenade",
+      "source": "exerciseCyclingLoop",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:avoid:toddlerPlay",
+      "source": "exerciseCyclingLoop",
+      "target": "toddlerPlay",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:avoid:quietGarden",
+      "source": "exerciseCyclingLoop",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:movement:mainEntrancePlaza",
+      "source": "exerciseCyclingLoop",
+      "target": "mainEntrancePlaza",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:movement:secondaryEntrances",
+      "source": "exerciseCyclingLoop",
+      "target": "secondaryEntrances",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:movement:walkingPromenade",
+      "source": "exerciseCyclingLoop",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:exerciseCyclingLoop:movement:joggingLoop",
+      "source": "exerciseCyclingLoop",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:nativePlanting:preferred:treePlanting",
+      "source": "nativePlanting",
+      "target": "treePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:nativePlanting:preferred:biodiversityHabitat",
+      "source": "nativePlanting",
+      "target": "biodiversityHabitat",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:preferred:outdoorFitness",
+      "source": "joggingLoop",
+      "target": "outdoorFitness",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:preferred:walkingPromenade",
+      "source": "joggingLoop",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:movement:walkingPromenade",
+      "source": "joggingLoop",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:movement:exerciseCyclingLoop",
+      "source": "joggingLoop",
+      "target": "exerciseCyclingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:movement:shadedCirculation",
+      "source": "joggingLoop",
+      "target": "shadedCirculation",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:joggingLoop:movement:accessibleRoutes",
+      "source": "joggingLoop",
+      "target": "accessibleRoutes",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleRecreation:preferred:sportsCourt",
+      "source": "flexibleRecreation",
+      "target": "sportsCourt",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleRecreation:preferred:multipurposeLawn",
+      "source": "flexibleRecreation",
+      "target": "multipurposeLawn",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleRecreation:avoid:quietGarden",
+      "source": "flexibleRecreation",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleEventLawn:preferred:communityPlaza",
+      "source": "flexibleEventLawn",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleEventLawn:preferred:multipurposeLawn",
+      "source": "flexibleEventLawn",
+      "target": "multipurposeLawn",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:flexibleEventLawn:avoid:quietGarden",
+      "source": "flexibleEventLawn",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:secondaryEntrances:preferred:wayfindingNodes",
+      "source": "secondaryEntrances",
+      "target": "wayfindingNodes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:secondaryEntrances:preferred:accessibleRoutes",
+      "source": "secondaryEntrances",
+      "target": "accessibleRoutes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:secondaryEntrances:avoid:quietGarden",
+      "source": "secondaryEntrances",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:secondaryEntrances:movement:walkingPromenade",
+      "source": "secondaryEntrances",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:outdoorFitness:preferred:joggingLoop",
+      "source": "outdoorFitness",
+      "target": "joggingLoop",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:outdoorFitness:preferred:sportsCourt",
+      "source": "outdoorFitness",
+      "target": "sportsCourt",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:outdoorFitness:avoid:quietGarden",
+      "source": "outdoorFitness",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:outdoorFitness:avoid:sensoryGarden",
+      "source": "outdoorFitness",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:multipurposeLawn:preferred:flexibleEventLawn",
+      "source": "multipurposeLawn",
+      "target": "flexibleEventLawn",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:multipurposeLawn:preferred:communityPlaza",
+      "source": "multipurposeLawn",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:multipurposeLawn:avoid:quietGarden",
+      "source": "multipurposeLawn",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:treePlanting:preferred:nativePlanting",
+      "source": "treePlanting",
+      "target": "nativePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:treePlanting:preferred:biodiversityHabitat",
+      "source": "treePlanting",
+      "target": "biodiversityHabitat",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:preferred:sensoryGarden",
+      "source": "quietGarden",
+      "target": "sensoryGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:preferred:wellnessZone",
+      "source": "quietGarden",
+      "target": "wellnessZone",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:preferred:viewingPoints",
+      "source": "quietGarden",
+      "target": "viewingPoints",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:avoid:sportsCourt",
+      "source": "quietGarden",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:avoid:communityPlaza",
+      "source": "quietGarden",
+      "target": "communityPlaza",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:avoid:flexibleEventLawn",
+      "source": "quietGarden",
+      "target": "flexibleEventLawn",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:avoid:cafeKiosk",
+      "source": "quietGarden",
+      "target": "cafeKiosk",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:quietGarden:avoid:smallEventZone",
+      "source": "quietGarden",
+      "target": "smallEventZone",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:irrigationEfficiency:preferred:treePlanting",
+      "source": "irrigationEfficiency",
+      "target": "treePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:irrigationEfficiency:preferred:bioswale",
+      "source": "irrigationEfficiency",
+      "target": "bioswale",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:irrigationEfficiency:service:operationsArea",
+      "source": "irrigationEfficiency",
+      "target": "operationsArea",
+      "type": "service",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:preferred:treePlanting",
+      "source": "shadedCirculation",
+      "target": "treePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:preferred:walkingPromenade",
+      "source": "shadedCirculation",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:movement:walkingPromenade",
+      "source": "shadedCirculation",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:movement:joggingLoop",
+      "source": "shadedCirculation",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:movement:exerciseCyclingLoop",
+      "source": "shadedCirculation",
+      "target": "exerciseCyclingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedCirculation:movement:accessibleRoutes",
+      "source": "shadedCirculation",
+      "target": "accessibleRoutes",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sensoryGarden:preferred:quietGarden",
+      "source": "sensoryGarden",
+      "target": "quietGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sensoryGarden:preferred:wellnessZone",
+      "source": "sensoryGarden",
+      "target": "wellnessZone",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sensoryGarden:avoid:sportsCourt",
+      "source": "sensoryGarden",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:sensoryGarden:avoid:cafeKiosk",
+      "source": "sensoryGarden",
+      "target": "cafeKiosk",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bioswale:preferred:treePlanting",
+      "source": "bioswale",
+      "target": "treePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bioswale:preferred:nativePlanting",
+      "source": "bioswale",
+      "target": "nativePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bioswale:avoid:communityPlaza",
+      "source": "bioswale",
+      "target": "communityPlaza",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bioswale:avoid:flexibleEventLawn",
+      "source": "bioswale",
+      "target": "flexibleEventLawn",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedSeating:preferred:inclusivePlayground",
+      "source": "shadedSeating",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedSeating:preferred:picnicArea",
+      "source": "shadedSeating",
+      "target": "picnicArea",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedSeating:preferred:walkingPromenade",
+      "source": "shadedSeating",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:shadedSeating:avoid:sportsCourt",
+      "source": "shadedSeating",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:naturePlay:preferred:biodiversityHabitat",
+      "source": "naturePlay",
+      "target": "biodiversityHabitat",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:naturePlay:preferred:treePlanting",
+      "source": "naturePlay",
+      "target": "treePlanting",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:naturePlay:avoid:sportsCourt",
+      "source": "naturePlay",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:familySeatingPlay:preferred:inclusivePlayground",
+      "source": "familySeatingPlay",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:familySeatingPlay:preferred:toddlerPlay",
+      "source": "familySeatingPlay",
+      "target": "toddlerPlay",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:familySeatingPlay:avoid:sportsCourt",
+      "source": "familySeatingPlay",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wellnessZone:preferred:quietGarden",
+      "source": "wellnessZone",
+      "target": "quietGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wellnessZone:preferred:sensoryGarden",
+      "source": "wellnessZone",
+      "target": "sensoryGarden",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wellnessZone:avoid:sportsCourt",
+      "source": "wellnessZone",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wellnessZone:avoid:flexibleRecreation",
+      "source": "wellnessZone",
+      "target": "flexibleRecreation",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:operationsArea:preferred:serviceAccess",
+      "source": "operationsArea",
+      "target": "serviceAccess",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:operationsArea:preferred:wastePoints",
+      "source": "operationsArea",
+      "target": "wastePoints",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:operationsArea:avoid:quietGarden",
+      "source": "operationsArea",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:operationsArea:avoid:communityPlaza",
+      "source": "operationsArea",
+      "target": "communityPlaza",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:operationsArea:service:serviceAccess",
+      "source": "operationsArea",
+      "target": "serviceAccess",
+      "type": "service",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:picnicArea:preferred:restrooms",
+      "source": "picnicArea",
+      "target": "restrooms",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:picnicArea:preferred:drinkingWater",
+      "source": "picnicArea",
+      "target": "drinkingWater",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:picnicArea:preferred:shadedSeating",
+      "source": "picnicArea",
+      "target": "shadedSeating",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:picnicArea:avoid:sportsCourt",
+      "source": "picnicArea",
+      "target": "sportsCourt",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:cafeKiosk:preferred:communityPlaza",
+      "source": "cafeKiosk",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:cafeKiosk:preferred:mainEntrancePlaza",
+      "source": "cafeKiosk",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:cafeKiosk:preferred:walkingPromenade",
+      "source": "cafeKiosk",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:cafeKiosk:avoid:quietGarden",
+      "source": "cafeKiosk",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:cafeKiosk:avoid:sensoryGarden",
+      "source": "cafeKiosk",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:preferred:wayfindingNodes",
+      "source": "mainEntrancePlaza",
+      "target": "wayfindingNodes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:preferred:dropOffZone",
+      "source": "mainEntrancePlaza",
+      "target": "dropOffZone",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:preferred:communityPlaza",
+      "source": "mainEntrancePlaza",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:avoid:quietGarden",
+      "source": "mainEntrancePlaza",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:avoid:sensoryGarden",
+      "source": "mainEntrancePlaza",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:movement:walkingPromenade",
+      "source": "mainEntrancePlaza",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:mainEntrancePlaza:movement:accessibleRoutes",
+      "source": "mainEntrancePlaza",
+      "target": "accessibleRoutes",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:drinkingWater:preferred:inclusivePlayground",
+      "source": "drinkingWater",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:drinkingWater:preferred:joggingLoop",
+      "source": "drinkingWater",
+      "target": "joggingLoop",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:drinkingWater:preferred:sportsCourt",
+      "source": "drinkingWater",
+      "target": "sportsCourt",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:drinkingWater:avoid:quietGarden",
+      "source": "drinkingWater",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:preferred:mainEntrancePlaza",
+      "source": "wayfindingNodes",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:preferred:secondaryEntrances",
+      "source": "wayfindingNodes",
+      "target": "secondaryEntrances",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:preferred:communityPlaza",
+      "source": "wayfindingNodes",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:movement:walkingPromenade",
+      "source": "wayfindingNodes",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:movement:joggingLoop",
+      "source": "wayfindingNodes",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wayfindingNodes:movement:shadedCirculation",
+      "source": "wayfindingNodes",
+      "target": "shadedCirculation",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bicycleParking:preferred:mainEntrancePlaza",
+      "source": "bicycleParking",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bicycleParking:preferred:secondaryEntrances",
+      "source": "bicycleParking",
+      "target": "secondaryEntrances",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bicycleParking:preferred:dropOffZone",
+      "source": "bicycleParking",
+      "target": "dropOffZone",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:bicycleParking:avoid:quietGarden",
+      "source": "bicycleParking",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:preferred:walkingPromenade",
+      "source": "efficientLighting",
+      "target": "walkingPromenade",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:preferred:joggingLoop",
+      "source": "efficientLighting",
+      "target": "joggingLoop",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:preferred:mainEntrancePlaza",
+      "source": "efficientLighting",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:movement:walkingPromenade",
+      "source": "efficientLighting",
+      "target": "walkingPromenade",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:movement:joggingLoop",
+      "source": "efficientLighting",
+      "target": "joggingLoop",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:efficientLighting:movement:shadedCirculation",
+      "source": "efficientLighting",
+      "target": "shadedCirculation",
+      "type": "movement",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:preferred:cafeKiosk",
+      "source": "wastePoints",
+      "target": "cafeKiosk",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:preferred:picnicArea",
+      "source": "wastePoints",
+      "target": "picnicArea",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:preferred:communityPlaza",
+      "source": "wastePoints",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:avoid:quietGarden",
+      "source": "wastePoints",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:service:operationsArea",
+      "source": "wastePoints",
+      "target": "operationsArea",
+      "type": "service",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:wastePoints:service:serviceAccess",
+      "source": "wastePoints",
+      "target": "serviceAccess",
+      "type": "service",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:preferred:inclusivePlayground",
+      "source": "restrooms",
+      "target": "inclusivePlayground",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:preferred:sportsCourt",
+      "source": "restrooms",
+      "target": "sportsCourt",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:preferred:communityPlaza",
+      "source": "restrooms",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:preferred:picnicArea",
+      "source": "restrooms",
+      "target": "picnicArea",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:avoid:quietGarden",
+      "source": "restrooms",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:restrooms:avoid:sensoryGarden",
+      "source": "restrooms",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:safetyPoint:preferred:mainEntrancePlaza",
+      "source": "safetyPoint",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:safetyPoint:preferred:wayfindingNodes",
+      "source": "safetyPoint",
+      "target": "wayfindingNodes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:safetyPoint:preferred:communityPlaza",
+      "source": "safetyPoint",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:preferred:operationsArea",
+      "source": "serviceAccess",
+      "target": "operationsArea",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:preferred:wastePoints",
+      "source": "serviceAccess",
+      "target": "wastePoints",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:avoid:quietGarden",
+      "source": "serviceAccess",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:avoid:communityPlaza",
+      "source": "serviceAccess",
+      "target": "communityPlaza",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:avoid:sensoryGarden",
+      "source": "serviceAccess",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:serviceAccess:service:operationsArea",
+      "source": "serviceAccess",
+      "target": "operationsArea",
+      "type": "service",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:dropOffZone:preferred:mainEntrancePlaza",
+      "source": "dropOffZone",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:dropOffZone:preferred:bicycleParking",
+      "source": "dropOffZone",
+      "target": "bicycleParking",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:dropOffZone:avoid:quietGarden",
+      "source": "dropOffZone",
+      "target": "quietGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:dropOffZone:avoid:sensoryGarden",
+      "source": "dropOffZone",
+      "target": "sensoryGarden",
+      "type": "avoid",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:smartMonitoring:preferred:mainEntrancePlaza",
+      "source": "smartMonitoring",
+      "target": "mainEntrancePlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:smartMonitoring:preferred:wayfindingNodes",
+      "source": "smartMonitoring",
+      "target": "wayfindingNodes",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    },
+    {
+      "id": "advisory:smartMonitoring:preferred:communityPlaza",
+      "source": "smartMonitoring",
+      "target": "communityPlaza",
+      "type": "preferred",
+      "mandatory": false,
+      "accepted": false,
+      "authority": "opportunity_catalog_advisory"
+    }
+  ]
+}

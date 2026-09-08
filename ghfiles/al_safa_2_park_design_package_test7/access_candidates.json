@@ -1,0 +1,2568 @@
+{
+  "schema_version": "1.2.0",
+  "summary": {
+    "candidate_count": 55,
+    "eligible_public_candidate_count": 45,
+    "excluded_school_facing_count": 0,
+    "excluded_building_facing_count": 10,
+    "pair_count": 990,
+    "settings": {
+      "candidateSpacingM": 10,
+      "catchmentRadiusM": 800,
+      "roadEdgeMaxDistanceM": 25
+    },
+    "disclosure": "Population pull is an inverse-distance-weighted potential-demand model over H3 population, not measured pedestrian footfall. Intersection count and barrier score are source GIS proxies."
+  },
+  "candidates": [
+    {
+      "candidate_id": "access-edge-1-1",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.05555555555555555,
+      "coordinates": {
+        "x": 320765.88444444444,
+        "y": 2783278.945,
+        "longitude": 55.221764888888885,
+        "latitude": 25.154869666666666,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5412.055441084089,
+        "population_within_catchment": 14230.096866855398,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 750,
+        "average_barrier_score": 11.954545454545455,
+        "nearest_bus_stop_m": 465.5273818659901,
+        "nearest_road_m": 22.795759187881615,
+        "nearest_school_boundary_m": 183.57308635447657,
+        "nearest_building_boundary_m": 41.04816128349494
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0,
+        "transit_access": 0.3873352698383935,
+        "intersection_connectivity": 0.4868421052631579,
+        "road_access": 0,
+        "low_barrier_access": 0.9440173796791445
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-2",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.16666666666666666,
+      "coordinates": {
+        "x": 320758.0733333333,
+        "y": 2783284.735,
+        "longitude": 55.22168666666666,
+        "latitude": 25.154921,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5444.345814433506,
+        "population_within_catchment": 14230.096866855398,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 750,
+        "average_barrier_score": 11.954545454545455,
+        "nearest_bus_stop_m": 456.1382815946333,
+        "nearest_road_m": 21.11404989060538,
+        "nearest_school_boundary_m": 187.75311351925865,
+        "nearest_building_boundary_m": 35.09028312007201
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.04147532533705451,
+        "transit_access": 0.4612335667533435,
+        "intersection_connectivity": 0.4868421052631579,
+        "road_access": 0.08000237014536848,
+        "low_barrier_access": 0.9440173796791445
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-3",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.2777777777777778,
+      "coordinates": {
+        "x": 320750.2622222222,
+        "y": 2783290.525,
+        "longitude": 55.22160844444444,
+        "latitude": 25.154972333333333,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5474.497905798181,
+        "population_within_catchment": 14230.096866855398,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 750,
+        "average_barrier_score": 11.954545454545455,
+        "nearest_bus_stop_m": 446.76346730550506,
+        "nearest_road_m": 13.956741777934914,
+        "nearest_school_boundary_m": 192.33424123697935,
+        "nearest_building_boundary_m": 31.093078131998634
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.08020413733962685,
+        "transit_access": 0.5350194237405121,
+        "intersection_connectivity": 0.4868421052631579,
+        "road_access": 0.42049023793662144,
+        "low_barrier_access": 0.9440173796791445
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-4",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.3888888888888889,
+      "coordinates": {
+        "x": 320742.4511111111,
+        "y": 2783296.315,
+        "longitude": 55.22153022222222,
+        "latitude": 25.15502366666667,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5502.781528838918,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 437.4038575676963,
+        "nearest_road_m": 4.603132220213504,
+        "nearest_school_boundary_m": 197.2885302845427,
+        "nearest_building_boundary_m": 29.77234780288836
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.1165329977907356,
+        "transit_access": 0.6086856110665422,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.8654606827358979,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-5",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.5,
+      "coordinates": {
+        "x": 320734.64,
+        "y": 2783302.105,
+        "longitude": 55.221452,
+        "latitude": 25.155075,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5529.951316601281,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 428.06044973227165,
+        "nearest_road_m": 2.5046952044181303,
+        "nearest_school_boundary_m": 202.5886056149874,
+        "nearest_building_boundary_m": 29.47084533888897
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.15143119406083363,
+        "transit_access": 0.6822242789329477,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.9652876475605018,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-6",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.6111111111111112,
+      "coordinates": {
+        "x": 320726.8288888889,
+        "y": 2783307.895,
+        "longitude": 55.22137377777778,
+        "latitude": 25.15512633333333,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5554.725608078155,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 418.73432836157826,
+        "nearest_road_m": 9.804468400976013,
+        "nearest_school_boundary_m": 208.20806224019785,
+        "nearest_building_boundary_m": 31.414945551448465
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.18325249844401453,
+        "transit_access": 0.7556268911319939,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6180224227121094,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-7",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.7222222222222222,
+      "coordinates": {
+        "x": 320719.01777777774,
+        "y": 2783313.685,
+        "longitude": 55.22129555555556,
+        "latitude": 25.155177666666667,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5576.952388688381,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 409.4266747360646,
+        "nearest_road_m": 9.760741396801716,
+        "nearest_school_boundary_m": 214.12175590582376,
+        "nearest_building_boundary_m": 35.976964805193155
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.21180165602199774,
+        "transit_access": 0.8288841502218816,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6201026062366735,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-8",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.8333333333333334,
+      "coordinates": {
+        "x": 320711.20666666667,
+        "y": 2783319.475,
+        "longitude": 55.221217333333335,
+        "latitude": 25.155229,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5596.444758296689,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 400.13877759605646,
+        "nearest_road_m": 9.717014392217632,
+        "nearest_school_boundary_m": 220.3059931915724,
+        "nearest_building_boundary_m": 35.81823532338675
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.23683860317483274,
+        "transit_access": 0.9019859129820164,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6221827897807319,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-1-9",
+      "edge_id": "edge-1",
+      "boundary_parameter": 0.9444444444444444,
+      "coordinates": {
+        "x": 320703.39555555553,
+        "y": 2783325.265,
+        "longitude": 55.221139111111114,
+        "latitude": 25.155280333333334,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5612.9916786332,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 390.87204530413584,
+        "nearest_road_m": 9.673287388043335,
+        "nearest_school_boundary_m": 226.73863815782053,
+        "nearest_building_boundary_m": 36.3028953589451
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.25809227208899205,
+        "transit_access": 0.9749210946872117,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.624262973305296,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-1",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.03571428571428571,
+      "coordinates": {
+        "x": 320702.2442857143,
+        "y": 2783331.9414285715,
+        "longitude": 55.22112682142857,
+        "latitude": 25.155340464285715,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5642.135601097558,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 387.68566122618296,
+        "nearest_road_m": 5.4784857507517835,
+        "nearest_school_boundary_m": 226.68383253930537,
+        "nearest_building_boundary_m": 41.959660632920674
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.2955261429435372,
+        "transit_access": 1,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.8238183148952714,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-2",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.10714285714285714,
+      "coordinates": {
+        "x": 320707.7528571428,
+        "y": 2783339.5042857146,
+        "longitude": 55.221180464285716,
+        "latitude": 25.15540939285714,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5684.9440287312755,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 390.71497938028824,
+        "nearest_road_m": 2.371418473822636,
+        "nearest_school_boundary_m": 220.11289320508578,
+        "nearest_building_boundary_m": 51.051110784131446
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.35051136854199605,
+        "transit_access": 0.9761573051802576,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.9716278957532987,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-3",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.17857142857142858,
+      "coordinates": {
+        "x": 320713.2614285714,
+        "y": 2783347.0671428572,
+        "longitude": 55.221234107142855,
+        "latitude": 25.15547832142857,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5725.995608817901,
+        "population_within_catchment": 14095.655566731468,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 11.80952380952381,
+        "nearest_bus_stop_m": 393.9432708382479,
+        "nearest_road_m": 2.4875435685657648,
+        "nearest_school_boundary_m": 213.7496056375677,
+        "nearest_building_boundary_m": 60.22375809272326
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.403240013741251,
+        "transit_access": 0.9507485616592104,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.966103586154813,
+        "low_barrier_access": 1
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-4",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.25,
+      "coordinates": {
+        "x": 320718.77,
+        "y": 2783354.63,
+        "longitude": 55.22128775,
+        "latitude": 25.155547249999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5768.1249138354,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 397.36568611295985,
+        "nearest_road_m": 2.6036686635877038,
+        "nearest_school_boundary_m": 207.61306413616185,
+        "nearest_building_boundary_m": 52.90190355748121
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.4573529412356706,
+        "transit_access": 0.9238119380395354,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.9605792765430636,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-5",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.32142857142857145,
+      "coordinates": {
+        "x": 320724.27857142856,
+        "y": 2783362.192857143,
+        "longitude": 55.22134139285714,
+        "latitude": 25.155616178571428,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5808.516757821759,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 400.9772545866782,
+        "nearest_road_m": 5.24755958822836,
+        "nearest_school_boundary_m": 201.7239629407021,
+        "nearest_building_boundary_m": 43.547503735805925
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.5092341893144577,
+        "transit_access": 0.8953865563004877,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.8348039474064138,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-6",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.39285714285714285,
+      "coordinates": {
+        "x": 320729.78714285715,
+        "y": 2783369.7557142857,
+        "longitude": 55.22139503571429,
+        "latitude": 25.155685107142858,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5845.834753451083,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 404.7729131581542,
+        "nearest_road_m": 11.262976217608264,
+        "nearest_school_boundary_m": 196.1045955190107,
+        "nearest_building_boundary_m": 34.194167601507445
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.557167237127326,
+        "transit_access": 0.8655122663263562,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.5486382060730548,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-7",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.4642857142857143,
+      "coordinates": {
+        "x": 320735.2957142857,
+        "y": 2783377.318571429,
+        "longitude": 55.22144867857143,
+        "latitude": 25.155754035714285,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5878.035465156395,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 408.74753343816104,
+        "nearest_road_m": 11.135897020890969,
+        "nearest_school_boundary_m": 190.7787982915449,
+        "nearest_building_boundary_m": 24.84309660590761
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.5985273966897606,
+        "transit_access": 0.8342294318600797,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.5546836248324203,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-8",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.5357142857142857,
+      "coordinates": {
+        "x": 320740.8042857143,
+        "y": 2783384.8814285714,
+        "longitude": 55.221502321428574,
+        "latitude": 25.155822964285715,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5903.068584404146,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 412.8959472940272,
+        "nearest_road_m": 11.008817824359996,
+        "nearest_school_boundary_m": 185.7718216149093,
+        "nearest_building_boundary_m": 15.498391358237571
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.6306811520448532,
+        "transit_access": 0.801578729451233,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.5607290435829221,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-9",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.6071428571428571,
+      "coordinates": {
+        "x": 320746.3128571428,
+        "y": 2783392.4442857145,
+        "longitude": 55.22155596428571,
+        "latitude": 25.15589189285714,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 5922.391112287398,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 417.212970587528,
+        "nearest_road_m": 10.88173862759612,
+        "nearest_school_boundary_m": 181.11010979348544,
+        "nearest_building_boundary_m": 6.188954281545364
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.6554999462291148,
+        "transit_access": 0.7676009616234563,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.5667744623445036,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-10",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.6785714285714286,
+      "coordinates": {
+        "x": 320751.8214285714,
+        "y": 2783400.007142857,
+        "longitude": 55.22160960714286,
+        "latitude": 25.15596082142857,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 5938.308418076993,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 421.693425009098,
+        "nearest_road_m": 10.754659431390973,
+        "nearest_school_boundary_m": 176.82097264563035,
+        "nearest_building_boundary_m": 0.5367685802523902
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.675944907610298,
+        "transit_access": 0.7323368850250671,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.5728198810795051,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-11",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.75,
+      "coordinates": {
+        "x": 320757.32999999996,
+        "y": 2783407.5700000003,
+        "longitude": 55.22166325,
+        "latitude": 25.156029750000002,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 5951.874647649328,
+        "population_within_catchment": 13790.930809700862,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 685,
+        "average_barrier_score": 13.052631578947368,
+        "nearest_bus_stop_m": 426.3321579472239,
+        "nearest_road_m": 7.2058296511706175,
+        "nearest_school_boundary_m": 172.93213466568008,
+        "nearest_building_boundary_m": 5.608993096104585
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.6933700323996933,
+        "transit_access": 0.695827054044079,
+        "intersection_connectivity": 0.05921052631578947,
+        "road_access": 0.7416450128189417,
+        "low_barrier_access": 0.5201238390092882
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-12",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.8214285714285714,
+      "coordinates": {
+        "x": 320762.83857142855,
+        "y": 2783415.132857143,
+        "longitude": 55.221716892857145,
+        "latitude": 25.15609867857143,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5983.06375421379,
+        "population_within_catchment": 15615.989857399836,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 712,
+        "average_barrier_score": 12.4,
+        "nearest_bus_stop_m": 431.12406038025017,
+        "nearest_road_m": 2.100398686518099,
+        "nearest_school_boundary_m": 169.47115497142872,
+        "nearest_building_boundary_m": 9.99872685764876
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.733430837139706,
+        "transit_access": 0.6581116799881072,
+        "intersection_connectivity": 0.23684210526315788,
+        "road_access": 0.9845208644582788,
+        "low_barrier_access": 0.7720588235294119
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-13",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.8928571428571429,
+      "coordinates": {
+        "x": 320768.34714285715,
+        "y": 2783422.6957142856,
+        "longitude": 55.221770535714285,
+        "latitude": 25.15616760714286,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6016.4835234278635,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 436.06408280464774,
+        "nearest_road_m": 5.499990723633403,
+        "nearest_school_boundary_m": 166.46472259718945,
+        "nearest_building_boundary_m": 1.141320395495332
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.7763568134312736,
+        "transit_access": 0.6192305057185847,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.8227952791047052,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-2-14",
+      "edge_id": "edge-2",
+      "boundary_parameter": 0.9642857142857143,
+      "coordinates": {
+        "x": 320773.8557142857,
+        "y": 2783430.2585714287,
+        "longitude": 55.22182417857143,
+        "latitude": 25.156236535714285,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6054.537100930738,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 441.1472492494786,
+        "nearest_road_m": 10.15743915985514,
+        "nearest_school_boundary_m": 163.9378470827631,
+        "nearest_building_boundary_m": 1.6229709404231532
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8252346783630835,
+        "transit_access": 0.5792226953478536,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6012308777357714,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-3-1",
+      "edge_id": "edge-3",
+      "boundary_parameter": 0.25,
+      "coordinates": {
+        "x": 320778.27999999997,
+        "y": 2783436.29,
+        "longitude": 55.22186725,
+        "latitude": 25.156291500000002,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6083.6908719324265,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 445.33158387877177,
+        "nearest_road_m": 10.011011723796642,
+        "nearest_school_boundary_m": 162.25314080163594,
+        "nearest_building_boundary_m": 0
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8626811991577652,
+        "transit_access": 0.5462892731997981,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6081967320353003,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-3-2",
+      "edge_id": "edge-3",
+      "boundary_parameter": 0.75,
+      "coordinates": {
+        "x": 320781.62,
+        "y": 2783440.79,
+        "longitude": 55.22189975,
+        "latitude": 25.156332499999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6104.7699933900685,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 448.54838445813124,
+        "nearest_road_m": 9.93281313616777,
+        "nearest_school_boundary_m": 161.17596750132023,
+        "nearest_building_boundary_m": 0
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8897562475263452,
+        "transit_access": 0.520970970331643,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6119167996846037,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-4-1",
+      "edge_id": "edge-4",
+      "boundary_parameter": 0.16666666666666666,
+      "coordinates": {
+        "x": 320785.6,
+        "y": 2783446.203333333,
+        "longitude": 55.2219385,
+        "latitude": 25.156381833333334,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6129.305993921489,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 452.4418517825585,
+        "nearest_road_m": 9.808630992335397,
+        "nearest_school_boundary_m": 160.16382907635008,
+        "nearest_building_boundary_m": 3.9169858024090844
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9212714794345932,
+        "transit_access": 0.49032686215794197,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6178243996796884,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-4-2",
+      "edge_id": "edge-4",
+      "boundary_parameter": 0.5,
+      "coordinates": {
+        "x": 320790.22,
+        "y": 2783452.5300000003,
+        "longitude": 55.2219835,
+        "latitude": 25.156439499999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6156.868700124967,
+        "population_within_catchment": 16442.79239341058,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 744,
+        "average_barrier_score": 12.857142857142858,
+        "nearest_bus_stop_m": 457.04386660361405,
+        "nearest_road_m": 9.937875623354625,
+        "nearest_school_boundary_m": 159.35905653594634,
+        "nearest_building_boundary_m": 11.750957407979383
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9566743592523184,
+        "transit_access": 0.45410602652677445,
+        "intersection_connectivity": 0.4473684210526316,
+        "road_access": 0.6116759667567992,
+        "low_barrier_access": 0.5955882352941176
+      }
+    },
+    {
+      "candidate_id": "access-edge-4-3",
+      "edge_id": "edge-4",
+      "boundary_parameter": 0.8333333333333334,
+      "coordinates": {
+        "x": 320794.84,
+        "y": 2783458.8566666665,
+        "longitude": 55.2220285,
+        "latitude": 25.156497166666668,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6184.704174054172,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 461.73293685615056,
+        "nearest_road_m": 11.984630898719372,
+        "nearest_school_boundary_m": 158.93680466684427,
+        "nearest_building_boundary_m": 4.860915717219089
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9924275951976586,
+        "transit_access": 0.41720000829687975,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.5143076086214635,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-1",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.05,
+      "coordinates": {
+        "x": 320800.77300000004,
+        "y": 2783459.197,
+        "longitude": 55.2220873,
+        "latitude": 25.156500949999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": false,
+        "secondary_entrance": false,
+        "drop_off": false,
+        "service_entrance": false
+      },
+      "hard_exclusions": [
+        "building_facing_edge"
+      ],
+      "metrics_raw": {
+        "population_pull": 6190.599625777177,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 467.67110757246127,
+        "nearest_road_m": 7.036761897302332,
+        "nearest_school_boundary_m": 154.28024817840733,
+        "nearest_building_boundary_m": 1.218859739716279
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 1,
+        "transit_access": 0.3704627608457799,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.7496879136024026,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-2",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.15,
+      "coordinates": {
+        "x": 320808.01900000003,
+        "y": 2783453.551,
+        "longitude": 55.2221599,
+        "latitude": 25.15645085,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6172.784915823613,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 474.84786165890534,
+        "nearest_road_m": 2.227583761477875,
+        "nearest_school_boundary_m": 145.1009520367259,
+        "nearest_building_boundary_m": 5.153740583266415
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9771179204676914,
+        "transit_access": 0.3139770605083835,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.9784704088531522,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-3",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.25,
+      "coordinates": {
+        "x": 320815.265,
+        "y": 2783447.9050000003,
+        "longitude": 55.222232500000004,
+        "latitude": 25.15640075,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6152.160616596568,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 482.09281497448006,
+        "nearest_road_m": 2.244616537630701,
+        "nearest_school_boundary_m": 135.92255607519567,
+        "nearest_building_boundary_m": 4.480259689993598
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9506270678834212,
+        "transit_access": 0.25695458809080796,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.9776601246592141,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-4",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.35,
+      "coordinates": {
+        "x": 320822.511,
+        "y": 2783442.259,
+        "longitude": 55.2223051,
+        "latitude": 25.15635065,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6128.769852211848,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 489.4029387345386,
+        "nearest_road_m": 2.787844112101887,
+        "nearest_school_boundary_m": 126.74525585594935,
+        "nearest_building_boundary_m": 4.929194863000555
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.9205828329580257,
+        "transit_access": 0.19941918208882514,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.9518176716523815,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-5",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.45,
+      "coordinates": {
+        "x": 320829.757,
+        "y": 2783436.613,
+        "longitude": 55.2223777,
+        "latitude": 25.15630055,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6102.664164567292,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 496.77535596886304,
+        "nearest_road_m": 5.0452510427936135,
+        "nearest_school_boundary_m": 117.56930797605767,
+        "nearest_building_boundary_m": 12.082323369215192
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8870514186108136,
+        "transit_access": 0.14139348612037939,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.844428181013052,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-6",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.55,
+      "coordinates": {
+        "x": 320837.003,
+        "y": 2783430.967,
+        "longitude": 55.2224503,
+        "latitude": 25.156250449999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6073.899605103956,
+        "population_within_catchment": 16721.019876206294,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 775,
+        "average_barrier_score": 13.136363636363637,
+        "nearest_bus_stop_m": 504.2073341573113,
+        "nearest_road_m": 3.4718131149413143,
+        "nearest_school_boundary_m": 108.39505587433052,
+        "nearest_building_boundary_m": 13.725757243348392
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8501048200376379,
+        "transit_access": 0.0828990068878106,
+        "intersection_connectivity": 0.6513157894736842,
+        "road_access": 0.919279859426604,
+        "low_barrier_access": 0.48780080213903754
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-7",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.65,
+      "coordinates": {
+        "x": 320844.249,
+        "y": 2783425.321,
+        "longitude": 55.2225229,
+        "latitude": 25.15620035,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6043.747429977984,
+        "population_within_catchment": 16968.024540508166,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 828,
+        "average_barrier_score": 13.478260869565217,
+        "nearest_bus_stop_m": 510.1330295932554,
+        "nearest_road_m": 2.992247688857183,
+        "nearest_school_boundary_m": 99.22296993126746,
+        "nearest_building_boundary_m": 13.723585426362
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.8113759004479836,
+        "transit_access": 0.036259947968730444,
+        "intersection_connectivity": 1,
+        "road_access": 0.9420937730968464,
+        "low_barrier_access": 0.35581841432225103
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-8",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.75,
+      "coordinates": {
+        "x": 320851.495,
+        "y": 2783419.675,
+        "longitude": 55.2225955,
+        "latitude": 25.15615025,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 6016.310558499799,
+        "population_within_catchment": 16208.496973598376,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 819,
+        "average_barrier_score": 14.090909090909092,
+        "nearest_bus_stop_m": 502.9349067722471,
+        "nearest_road_m": 2.625131104428367,
+        "nearest_school_boundary_m": 90.05371202769408,
+        "nearest_building_boundary_m": 13.72141360937561
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.7761346488689215,
+        "transit_access": 0.09291383407961817,
+        "intersection_connectivity": 0.9407894736842105,
+        "road_access": 0.959558264089164,
+        "low_barrier_access": 0.11931818181818166
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-9",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.85,
+      "coordinates": {
+        "x": 320858.741,
+        "y": 2783414.029,
+        "longitude": 55.2226681,
+        "latitude": 25.15610015,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5990.6413618728775,
+        "population_within_catchment": 16208.496973598376,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 819,
+        "average_barrier_score": 14.090909090909092,
+        "nearest_bus_stop_m": 495.8024774867672,
+        "nearest_road_m": 4.513495541158404,
+        "nearest_school_boundary_m": 80.88824390477383,
+        "nearest_building_boundary_m": 13.719241791878815
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.7431638848049128,
+        "transit_access": 0.14905066954096868,
+        "intersection_connectivity": 0.9407894736842105,
+        "road_access": 0.8697248839197662,
+        "low_barrier_access": 0.11931818181818166
+      }
+    },
+    {
+      "candidate_id": "access-edge-5-10",
+      "edge_id": "edge-5",
+      "boundary_parameter": 0.95,
+      "coordinates": {
+        "x": 320865.98699999996,
+        "y": 2783408.383,
+        "longitude": 55.2227407,
+        "latitude": 25.15605005,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5965.380381500877,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 488.73861785010814,
+        "nearest_road_m": 5.270770152499466,
+        "nearest_school_boundary_m": 71.7280183609301,
+        "nearest_building_boundary_m": 14.94587227315186
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.7107174535442916,
+        "transit_access": 0.2046478174793973,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.8336997731254562,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-1",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.041666666666666664,
+      "coordinates": {
+        "x": 320866.61833333335,
+        "y": 2783401.70375,
+        "longitude": 55.22274783333334,
+        "latitude": 25.155989833333333,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5937.0123059444895,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 488.40481071903247,
+        "nearest_road_m": 4.393889716511264,
+        "nearest_school_boundary_m": 67.72923414957164,
+        "nearest_building_boundary_m": 21.375422612186885
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.6742801181763954,
+        "transit_access": 0.20727509568195424,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.8754147789988149,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-2",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.125,
+      "coordinates": {
+        "x": 320860.635,
+        "y": 2783393.99125,
+        "longitude": 55.2226895,
+        "latitude": 25.1559195,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5902.991968058611,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 494.8311995029676,
+        "nearest_road_m": 7.6573168645146135,
+        "nearest_school_boundary_m": 69.90194043481796,
+        "nearest_building_boundary_m": 23.47673483040181
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.6305827422859186,
+        "transit_access": 0.15669525600392753,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.7201668374789179,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-3",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.20833333333333334,
+      "coordinates": {
+        "x": 320854.6516666667,
+        "y": 2783386.27875,
+        "longitude": 55.222631166666666,
+        "latitude": 25.155849166666666,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5866.804482829535,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 501.3652747624732,
+        "nearest_road_m": 7.687716695112927,
+        "nearest_school_boundary_m": 73.32038776950753,
+        "nearest_building_boundary_m": 23.838494149358052
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.5841017769912625,
+        "transit_access": 0.10526785405524253,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.7187206550121729,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-4",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.2916666666666667,
+      "coordinates": {
+        "x": 320848.66833333333,
+        "y": 2783378.56625,
+        "longitude": 55.22257283333333,
+        "latitude": 25.155778833333333,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5828.389179814124,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 508.0028812337658,
+        "nearest_road_m": 7.7202892394823035,
+        "nearest_school_boundary_m": 77.82058286110325,
+        "nearest_building_boundary_m": 24.20025346831429
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.5347592942257469,
+        "transit_access": 0.05302559445167199,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.7171711120825858,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-5",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.375,
+      "coordinates": {
+        "x": 320842.685,
+        "y": 2783370.85375,
+        "longitude": 55.2225145,
+        "latitude": 25.1557085,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5787.680815727863,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 514.7400138070379,
+        "nearest_road_m": 7.7528617843676955,
+        "nearest_school_boundary_m": 83.22723616138954,
+        "nearest_building_boundary_m": 23.640383120047794
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.48247149234291753,
+        "transit_access": 0,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.7156215691284508,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-6",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.4583333333333333,
+      "coordinates": {
+        "x": 320836.70166666666,
+        "y": 2783363.14125,
+        "longitude": 55.22245616666667,
+        "latitude": 25.155638166666666,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5744.610740522329,
+        "population_within_catchment": 15381.694437587634,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 787,
+        "average_barrier_score": 13.714285714285714,
+        "nearest_bus_stop_m": 511.06932027793215,
+        "nearest_road_m": 7.749200305356622,
+        "nearest_school_boundary_m": 89.3759947041001,
+        "nearest_building_boundary_m": 20.702957220634776
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.42715019388313596,
+        "transit_access": 0.02889073419794752,
+        "intersection_connectivity": 0.7302631578947368,
+        "road_access": 0.7157957532157944,
+        "low_barrier_access": 0.2647058823529417
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-7",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.5416666666666666,
+      "coordinates": {
+        "x": 320830.7183333333,
+        "y": 2783355.42875,
+        "longitude": 55.22239783333333,
+        "latitude": 25.155567833333333,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5715.568671644402,
+        "population_within_catchment": 13556.63538988866,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 760,
+        "average_barrier_score": 14.4,
+        "nearest_bus_stop_m": 506.56833654272145,
+        "nearest_road_m": 7.435468785671558,
+        "nearest_school_boundary_m": 96.12455403113049,
+        "nearest_building_boundary_m": 21.403090805163004
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.3898471487266476,
+        "transit_access": 0.06431638978378318,
+        "intersection_connectivity": 0.5526315789473685,
+        "road_access": 0.7307206068779375,
+        "low_barrier_access": 0
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-8",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.625,
+      "coordinates": {
+        "x": 320824.735,
+        "y": 2783347.71625,
+        "longitude": 55.2223395,
+        "latitude": 25.1554975,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5691.081943715776,
+        "population_within_catchment": 13309.630725586787,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 707,
+        "average_barrier_score": 14.052631578947368,
+        "nearest_bus_stop_m": 502.2167608852028,
+        "nearest_road_m": 7.121737265986495,
+        "nearest_school_boundary_m": 103.35548952074531,
+        "nearest_building_boundary_m": 25.532733187999387
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.3583952049448333,
+        "transit_access": 0.09856610708291613,
+        "intersection_connectivity": 0.20394736842105263,
+        "road_access": 0.7456454605400807,
+        "low_barrier_access": 0.13409442724458231
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-9",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.7083333333333334,
+      "coordinates": {
+        "x": 320818.75166666665,
+        "y": 2783340.0037499997,
+        "longitude": 55.22228116666667,
+        "latitude": 25.155427166666666,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5665.151729444355,
+        "population_within_catchment": 13031.403242791072,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 676,
+        "average_barrier_score": 13.777777777777779,
+        "nearest_bus_stop_m": 498.0185098051536,
+        "nearest_road_m": 6.808005746216423,
+        "nearest_school_boundary_m": 110.97454847189864,
+        "nearest_building_boundary_m": 30.95635193578383
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.32508917712877117,
+        "transit_access": 0.1316090607068584,
+        "intersection_connectivity": 0,
+        "road_access": 0.7605703142062679,
+        "low_barrier_access": 0.24019607843137236
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-10",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.7916666666666666,
+      "coordinates": {
+        "x": 320812.7683333333,
+        "y": 2783332.29125,
+        "longitude": 55.22222283333333,
+        "latitude": 25.155356833333332,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5638.481987175283,
+        "population_within_catchment": 13031.403242791072,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 676,
+        "average_barrier_score": 13.777777777777779,
+        "nearest_bus_stop_m": 493.9774925753436,
+        "nearest_road_m": 6.49427422653136,
+        "nearest_school_boundary_m": 118.90714642545116,
+        "nearest_building_boundary_m": 37.415370562724256
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.290833263600132,
+        "transit_access": 0.1634144821483503,
+        "intersection_connectivity": 0,
+        "road_access": 0.775495167868411,
+        "low_barrier_access": 0.24019607843137236
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-11",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.875,
+      "coordinates": {
+        "x": 320806.785,
+        "y": 2783324.57875,
+        "longitude": 55.2221645,
+        "latitude": 25.1552865,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5610.935888507988,
+        "population_within_catchment": 13925.372109824792,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 691,
+        "average_barrier_score": 13.15,
+        "nearest_bus_stop_m": 490.09759854701826,
+        "nearest_road_m": 8.319966197830869,
+        "nearest_school_boundary_m": 127.0945884040637,
+        "nearest_building_boundary_m": 45.07870951538668
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.25545171530926114,
+        "transit_access": 0.1939517596954241,
+        "intersection_connectivity": 0.09868421052631579,
+        "road_access": 0.6886432457818203,
+        "low_barrier_access": 0.48253676470588236
+      }
+    },
+    {
+      "candidate_id": "access-edge-6-12",
+      "edge_id": "edge-6",
+      "boundary_parameter": 0.9583333333333334,
+      "coordinates": {
+        "x": 320800.80166666664,
+        "y": 2783316.86625,
+        "longitude": 55.22210616666666,
+        "latitude": 25.155216166666666,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5582.627879816439,
+        "population_within_catchment": 14027.379037866369,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 723,
+        "average_barrier_score": 12.523809523809524,
+        "nearest_bus_stop_m": 486.38268359403753,
+        "nearest_road_m": 12.203250940066619,
+        "nearest_school_boundary_m": 135.49068307527946,
+        "nearest_building_boundary_m": 53.43066551009851
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.21909153274273388,
+        "transit_access": 0.22319054512480663,
+        "intersection_connectivity": 0.3092105263157895,
+        "road_access": 0.5039074036054207,
+        "low_barrier_access": 0.7242647058823533
+      }
+    },
+    {
+      "candidate_id": "access-edge-7-1",
+      "edge_id": "edge-7",
+      "boundary_parameter": 0.1,
+      "coordinates": {
+        "x": 320795.008,
+        "y": 2783309.314,
+        "longitude": 55.2220497,
+        "latitude": 25.1551473,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5552.450439490323,
+        "population_within_catchment": 14027.379037866369,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 723,
+        "average_barrier_score": 12.523809523809524,
+        "nearest_bus_stop_m": 482.9709789211117,
+        "nearest_road_m": 3.017230518103859,
+        "nearest_school_boundary_m": 143.8199060633021,
+        "nearest_building_boundary_m": 57.73021575837097
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.18033016130173798,
+        "transit_access": 0.25004286937520737,
+        "intersection_connectivity": 0.3092105263157895,
+        "road_access": 0.9409052885258755,
+        "low_barrier_access": 0.7242647058823533
+      }
+    },
+    {
+      "candidate_id": "access-edge-7-2",
+      "edge_id": "edge-7",
+      "boundary_parameter": 0.3,
+      "coordinates": {
+        "x": 320789.404,
+        "y": 2783301.922,
+        "longitude": 55.2219951,
+        "latitude": 25.1550799,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5520.406520733027,
+        "population_within_catchment": 14027.379037866369,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 723,
+        "average_barrier_score": 12.523809523809524,
+        "nearest_bus_stop_m": 479.8545156190822,
+        "nearest_road_m": 1.7750157496499637,
+        "nearest_school_boundary_m": 152.0476907422802,
+        "nearest_building_boundary_m": 57.69553552913681
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.13917139422427452,
+        "transit_access": 0.27457145292016105,
+        "intersection_connectivity": 0.3092105263157895,
+        "road_access": 1,
+        "low_barrier_access": 0.7242647058823533
+      }
+    },
+    {
+      "candidate_id": "access-edge-7-3",
+      "edge_id": "edge-7",
+      "boundary_parameter": 0.5,
+      "coordinates": {
+        "x": 320783.8,
+        "y": 2783294.53,
+        "longitude": 55.2219405,
+        "latitude": 25.155012499999998,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5486.005852551082,
+        "population_within_catchment": 14027.379037866369,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 723,
+        "average_barrier_score": 12.523809523809524,
+        "nearest_bus_stop_m": 476.89814300333643,
+        "nearest_road_m": 2.058923669869426,
+        "nearest_school_boundary_m": 160.38992518254602,
+        "nearest_building_boundary_m": 58.890954313844965
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.09498550361164883,
+        "transit_access": 0.2978400191336984,
+        "intersection_connectivity": 0.3092105263157895,
+        "road_access": 0.9864939163044489,
+        "low_barrier_access": 0.7242647058823533
+      }
+    },
+    {
+      "candidate_id": "access-edge-7-4",
+      "edge_id": "edge-7",
+      "boundary_parameter": 0.7,
+      "coordinates": {
+        "x": 320778.196,
+        "y": 2783287.138,
+        "longitude": 55.2218859,
+        "latitude": 25.1549451,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5450.82642658409,
+        "population_within_catchment": 14230.096866855398,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 750,
+        "average_barrier_score": 11.954545454545455,
+        "nearest_bus_stop_m": 474.10485591273687,
+        "nearest_road_m": 9.011620276156014,
+        "nearest_school_boundary_m": 168.82964461274256,
+        "nearest_building_boundary_m": 54.92280000148713
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.04979933864034345,
+        "transit_access": 0.3198249966953445,
+        "intersection_connectivity": 0.4868421052631579,
+        "road_access": 0.6557398387088244,
+        "low_barrier_access": 0.9440173796791445
+      }
+    },
+    {
+      "candidate_id": "access-edge-7-5",
+      "edge_id": "edge-7",
+      "boundary_parameter": 0.9,
+      "coordinates": {
+        "x": 320772.592,
+        "y": 2783279.746,
+        "longitude": 55.2218313,
+        "latitude": 25.1548777,
+        "crs": "EPSG:32640"
+      },
+      "eligible_roles": {
+        "main_entrance": true,
+        "secondary_entrance": true,
+        "drop_off": true,
+        "service_entrance": true
+      },
+      "hard_exclusions": [],
+      "metrics_raw": {
+        "population_pull": 5414.234297899179,
+        "population_within_catchment": 14230.096866855398,
+        "school_generators_within_catchment": 1,
+        "building_generators_within_catchment": 13,
+        "intersection_count_within_catchment": 750,
+        "average_barrier_score": 11.954545454545455,
+        "nearest_bus_stop_m": 471.4775529757943,
+        "nearest_road_m": 18.164455951193318,
+        "nearest_school_boundary_m": 177.3529324822874,
+        "nearest_building_boundary_m": 47.793923044708976
+      },
+      "evidence_status": {
+        "population": "computed",
+        "intersections": "computed",
+        "transit": "computed",
+        "roads": "computed",
+        "schools": "computed",
+        "buildings": "computed"
+      },
+      "metrics_normalized": {
+        "population_pull": 0.002798629619139015,
+        "transit_access": 0.34050357152237043,
+        "intersection_connectivity": 0.4868421052631579,
+        "road_access": 0.22032062045270362,
+        "low_barrier_access": 0.9440173796791445
+      }
+    }
+  ]
+}

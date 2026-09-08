@@ -1,0 +1,49 @@
+{
+  "status": "complete",
+  "brief_gross_area_m2": 15000,
+  "measured_boundary_area_m2": 14736.99,
+  "measured_to_brief_variance_m2": -263.01,
+  "exclusive_program_area_m2": 7525,
+  "operations_area_m2": 500,
+  "drop_off_area_m2": 250,
+  "circulation_area_m2": 6000,
+  "exclusive_committed_area_m2": 14275,
+  "remaining_area_m2": 461.99,
+  "shared_demand_area_m2": 8025,
+  "overlay_target_area_m2": 0,
+  "maximum_leasable_area_m2": 2250,
+  "maximum_leasable_area_percent": 15,
+  "unresolved_exclusive_program_ids": [],
+  "unresolved_coverage_program_ids": [],
+  "coverage_targets": [
+    {
+      "program_id": "treePlanting",
+      "label": "Tree canopy",
+      "percent": 30,
+      "equivalent_area_m2": 4421.1
+    },
+    {
+      "program_id": "nativePlanting",
+      "label": "Native planting",
+      "percent": 20,
+      "equivalent_area_m2": 2947.4
+    },
+    {
+      "program_id": "biodiversityHabitat",
+      "label": "Biodiversity habitat",
+      "percent": 10,
+      "equivalent_area_m2": 1473.7
+    },
+    {
+      "program_id": "bioswale",
+      "label": "Bioswale",
+      "percent": 5,
+      "equivalent_area_m2": 736.85
+    }
+  ],
+  "notes": [
+    "Measured boundary area governs geometric containment; the brief gross area remains the authoritative project statement.",
+    "Shared-space demand is nominal and may overlap compatible territories; it is not added to exclusive committed area.",
+    "Landscape coverage targets overlap program territories and are not subtracted from remaining area."
+  ]
+}

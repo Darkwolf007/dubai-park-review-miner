@@ -1,0 +1,21 @@
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [],
+  "metrics": {
+    "program_count": 44,
+    "relationship_count": 1160,
+    "journey_count": 64,
+    "movement_demand_count": 50,
+    "target_area_m2": 16300,
+    "exclusive_target_area_m2": 8275,
+    "shared_target_area_m2": 8025,
+    "overlay_target_area_m2": 0,
+    "site_area_m2": 14736.99,
+    "brief_site_area_m2": 15000,
+    "measured_boundary_area_m2": 14736.99,
+    "exclusive_unallocated_area_m2": 6461.99,
+    "target_area_ratio": 0.561512,
+    "orphan_program_count": 0
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.2.0",
+  "source_file": "UAE_MiddleEast_200_Plant_Database_Simulation.csv",
+  "source_authority": "simulation_dataset_competition_design_support_only",
+  "automation_policy": "candidate_generation_only_until_horticultural_safety_verification",
+  "hydrozones": [
+    {
+      "id": "HZ-CREST",
+      "name": "Desert Crest",
+      "water_demand": "very_low",
+      "morphology": "exposed_ridges_and_boundaries"
+    },
+    {
+      "id": "HZ-SLOPE",
+      "name": "Stabilized Slope",
+      "water_demand": "low",
+      "morphology": "dune_slopes_and_buffers"
+    },
+    {
+      "id": "HZ-HOLLOW",
+      "name": "Shaded Hollow",
+      "water_demand": "moderate",
+      "morphology": "play_picnic_quiet_and_social_oases"
+    },
+    {
+      "id": "HZ-WATER",
+      "name": "Specialized Water",
+      "water_demand": "specialized_or_high",
+      "morphology": "bioswale_or_exception_only"
+    }
+  ],
+  "optimization_objectives": [
+    "minimize_irrigation_pipe_length",
+    "minimize_hardscape_crossings",
+    "minimize_hydrozone_fragmentation",
+    "minimize_water_demand",
+    "meet_canopy_shade_targets",
+    "avoid_root_conflicts"
+  ],
+  "required_unverified_fields": [
+    "thorn_hazard",
+    "toxicity_risk",
+    "allergen_risk",
+    "fruit_litter_risk",
+    "fragrance",
+    "uae_nursery_availability",
+    "establishment_period_months"
+  ]
+}

@@ -118,6 +118,7 @@ public sealed class DuneTerrainGeneratorComponent : GH_Component
         var deltas = new double[vertexCount];
         var active = new bool[vertexCount];
         var pinned = new bool[vertexCount];
+        var balanceWeights = new double[vertexCount];
 
         for (var index = 0; index < vertexCount; index++)
         {
@@ -157,9 +158,18 @@ public sealed class DuneTerrainGeneratorComponent : GH_Component
             }
 
             var boundaryFade = Math.Clamp(DistanceToCurveXY(boundary, point) / ridgeHalfWidth, 0, 1);
-            displacement *= SmoothStep(boundaryFade);
+            balanceWeights[index] = SmoothStep(boundaryFade);
+            displacement *= balanceWeights[index];
             deltas[index] = displacement;
             active[index] = displacement > 1e-6;
+        }
+
+        var ridgeAffectedCount = active.Count(value => value);
+        if (ridgeAffectedCount == 0)
+        {
+            AddRuntimeMessage(
+                GH_RuntimeMessageLevel.Warning,
+                "No terrain vertices intersect the dune ridge influence bands. Increase Ridge Half Width or subdivide/remesh the Existing Terrain so it has vertices between the boundary and dune axes.");
         }
 
         var neighbours = BuildVertexNeighbours(proposed);
@@ -175,11 +185,19 @@ public sealed class DuneTerrainGeneratorComponent : GH_Component
         }
 
         var activeIndexes = Enumerable.Range(0, vertexCount).Where(index => active[index] && !pinned[index]).ToList();
-        if (activeIndexes.Count > 0 && balanceStrength > 0)
+        var movableIndexes = Enumerable.Range(0, vertexCount)
+            .Where(index => !pinned[index] && balanceWeights[index] > 1e-6)
+            .ToList();
+        if (activeIndexes.Count > 0 && movableIndexes.Count > 1 && balanceStrength > 0)
         {
-            var correction = activeIndexes.Average(index => deltas[index]) * balanceStrength;
-            foreach (var index in activeIndexes)
-                deltas[index] -= correction;
+            // Spread balancing cut over the whole unprotected interior instead of subtracting the
+            // ridge mean from ridge vertices alone. The old approach could cancel the complete
+            // deformation when a coarse mesh sampled similar values along every ridge band.
+            var totalFill = movableIndexes.Sum(index => deltas[index]);
+            var totalWeight = movableIndexes.Sum(index => balanceWeights[index]);
+            var correction = totalWeight <= 1e-9 ? 0 : totalFill / totalWeight * balanceStrength;
+            foreach (var index in movableIndexes)
+                deltas[index] -= correction * balanceWeights[index];
         }
 
         for (var index = 0; index < vertexCount; index++)
@@ -210,7 +228,7 @@ public sealed class DuneTerrainGeneratorComponent : GH_Component
         data.SetData(6, maximumFill);
         data.SetData(7, meanActive);
         data.SetData(8,
-            $"Generated preliminary morphology on {vertexCount} vertices from {axes.Count} valley axes and {barahas.Count} selected Barahas; landscape height {landscapeHeight:0.##} m, architectural height {architecturalHeight:0.##} m in {architecturalZones.Count} explicit zones, ridge offset {ridgeOffset:0.##} m, half-width {ridgeHalfWidth:0.##} m, balance strength {balanceStrength:0.##}, smoothing {smoothingPasses}. Maximum vertex cut/fill {maximumCut:0.##}/{maximumFill:0.##} m. Verify volumes with CutFill and route slopes with RouteTerrain.");
+            $"Generated preliminary morphology on {vertexCount} vertices ({ridgeAffectedCount} ridge-affected, {movableIndexes.Count} movable) from {axes.Count} valley axes and {barahas.Count} selected Barahas; landscape height {landscapeHeight:0.##} m, architectural height {architecturalHeight:0.##} m in {architecturalZones.Count} explicit zones, ridge offset {ridgeOffset:0.##} m, half-width {ridgeHalfWidth:0.##} m, balance strength {balanceStrength:0.##}, smoothing {smoothingPasses}. Maximum vertex cut/fill {maximumCut:0.##}/{maximumFill:0.##} m. Verify volumes with CutFill and route slopes with RouteTerrain.");
     }
 
     private static bool Contains(Curve curve, Point3d point, double tolerance) =>

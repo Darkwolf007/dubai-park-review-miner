@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.2.0",
+  "authority": "designer_approved_competition_input",
+  "source_lineage": {
+    "regional_weather": {
+      "station": "Dubai.Intl.AP 411940",
+      "source": "ARE_DU_Dubai.Intl.AP.411940_TMYx.epw (8,760-hour regional typical meteorological year)",
+      "evidenceNature": "weather-file",
+      "hours": 8760,
+      "hoursAtOrAbove35C": 1673,
+      "hoursAtOrAbove40C": 285,
+      "eveningHoursAtOrAbove35C": 559,
+      "hottestHour": {
+        "month": 6,
+        "day": 9,
+        "hour": 12,
+        "dryBulbC": 46,
+        "relativeHumidityPct": 28,
+        "windDirectionDeg": 220,
+        "windSpeedMs": 2.5
+      },
+      "windSectorHours": {
+        "N": 673,
+        "NE": 600,
+        "E": 986,
+        "SE": 754,
+        "S": 1657,
+        "SW": 665,
+        "W": 1590,
+        "NW": 1509
+      },
+      "dominantWindSectors": [
+        "S",
+        "W",
+        "NW"
+      ]
+    },
+    "site_microclimate": {
+      "source": "Dubai Intl Airport TMYx EPW + infrared.city Environmental Climate Analysis, 2026-07-26 (regional weather file and site CFD/UTCI simulation)",
+      "evidence_nature": "proxy",
+      "heat_island_extreme": {
+        "window": "Peak 4-hour heat-wave window, June 6, 15:00-19:00",
+        "meanUtciC": 49.94,
+        "areaUtciOver38PctC": 100,
+        "outdoorComfortAreaPct": 0,
+        "meanSkyViewFactorPct": 79.65,
+        "meanDirectSunHours": 2.94,
+        "zoneRisks": [
+          {
+            "zone": "Central spine / wide street corridor",
+            "priority": "CRITICAL",
+            "risk": "UTCI 48-51C with >3hrs direct sun and SVF>0.8 -- unsafe pedestrian conditions.",
+            "intervention": "Continuous shade canopy with tree pits and cool pavement."
+          },
+          {
+            "zone": "Southern frontage / arterial edge",
+            "priority": "HIGH",
+            "risk": "UTCI>38C with long sun exposure and high sky view factor.",
+            "intervention": "Large-canopy trees, shade structures, protected crossings."
+          },
+          {
+            "zone": "Open intersections and plazas",
+            "priority": "MODERATE",
+            "risk": "Extreme heat stress with exposed sky conditions.",
+            "intervention": "Shade sails/pergolas, seating refuges, high-albedo paving."
+          },
+          {
+            "zone": "Parking and service yards",
+            "priority": "MODERATE",
+            "risk": "Prolonged sun exposure on hardscape amplifying heat retention.",
+            "intervention": "Temporary canopies, cool pavement coatings, perimeter trees."
+          }
+        ]
+      },
+      "natural_ventilation": {
+        "window": "8-direction wind simulation, July noon",
+        "calmAreaFractionPct": 62,
+        "ventilationIndexPct": 38,
+        "meanWindSpeedByDirectionMs": {
+          "N": 1.83,
+          "NE": 1.92,
+          "E": 1.82,
+          "SE": 1.88,
+          "S": 1.96,
+          "SW": 1.92,
+          "W": 1.77,
+          "NW": 1.75
+        },
+        "highStagnationZone": "Central enclosed courtyards and interior blocks (high stagnation under N, NE, E, SE, S, NW winds).",
+        "zoneRisks": [
+          {
+            "zone": "Central enclosed courtyards and interior blocks",
+            "priority": "CRITICAL",
+            "risk": "~62% calm-wind coverage limiting passive cooling and pollutant dispersion.",
+            "intervention": "8-12m mid-block passages and porous courtyard edges aligned to the dominant corridor."
+          },
+          {
+            "zone": "Southern/southwestern interior blocks",
+            "priority": "HIGH",
+            "risk": "Stagnation and weak cross-flow under NE, N, S winds.",
+            "intervention": "Diagonal permeability and wind-access courts (+10-18pp cross-flow)."
+          },
+          {
+            "zone": "Northern/northwestern interior blocks",
+            "priority": "HIGH",
+            "risk": "Wind shadows from continuous frontages under SW, E, NW winds.",
+            "intervention": "6-10m frontage breaks and shaded pedestrian air paths (+10-20pp)."
+          }
+        ]
+      },
+      "year_round_comfort": {
+        "seasons": [
+          {
+            "season": "SUMMER",
+            "meanUtciC": 39.1,
+            "comfortAreaPct": 0
+          },
+          {
+            "season": "WINTER",
+            "meanUtciC": 20.48,
+            "comfortAreaPct": 100
+          },
+          {
+            "season": "SPRING",
+            "meanUtciC": 30.4,
+            "comfortAreaPct": 0
+          },
+          {
+            "season": "AUTUMN",
+            "meanUtciC": 30.84,
+            "comfortAreaPct": 0
+          }
+        ],
+        "note": "Winter-comfortable but critical heat stress in summer/spring/autumn -- design must use adaptive/deciduous shade that preserves winter sun access rather than permanent fixed shade."
+      }
+    },
+    "review_and_user_evidence": "Program-level evidence_sources, evidence, primary_users, and scores remain embedded in area/node/route program records."
+  },
+  "site_axes": {
+    "principal_long_axis_azimuth_deg_from_north": 21,
+    "primary_sikka": {
+      "id": "primary_sikka",
+      "role": "ventilated_accessible_valley",
+      "azimuth_deg_from_north": 21,
+      "offset_m": 0,
+      "basis": "site_long_axis_plus_southerly_epw_wind"
+    },
+    "ventilation_cuts": [
+      {
+        "id": "west_east_ventilation_cut",
+        "role": "wind_erosion_passage",
+        "azimuth_deg_from_north": 90,
+        "offset_m": -18,
+        "basis": "westerly_epw_wind"
+      },
+      {
+        "id": "northwest_southeast_ventilation_cut",
+        "role": "wind_erosion_passage",
+        "azimuth_deg_from_north": 135,
+        "offset_m": 18,
+        "basis": "northwesterly_epw_wind"
+      }
+    ]
+  },
+  "baraha_rules": {
+    "generator": "movement_route_intersection",
+    "minimum_distinct_routes": 2,
+    "cluster_distance_m": 6,
+    "minimum_radius_m": 6,
+    "maximum_radius_m": 14,
+    "social_program_ids": [
+      "communityPlaza",
+      "smallEventZone",
+      "flexibleEventLawn",
+      "mainEntrancePlaza"
+    ],
+    "score_components": [
+      "distinct_route_count",
+      "social_program_proximity",
+      "shade_priority"
+    ],
+    "designer_review_required": true
+  },
+  "terrain_rules": {
+    "existing_ground_character": "nearly_flat",
+    "observed_relief_m": 1.372,
+    "observed_triangle_slope_percent": {
+      "median": 1.7,
+      "p95": 3.19,
+      "maximum": 4.28
+    },
+    "preferred_landscape_ridge_height_m": {
+      "minimum": 0.6,
+      "maximum": 1.8
+    },
+    "architectural_ridge_height_m": {
+      "minimum": 2.5,
+      "maximum": 4
+    },
+    "hollow_policy": "retain_near_existing_grade_and_form_protection_with_surrounding_ridges",
+    "cut_fill_balance_required": true
+  },
+  "coordinate_transform": {
+    "obj_axis_convention": "rhino_y_up",
+    "utm_easting": "obj_x",
+    "utm_northing": "-obj_z",
+    "elevation": "obj_y"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.4.0",
+  "package_type": "park_design_grasshopper",
+  "generated_at": "2026-09-02T20:42:44.968Z",
+  "project": {
+    "site_name": "Al Safa 2 Neighborhood Park"
+  },
+  "coordinate_system": {
+    "crs": "EPSG:32640",
+    "units": "meters",
+    "source_crs": "EPSG:4326"
+  },
+  "files": {
+    "site": "site.json",
+    "park_design_package": "park_design_package.json",
+    "validation": "validation.json",
+    "area_programs": "area_programs.json",
+    "node_programs": "node_programs.json",
+    "route_programs": "route_programs.json",
+    "landscape_systems": "landscape_systems.json",
+    "access_candidates": "access_candidates.json",
+    "access_pair_metrics": "access_pair_metrics.json",
+    "movement_requirements": "movement_requirements.json",
+    "terrain_requirements": "terrain_requirements.json",
+    "climate_morphology": "climate_morphology.json",
+    "planting_strategy": "planting_strategy.json",
+    "program_ontology": "program_ontology.json",
+    "user_program_suitability": "user_program_suitability.json",
+    "parametric_relationships": "parametric_relationships.json",
+    "masterplan_settings": "masterplan_settings.json",
+    "area_reconciliation": "area_reconciliation.json",
+    "design_estimate": "design_estimate.json",
+    "grid": "grid.json",
+    "relationships": "relationships.json",
+    "unresolved": "unresolved.json"
+  },
+  "counts": {
+    "area_programs": 22,
+    "selected_area_programs": 22,
+    "node_programs": 14,
+    "route_programs": 8,
+    "landscape_systems": 4,
+    "access_candidates": 55,
+    "access_candidate_pairs": 990,
+    "grid_cells": 186,
+    "accepted_rule_edges": 0,
+    "advisory_relationships": 193,
+    "designer_relationships": 21,
+    "user_groups": 14,
+    "user_program_suitability": 616,
+    "parametric_relationships": 946,
+    "unresolved_rules": 0
+  },
+  "safety_policy": {
+    "numeric_constraints": "Only accepted Park Brain edges with approved provenance are authoritative.",
+    "advisory_relationships": "Opportunity catalog relationships are exported separately and never treated as accepted constraints.",
+    "program_areas": "Canonical Opportunity Lab recommendations require explicit designer approval before final optimization.",
+    "unresolved_extents": "Mandatory programs without approved extents remain represented as landscape overlays or area intent anchors; they are never treated as omitted."
+  }
+}
