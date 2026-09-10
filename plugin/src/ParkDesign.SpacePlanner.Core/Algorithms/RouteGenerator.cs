@@ -76,8 +76,12 @@ public static class RouteGenerator
         {
             new(program.Id, program.Name, spine, false,
                 centralDestinationId is null ? "curvilinear_primary_spine" : $"curvilinear_primary_spine_via:{centralDestinationId}",
-                ["accessible", "shade_priority", "primary"], spineStartId, spineEndId)
+                centralDestinationId is null
+                    ? ["accessible", "shade_priority", "primary"]
+                    : ["accessible", "shade_priority", "primary", $"via:{centralDestinationId}"],
+                spineStartId, spineEndId)
         };
+        var growingNetwork = new List<IReadOnlyList<Point2>> { spine };
 
         var anchorDemand = requiredIds.ToDictionary(id => id,
             id => demandList.Where(demand => demand.Origin == id || demand.Destination == id)
@@ -85,16 +89,22 @@ public static class RouteGenerator
         foreach (var sourceId in requiredIds.Where(id => id != spineStartId && id != spineEndId && id != centralDestinationId)
                      .OrderByDescending(id => anchorDemand[id]).ThenBy(id => id, StringComparer.Ordinal))
         {
-            var attachment = ClosestPointOnPolyline(spine, anchors[sourceId]);
             var obstacles = areas.Where(area => area.SpatialMode == "exclusive" && area.ProgramId != sourceId).ToList();
+            var attachment = ClosestClearPointOnNetwork(growingNetwork, anchors[sourceId], obstacles);
             var start = AccessibleBubbleEdge(sourceId, anchors[sourceId], attachment, areas, obstacles, boundary);
             var branchRaw = ShortestVisibilityPath(boundary, start, attachment, obstacles);
             var branch = ShapeParkPath(boundary, branchRaw, obstacles, sourceId);
+            if (!RouteClear(boundary, branch, obstacles))
+            {
+                warnings.Add($"Walking branch for {sourceId} could not reach the existing network without crossing an exclusive program and was not generated.");
+                continue;
+            }
             var targetId = PolygonMath.Distance(attachment, anchors[spineStartId])
                 <= PolygonMath.Distance(attachment, anchors[spineEndId]) ? spineStartId : spineEndId;
             routes.Add(new(program.Id, program.Name, branch, false,
                 $"hierarchical_spine_branch:persona_od_weight={anchorDemand[sourceId]:0.##}",
-                ["accessible", "shade_priority", "secondary"], sourceId, targetId));
+                ["accessible", "shade_priority", "secondary", "merged_network"], sourceId, targetId));
+            growingNetwork.Add(branch);
         }
         return routes;
     }
@@ -134,6 +144,32 @@ public static class RouteGenerator
             bestDistance = distance;
         }
         return best;
+    }
+
+    private static Point2 ClosestPointOnNetwork(IReadOnlyList<IReadOnlyList<Point2>> network, Point2 point) =>
+        network.Select(polyline => ClosestPointOnPolyline(polyline, point))
+            .OrderBy(candidate => PolygonMath.Distance(candidate, point))
+            .ThenBy(candidate => candidate.X)
+            .ThenBy(candidate => candidate.Y)
+            .First();
+
+    private static Point2 ClosestClearPointOnNetwork(IReadOnlyList<IReadOnlyList<Point2>> network, Point2 point,
+        IReadOnlyList<BubblePlacement> obstacles)
+    {
+        var candidates = new List<Point2>();
+        foreach (var polyline in network)
+        for (var index = 0; index < polyline.Count - 1; index++)
+        for (var sample = 0; sample <= 24; sample++)
+        {
+            var t = sample / 24d;
+            var candidate = new Point2(polyline[index].X + (polyline[index + 1].X - polyline[index].X) * t,
+                polyline[index].Y + (polyline[index + 1].Y - polyline[index].Y) * t);
+            if (obstacles.All(obstacle => PolygonMath.Distance(candidate, obstacle.Center) >= obstacle.Radius + .25))
+                candidates.Add(candidate);
+        }
+        return candidates.Count == 0 ? ClosestPointOnNetwork(network, point)
+            : candidates.OrderBy(candidate => PolygonMath.Distance(candidate, point))
+                .ThenBy(candidate => candidate.X).ThenBy(candidate => candidate.Y).First();
     }
 
     private static string? SelectCentralDestination(IReadOnlyList<string> ids,
@@ -261,6 +297,24 @@ public static class RouteGenerator
                 && obstacles.All(other => other.ProgramId == obstacle.ProgramId || PolygonMath.Distance(point, other.Center) >= other.Radius + .5))
                 points.Add(point);
         }
+        var boundaryCentroid = PolygonMath.Centroid(boundary);
+        for (var index = 0; index < boundary.Count; index++)
+        {
+            var a = boundary[index];
+            var b = boundary[(index + 1) % boundary.Count];
+            for (var sample = 0; sample <= 4; sample++)
+            {
+                var t = sample / 4d;
+                var edgePoint = new Point2(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t);
+                var dx = boundaryCentroid.X - edgePoint.X;
+                var dy = boundaryCentroid.Y - edgePoint.Y;
+                var length = Math.Sqrt(dx * dx + dy * dy);
+                var point = length <= 1e-9 ? edgePoint : new(edgePoint.X + dx / length * .5, edgePoint.Y + dy / length * .5);
+                if (PolygonMath.Contains(boundary, point)
+                    && obstacles.All(obstacle => PolygonMath.Distance(point, obstacle.Center) >= obstacle.Radius + .25))
+                    points.Add(point);
+            }
+        }
 
         var distance = Enumerable.Repeat(double.PositiveInfinity, points.Count).ToArray();
         var previous = Enumerable.Repeat(-1, points.Count).ToArray();
@@ -280,7 +334,11 @@ public static class RouteGenerator
                 distance[next] = candidate; previous[next] = current;
             }
         }
-        if (!double.IsFinite(distance[1])) return [start, end];
+        if (!double.IsFinite(distance[1]))
+        {
+            var gridPath = GridShortestPath(boundary, start, end, obstacles);
+            return gridPath.Count > 0 ? gridPath : [start, end];
+        }
         var path = new List<Point2>();
         for (var current = 1; current >= 0; current = previous[current])
         {
@@ -288,6 +346,107 @@ public static class RouteGenerator
             if (current == 0) break;
         }
         path.Reverse(); return path;
+    }
+
+    private static IReadOnlyList<Point2> GridShortestPath(IReadOnlyList<Point2> boundary, Point2 start, Point2 end,
+        IReadOnlyList<BubblePlacement> obstacles)
+    {
+        var minX = boundary.Min(point => point.X);
+        var maxX = boundary.Max(point => point.X);
+        var minY = boundary.Min(point => point.Y);
+        var maxY = boundary.Max(point => point.Y);
+        var span = Math.Max(maxX - minX, maxY - minY);
+        var spacing = Math.Clamp(span / 80d, 1, 3);
+        var columns = Math.Max(2, (int)Math.Ceiling((maxX - minX) / spacing) + 1);
+        var rows = Math.Max(2, (int)Math.Ceiling((maxY - minY) / spacing) + 1);
+        var valid = new bool[columns, rows];
+        for (var x = 0; x < columns; x++)
+        for (var y = 0; y < rows; y++)
+        {
+            var point = new Point2(minX + x * spacing, minY + y * spacing);
+            valid[x, y] = PolygonMath.Contains(boundary, point)
+                && obstacles.All(obstacle => PolygonMath.Distance(point, obstacle.Center) >= obstacle.Radius + .25);
+        }
+
+        var startCell = NearestValidCell(start, valid, minX, minY, spacing, columns, rows, boundary, obstacles);
+        var endCell = NearestValidCell(end, valid, minX, minY, spacing, columns, rows, boundary, obstacles);
+        if (startCell is null || endCell is null) return [];
+
+        var cameFrom = new Dictionary<(int X, int Y), (int X, int Y)>();
+        var cost = new Dictionary<(int X, int Y), double> { [startCell.Value] = 0 };
+        var queue = new PriorityQueue<(int X, int Y), double>();
+        queue.Enqueue(startCell.Value, 0);
+        var directions = new[] { (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1) };
+        while (queue.TryDequeue(out var current, out _))
+        {
+            if (current == endCell.Value) break;
+            foreach (var (dx, dy) in directions)
+            {
+                var next = (X: current.X + dx, Y: current.Y + dy);
+                if (next.X < 0 || next.X >= columns || next.Y < 0 || next.Y >= rows || !valid[next.X, next.Y]) continue;
+                var currentPoint = GridPoint(current, minX, minY, spacing);
+                var nextPoint = GridPoint(next, minX, minY, spacing);
+                if (!SegmentClear(boundary, currentPoint, nextPoint, obstacles)) continue;
+                var candidate = cost[current] + (dx == 0 || dy == 0 ? spacing : spacing * Math.Sqrt(2));
+                if (cost.TryGetValue(next, out var known) && candidate + 1e-9 >= known) continue;
+                cost[next] = candidate;
+                cameFrom[next] = current;
+                var heuristic = PolygonMath.Distance(nextPoint, end);
+                queue.Enqueue(next, candidate + heuristic);
+            }
+        }
+        if (startCell != endCell && !cameFrom.ContainsKey(endCell.Value)) return [];
+
+        var cells = new List<(int X, int Y)> { endCell.Value };
+        while (cells[^1] != startCell.Value) cells.Add(cameFrom[cells[^1]]);
+        cells.Reverse();
+        var points = new List<Point2> { start };
+        points.AddRange(cells.Select(cell => GridPoint(cell, minX, minY, spacing)));
+        points.Add(end);
+        points = points.Where((point, index) => index == 0 || PolygonMath.Distance(point, points[index - 1]) > .01).ToList();
+        return SimplifyVisibilityPath(points, boundary, obstacles);
+    }
+
+    private static (int X, int Y)? NearestValidCell(Point2 point, bool[,] valid, double minX, double minY,
+        double spacing, int columns, int rows, IReadOnlyList<Point2> boundary, IReadOnlyList<BubblePlacement> obstacles)
+    {
+        var centerX = Math.Clamp((int)Math.Round((point.X - minX) / spacing), 0, columns - 1);
+        var centerY = Math.Clamp((int)Math.Round((point.Y - minY) / spacing), 0, rows - 1);
+        var maxRadius = Math.Max(columns, rows);
+        for (var radius = 0; radius < maxRadius; radius++)
+        {
+            var candidates = new List<(int X, int Y)>();
+            for (var x = Math.Max(0, centerX - radius); x <= Math.Min(columns - 1, centerX + radius); x++)
+            for (var y = Math.Max(0, centerY - radius); y <= Math.Min(rows - 1, centerY + radius); y++)
+                if (valid[x, y] && (radius == 0 || Math.Abs(x - centerX) == radius || Math.Abs(y - centerY) == radius))
+                {
+                    var cell = (X: x, Y: y);
+                    if (SegmentClear(boundary, point, GridPoint(cell, minX, minY, spacing), obstacles)) candidates.Add(cell);
+                }
+            if (candidates.Count > 0)
+                return candidates.OrderBy(cell => PolygonMath.Distance(point, GridPoint(cell, minX, minY, spacing)))
+                    .ThenBy(cell => cell.X).ThenBy(cell => cell.Y).First();
+        }
+        return null;
+    }
+
+    private static Point2 GridPoint((int X, int Y) cell, double minX, double minY, double spacing) =>
+        new(minX + cell.X * spacing, minY + cell.Y * spacing);
+
+    private static IReadOnlyList<Point2> SimplifyVisibilityPath(IReadOnlyList<Point2> points,
+        IReadOnlyList<Point2> boundary, IReadOnlyList<BubblePlacement> obstacles)
+    {
+        if (points.Count < 3) return points;
+        var result = new List<Point2> { points[0] };
+        var current = 0;
+        while (current < points.Count - 1)
+        {
+            var next = points.Count - 1;
+            while (next > current + 1 && !SegmentClear(boundary, points[current], points[next], obstacles)) next--;
+            result.Add(points[next]);
+            current = next;
+        }
+        return result;
     }
 
     private static bool SegmentClear(IReadOnlyList<Point2> boundary, Point2 a, Point2 b,

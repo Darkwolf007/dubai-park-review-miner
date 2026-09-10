@@ -17,6 +17,7 @@ The Results tab exports `al_safa_2_park_design_package.zip`. The Grasshopper plu
 - `movement_requirements.json`: walking, jogging, exercise-cycling and service-network topology and sharing decisions
 - `terrain_requirements.json`: authoritative Rhino mesh contract, grading permission, cut/fill metrics and optional obstacle inputs
 - `climate_morphology.json`: EPW/CFD lineage, the primary sikka axis, ventilation cuts, baraha rules, nearly-flat terrain limits, and the Rhino OBJ-to-UTM transform
+- `lands_design_handoff.json`: stable Rhino parameters, intended Lands Design object mappings, and the ordered detail-design decisions for terrain, paths, planting, irrigation, furniture, and schedules
 - `planting_strategy.json`: hydrozones, irrigation-network objectives, and the safety fields that must be verified before automated planting
 - `program_ontology.json`: PATH/SPACE classification, user groups, time/season profiles, performance attributes, and D0-D10 compatibility
 - `user_program_suitability.json`: canonical user definitions and explainable user-program weights

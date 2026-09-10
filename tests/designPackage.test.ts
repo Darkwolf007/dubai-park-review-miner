@@ -10,6 +10,7 @@ import {
 import { buildAreaReconciliation } from '../src/lib/designPackage/areaReconciliation';
 import type { OpportunityResult } from '../src/lib/gis/opportunityEngine';
 import { buildApproximateDesignEstimate } from '../src/lib/designPackage/designEstimate';
+import { buildLandsDesignHandoff } from '../src/lib/designPackage/landsDesignHandoff';
 import { DEFAULT_MASTERPLAN_EXPORT_SETTINGS } from '../src/lib/gis/parkDesignPackage';
 
 function rawProgram(id: string, target = 100) {
@@ -235,4 +236,29 @@ test('preliminary masterplan defaults are complete and budget is stored in AED',
   for (const value of [settings.walkingPathLengthM, settings.walkingPathWidthM, settings.joggingPathWidthM, settings.cyclingPathWidthM, settings.servicePathLengthM, settings.servicePathWidthM, settings.treeCanopyAreaPerTreeM2, settings.treeUnitCostAed, settings.plantingCostAedPerM2]) {
     assert.ok(typeof value === 'number' && value > 0);
   }
+});
+
+test('Lands Design handoff preserves route dimensions and keeps species selection governed', () => {
+  const handoff = buildLandsDesignHandoff({
+    projectName: 'Al Safa 2 Park',
+    crs: 'EPSG:32640',
+    units: 'meters',
+    routePrograms: [
+      { id: 'walkingPromenade', name: 'Walking promenade', route_topology: 'program_connector_network', target_width_m: 3, target_length_m: 650, decision_authority: 'designer_input' },
+      { id: 'irrigationNetwork', name: 'Irrigation network', route_topology: 'network', target_width_m: null }
+    ],
+    nodePrograms: [{ id: 'drinkingWater', name: 'Drinking water', category: 'Amenities', geometry_type: 'point' }],
+    landscapeSystems: [{ id: 'bioswale', name: 'Bioswale', spatial_mode: 'overlay', coverage_target_percent: 5 }],
+    hydrozones: [{ id: 'HZ-CREST', name: 'Desert Crest', water_demand: 'very_low', morphology: 'exposed_ridges' }],
+    plantSourceFile: 'plants.csv',
+    plantSourceAuthority: 'simulation_dataset_competition_design_support_only',
+    plantAutomationPolicy: 'candidate_generation_only_until_horticultural_safety_verification'
+  });
+
+  assert.equal(handoff.target_application, 'Lands Design for Rhino');
+  assert.equal(handoff.object_mappings.paths[0].target_width_m, 3);
+  assert.equal(handoff.object_mappings.paths[1].status, 'width_decision_required');
+  assert.equal(handoff.object_mappings.planting_zones[0].lands_design_target_type, 'forest_or_groundcover_zone');
+  assert.equal(handoff.object_mappings.individual_plants.status, 'blocked_until_horticultural_review');
+  assert.ok(handoff.rhino_parameter_schema.some(parameter => parameter.name === 'LandsDesignTargetType'));
 });

@@ -14,6 +14,8 @@ public sealed class DistributeSpacesComponent : GH_Component
 {
     private int _seedOffset;
     private bool _lastReseed;
+    private string? _cachedPackageKey;
+    private DesignPackage? _cachedPackage;
 
     public DistributeSpacesComponent()
         : base(
@@ -39,6 +41,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         parameters.AddBooleanParameter("Use Package Boundary", "PB", "Use the georeferenced EPSG:32640 boundary stored in site.json instead of the Rhino Boundary input.", GH_ParamAccess.item, false);
         parameters.AddBooleanParameter("Reseed", "RS", "Connect a Grasshopper Button. Each rising pulse advances the deterministic seed by one.", GH_ParamAccess.item, false);
         parameters.AddTextParameter("CAD Grid GeoJSON", "CG", "Optional *_utm.geojson from CADGrid. When supplied, this designer-CAD grid replaces the package-generated analysis grid.", GH_ParamAccess.item);
+        parameters.AddBooleanParameter("Fast Preview", "FP", "For responsive reseeding, AUTO runs only the Balanced strategy. Disable to compare all three strategies for a final selection.", GH_ParamAccess.item, true);
         parameters[0].Optional = true;
         parameters[8].Optional = true;
     }
@@ -92,6 +95,10 @@ public sealed class DistributeSpacesComponent : GH_Component
         parameters.AddCurveParameter("Clean Geometry", "CGO", "Flattened, categorized planning geometry for BakePark: site, consolidated territories, overlays, route centerlines/corridors, dune guides, and Baraha alternatives. Diagnostic relationship lines are excluded.", GH_ParamAccess.list);
         parameters.AddTextParameter("Clean Geometry Names", "CGN", "Object names matching Clean Geometry.", GH_ParamAccess.list);
         parameters.AddTextParameter("Clean Geometry Layers", "CGL", "Rhino layer paths matching Clean Geometry; connect these three clean outputs to BakePark.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Area Program IDs", "AID", "Stable program IDs matching Bubbles, Centers, Names, and Area Proxy Data. Connect this directly to TreemapPaths Program IDs when the treemap preserves input order.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Public Walking Paths", "WP", "Only the connected public walking spine and merged secondary branches. Preview this instead of the combined Routes output when reviewing circulation.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Service Paths", "SVP", "Only service-access routes.", GH_ParamAccess.list);
+        parameters.AddCurveParameter("Other Route Systems", "ORS", "Lighting, irrigation, bioswale, and other non-walking networks, separated from public circulation.", GH_ParamAccess.list);
     }
 
     protected override void SolveInstance(IGH_DataAccess data)
@@ -105,6 +112,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         var usePackageBoundary = false;
         var reseed = false;
         var cadGridPath = string.Empty;
+        var fastPreview = true;
         data.GetData(0, ref boundary);
         if (!data.GetData(1, ref jsonPath)) return;
         data.GetData(2, ref seed);
@@ -114,6 +122,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         data.GetData(6, ref usePackageBoundary);
         data.GetData(7, ref reseed);
         data.GetData(8, ref cadGridPath);
+        data.GetData(9, ref fastPreview);
         if (reseed && !_lastReseed) _seedOffset++;
         _lastReseed = reseed;
         var effectiveSeed = unchecked(seed + _seedOffset);
@@ -129,14 +138,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         DesignPackage package;
         try
         {
-            package = DesignPackageLoader.LoadFile(jsonPath);
-            if (!string.IsNullOrWhiteSpace(cadGridPath))
-            {
-                var packageGrid = package.Grid;
-                package.Grid = CadGridGeoJsonLoader.LoadFile(cadGridPath, packageGrid);
-                warnings.Add($"CAD_GRID_OVERRIDE: Loaded {package.Grid.Cells.Count} designer-CAD cells. Suitability and constraints were transferred from nearest package-grid centroids.");
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, warnings[^1]);
-            }
+            package = LoadPackageCached(jsonPath, cadGridPath, warnings);
         }
         catch (Exception exception)
         {
@@ -206,7 +208,12 @@ public sealed class DistributeSpacesComponent : GH_Component
             return;
         }
 
-        var planning = PlanningEngine.Generate(polygon, package, effectiveSeed, strategy, includeOptional);
+        var effectiveStrategy = fastPreview && string.Equals(strategy, "AUTO", StringComparison.OrdinalIgnoreCase)
+            ? "Balanced"
+            : strategy;
+        if (fastPreview && !string.Equals(strategy, effectiveStrategy, StringComparison.OrdinalIgnoreCase))
+            warnings.Add("FAST_PREVIEW: AUTO comparison deferred; generating Balanced only for responsive reseeding.");
+        var planning = PlanningEngine.Generate(polygon, package, effectiveSeed, effectiveStrategy, includeOptional);
         var result = planning.Best;
         warnings.AddRange(result.Warnings);
         foreach (var warning in result.Warnings)
@@ -241,7 +248,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         var representedRouteProgramCount = physicalRouteProgramCount + (result.Routes.Any(route => route.ProgramId == "walkingPromenade") ? modifierProgramCount : 0);
         var representedPrograms = result.Areas.Placements.Count + result.AreaAnchors.Count + result.Nodes.Count + representedRouteProgramCount;
         var gridAuthority = package.Grid.Cells.Any(cell => cell.GridAuthority == "designer_cad") ? "designer CAD" : "package generated";
-        var summary = $"{package.Project.SiteName} | {package.CoordinateSystem.Crs} | seed {effectiveSeed} | {result.Strategy} strategy | represented {representedPrograms}/{package.Programs.Count + package.NodePrograms.Count + package.RoutePrograms.Count} programs: {result.Areas.Placements.Count} area bubbles, {result.AreaAnchors.Count} unresolved-area anchors, {result.Nodes.Count} nodes, {representedRouteProgramCount} route programs ({physicalRouteProgramCount} physical systems, {modifierProgramCount} walking attributes, {result.Routes.Count} curves) | sizing {result.AreaSizingMode}, program area {result.Areas.RequestedProgramAreaM2:0} m2 / boundary area {result.Areas.BoundaryAreaM2:0} m2 | {package.Grid.Cells.Count} {gridAuthority} suitability cells | {result.MorphologyAxes.Count} climate axes | {result.BarahaCandidates.Count} baraha candidates";
+        var summary = $"{package.Project.SiteName} | {package.CoordinateSystem.Crs} | seed {effectiveSeed} | {result.Strategy} strategy{(fastPreview ? " fast preview" : string.Empty)} | represented {representedPrograms}/{package.Programs.Count + package.NodePrograms.Count + package.RoutePrograms.Count} programs: {result.Areas.Placements.Count} area bubbles, {result.AreaAnchors.Count} unresolved-area anchors, {result.Nodes.Count} nodes, {representedRouteProgramCount} route programs ({physicalRouteProgramCount} physical systems, {modifierProgramCount} walking attributes, {result.Routes.Count} curves) | sizing {result.AreaSizingMode}, program area {result.Areas.RequestedProgramAreaM2:0} m2 / boundary area {result.Areas.BoundaryAreaM2:0} m2 | {package.Grid.Cells.Count} {gridAuthority} suitability cells | {result.MorphologyAxes.Count} climate axes | {result.BarahaCandidates.Count} baraha candidates";
 
         data.SetDataList(0, bubbles);
         data.SetDataList(1, centers);
@@ -459,6 +466,50 @@ public sealed class DistributeSpacesComponent : GH_Component
         data.SetDataList(44, cleanGeometry);
         data.SetDataList(45, cleanNames);
         data.SetDataList(46, cleanLayers);
+        data.SetDataList(47, result.Areas.Placements.Select(placement => placement.ProgramId));
+        data.SetDataList(48, result.Routes.Select((route, index) => (route, index))
+            .Where(item => item.route.ProgramId == "walkingPromenade").Select(item => routeCurves[item.index]));
+        data.SetDataList(49, result.Routes.Select((route, index) => (route, index))
+            .Where(item => item.route.ProgramId == "serviceAccess").Select(item => routeCurves[item.index]));
+        data.SetDataList(50, result.Routes.Select((route, index) => (route, index))
+            .Where(item => item.route.ProgramId is not "walkingPromenade" and not "serviceAccess"
+                && !item.route.Closed).Select(item => routeCurves[item.index]));
+    }
+
+    private DesignPackage LoadPackageCached(string packagePath, string cadGridPath, List<string> warnings)
+    {
+        var key = $"{PathStamp(packagePath)}|{PathStamp(cadGridPath)}";
+        if (_cachedPackage is not null && string.Equals(_cachedPackageKey, key, StringComparison.Ordinal))
+        {
+            warnings.Add("PACKAGE_CACHE: Reused the parsed design package for this preview.");
+            return _cachedPackage;
+        }
+
+        var package = DesignPackageLoader.LoadFile(packagePath);
+        if (!string.IsNullOrWhiteSpace(cadGridPath))
+        {
+            var packageGrid = package.Grid;
+            package.Grid = CadGridGeoJsonLoader.LoadFile(cadGridPath, packageGrid);
+            warnings.Add($"CAD_GRID_OVERRIDE: Loaded {package.Grid.Cells.Count} designer-CAD cells. Suitability and constraints were transferred from nearest package-grid centroids.");
+            AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, warnings[^1]);
+        }
+        _cachedPackageKey = key;
+        _cachedPackage = package;
+        return package;
+    }
+
+    private static string PathStamp(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+        var normalized = Path.GetFullPath(path.Trim().Trim('"'));
+        if (File.Exists(normalized)) return $"{normalized}:{File.GetLastWriteTimeUtc(normalized).Ticks}";
+        if (Directory.Exists(normalized))
+        {
+            var stamp = Directory.EnumerateFiles(normalized, "*.json", SearchOption.TopDirectoryOnly)
+                .Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(Directory.GetLastWriteTimeUtc(normalized)).Max().Ticks;
+            return $"{normalized}:{stamp}";
+        }
+        return normalized;
     }
 
     private static void AddCleanGeometry(List<Curve> geometry, List<string> names, List<string> layers,

@@ -13,6 +13,7 @@ import { buildCanonicalParkDesignPackage } from '../designPackage/canonicalAdapt
 import { serializeParkDesignPackage, validateParkDesignPackage } from '../designPackage/contract';
 import { buildAreaReconciliation, coverageTargetPercent, programSpatialMode, type AreaPlanningInputs } from '../designPackage/areaReconciliation';
 import { buildApproximateDesignEstimate, type DesignEstimateSettings } from '../designPackage/designEstimate';
+import { buildLandsDesignHandoff } from '../designPackage/landsDesignHandoff';
 import type { PersonaJourneyGroup } from './resultsSynthesisEngine';
 import {
   DUNE_TYPES, USER_GROUPS, buildParametricProgramDefinitions, buildParametricRelationships,
@@ -545,6 +546,18 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     optimization_objectives: ['minimize_irrigation_pipe_length', 'minimize_hardscape_crossings', 'minimize_hydrozone_fragmentation', 'minimize_water_demand', 'meet_canopy_shade_targets', 'avoid_root_conflicts'],
     required_unverified_fields: ['thorn_hazard', 'toxicity_risk', 'allergen_risk', 'fruit_litter_risk', 'fragrance', 'uae_nursery_availability', 'establishment_period_months']
   };
+  const landsDesignHandoff = buildLandsDesignHandoff({
+    projectName: input.siteName,
+    crs: 'EPSG:32640',
+    units: 'meters',
+    routePrograms,
+    nodePrograms,
+    landscapeSystems,
+    hydrozones: plantingStrategy.hydrozones,
+    plantSourceFile: plantingStrategy.source_file,
+    plantSourceAuthority: plantingStrategy.source_authority,
+    plantAutomationPolicy: plantingStrategy.automation_policy
+  });
   const manifest = {
     schema_version: '1.4.0',
     package_type: 'park_design_grasshopper',
@@ -565,6 +578,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
       terrain_requirements: 'terrain_requirements.json',
       climate_morphology: 'climate_morphology.json',
       planting_strategy: 'planting_strategy.json',
+      lands_design_handoff: 'lands_design_handoff.json',
       program_ontology: 'program_ontology.json',
       user_program_suitability: 'user_program_suitability.json',
       parametric_relationships: 'parametric_relationships.json',
@@ -664,6 +678,7 @@ export function buildParkDesignPackageFiles(input: BuildParkDesignPackageInput):
     jsonFile('terrain_requirements.json', terrainRequirements),
     jsonFile('climate_morphology.json', climateMorphology),
     jsonFile('planting_strategy.json', plantingStrategy),
+    jsonFile('lands_design_handoff.json', landsDesignHandoff),
     jsonFile('program_ontology.json', { schema_version: '1.3.0', dune_types: DUNE_TYPES, programs: parametricPrograms }),
     jsonFile('user_program_suitability.json', { schema_version: '1.3.0', user_groups: USER_GROUPS, suitability: userProgramSuitability }),
     jsonFile('parametric_relationships.json', { schema_version: '1.3.0', scale: '-1_repulsion_to_1_attraction', authority: 'computed_advisory', relationships: parametricRelationships }),

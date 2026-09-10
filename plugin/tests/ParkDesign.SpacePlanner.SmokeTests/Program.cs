@@ -249,7 +249,7 @@ if (args.Length > 0)
         .Select(program => program.Id).ToHashSet(StringComparer.Ordinal);
     var obstructedWalkingRoutes = walkingRoutes.Where(route => !RouteAvoidsUnrelatedExclusiveBubbles(route, best.Areas.Placements, exclusiveIds)).ToList();
     Require(obstructedWalkingRoutes.Count == 0,
-        $"Walking connectors must terminate at program edges and avoid unrelated exclusive bubble interiors: {string.Join(", ", obstructedWalkingRoutes.Select(route => $"{route.SourceAnchorId}->{route.TargetAnchorId}"))}.");
+        $"Walking connectors must terminate at program edges and avoid unrelated exclusive bubble interiors: {string.Join(", ", obstructedWalkingRoutes.Select(route => $"{route.SourceAnchorId}->{route.TargetAnchorId} through [{string.Join('|', RouteObstructionIds(route, best.Areas.Placements, exclusiveIds))}]"))}.");
     Require(best.Routes.Count(route => route.ProgramId == "serviceAccess") == 1
         && best.Routes.Single(route => route.ProgramId == "serviceAccess").Points.Count == 2,
         "Service access must be one boundary-to-operations spur.");
@@ -289,8 +289,9 @@ static void Require(bool condition, string message)
 static bool RouteAvoidsUnrelatedExclusiveBubbles(RoutePlacement route, IReadOnlyList<BubblePlacement> bubbles,
     IReadOnlySet<string> exclusiveIds)
 {
+    var allowedIds = RouteAllowedProgramIds(route);
     foreach (var bubble in bubbles.Where(bubble => exclusiveIds.Contains(bubble.ProgramId)
-        && bubble.ProgramId != route.SourceAnchorId && bubble.ProgramId != route.TargetAnchorId))
+        && !allowedIds.Contains(bubble.ProgramId)))
     for (var index = 0; index < route.Points.Count - 1; index++)
     {
         var a = route.Points[index]; var b = route.Points[index + 1];
@@ -300,6 +301,39 @@ static bool RouteAvoidsUnrelatedExclusiveBubbles(RoutePlacement route, IReadOnly
         if (PolygonMath.Distance(closest, bubble.Center) < bubble.Radius - .1) return false;
     }
     return true;
+}
+
+static IReadOnlyList<string> RouteObstructionIds(RoutePlacement route, IReadOnlyList<BubblePlacement> bubbles,
+    IReadOnlySet<string> exclusiveIds)
+{
+    var result = new List<string>();
+    var allowedIds = RouteAllowedProgramIds(route);
+    foreach (var bubble in bubbles.Where(bubble => exclusiveIds.Contains(bubble.ProgramId)
+        && !allowedIds.Contains(bubble.ProgramId)))
+    for (var index = 0; index < route.Points.Count - 1; index++)
+    {
+        var a = route.Points[index]; var b = route.Points[index + 1];
+        var dx = b.X - a.X; var dy = b.Y - a.Y; var lengthSquared = dx * dx + dy * dy;
+        var t = lengthSquared <= 1e-12 ? 0 : Math.Clamp(((bubble.Center.X - a.X) * dx + (bubble.Center.Y - a.Y) * dy) / lengthSquared, 0, 1);
+        var closest = new Point2(a.X + dx * t, a.Y + dy * t);
+        if (PolygonMath.Distance(closest, bubble.Center) < bubble.Radius - .1)
+        {
+            result.Add(bubble.ProgramId);
+            break;
+        }
+    }
+    return result;
+}
+
+static HashSet<string> RouteAllowedProgramIds(RoutePlacement route)
+{
+    var result = new HashSet<string>(StringComparer.Ordinal);
+    if (route.SourceAnchorId is not null) result.Add(route.SourceAnchorId);
+    if (route.TargetAnchorId is not null) result.Add(route.TargetAnchorId);
+    foreach (var attribute in route.Attributes ?? [])
+        if (attribute.StartsWith("via:", StringComparison.Ordinal) && attribute.Length > 4)
+            result.Add(attribute[4..]);
+    return result;
 }
 
 static double DistanceToTestSegment(Point2 point, Point2 a, Point2 b)
