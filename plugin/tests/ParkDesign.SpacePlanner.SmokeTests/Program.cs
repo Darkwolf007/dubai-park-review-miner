@@ -176,6 +176,7 @@ finally
 }
 
 RelationshipCompilerAndSolverTests();
+CirculationFoundationTests();
 Console.WriteLine("All ParkDesign.SpacePlanner core smoke tests passed.");
 
 if (args.Length > 0)
@@ -412,4 +413,159 @@ static void RelationshipCompilerAndSolverTests()
     var suitabilityEnergy = AreaSolverWeights.For(LayoutStrategy.Suitability);
     var connectivityEnergy = AreaSolverWeights.For(LayoutStrategy.Connectivity);
     Require(suitabilityEnergy.Suitability > balancedEnergy.Suitability && connectivityEnergy.Preferred > balancedEnergy.Preferred, "Strategies must expose measurably different energy emphasis.");
+}
+
+static void CirculationFoundationTests()
+{
+    var site = new List<Point2> { new(0, 0), new(100, 0), new(100, 60), new(0, 60) };
+    var spaces = new List<SpaceRegion>
+    {
+        new("play", "Inclusive Play", [new(30, 20), new(55, 20), new(55, 45), new(30, 45)],
+            SpaceCirculationBehavior.DestinationOnly, AccessPointCount: 2),
+        new("lawn", "Event Lawn", [new(60, 10), new(90, 10), new(90, 50), new(60, 50)],
+            SpaceCirculationBehavior.PermeableLandscape)
+    };
+    var entrances = new List<SiteEntrance>
+    {
+        new("main", new(0, 30), SiteEntranceType.Main, DemandWeight: 2),
+        new("secondary", new(100, 30), SiteEntranceType.Secondary)
+    };
+    var demands = new List<MovementDemandDefinition>
+    {
+        new() { Origin = "play", Destination = "lawn", Weight = 4 },
+        new() { Origin = "main", Destination = "play", Weight = 8 }
+    };
+    var explicitPoints = new List<ExplicitAccessPoint>
+    {
+        new("play-gate", "play", new(30, 32), Priority: 2, Accessible: true)
+    };
+
+    Require(SpaceRegionValidator.Validate(site, spaces).Count == 0,
+        "Valid authoritative program polygons must pass circulation validation.");
+    var generated = AccessPointGenerator.Generate(site, spaces, entrances, demands, explicitPoints);
+    Require(generated.Selected.Count(point => point.ProgramId == "play") == 2,
+        "Explicit access-count overrides must control selected boundary access points.");
+    Require(generated.Selected.Any(point => point.ProgramId == "play" && point.Source == "explicit"),
+        "Designer-authored access points must be retained and selected.");
+    Require(generated.Candidates.All(point =>
+            PolygonMath.DistanceToBoundary(spaces.Single(space => space.ProgramId == point.ProgramId).Ring, point.Point) < 0.001),
+        "Every generated program access point must lie on its authoritative polygon boundary.");
+
+    var repeated = AccessPointGenerator.Generate(site, spaces, entrances, demands, explicitPoints);
+    Require(generated.Candidates.Select(point => point.Id).SequenceEqual(repeated.Candidates.Select(point => point.Id)),
+        "Access-point IDs and ordering must be deterministic.");
+    var accessJson = CirculationJsonWriter.SerializeAccessPoints(generated);
+    using var accessDocument = JsonDocument.Parse(accessJson);
+    Require(accessDocument.RootElement.GetProperty("schema_version").GetString() == "1.0.0"
+        && accessDocument.RootElement.GetProperty("access_points").GetArrayLength() == generated.Candidates.Count,
+        "Access-point JSON must be versioned and preserve all candidate records.");
+
+    var invalid = new List<SpaceRegion>
+    {
+        new("bowtie", "Invalid", [new(10, 10), new(30, 30), new(10, 30), new(30, 10)],
+            SpaceCirculationBehavior.HardBarrier)
+    };
+    Require(SpaceRegionValidator.Validate(site, invalid).Any(error => error.StartsWith("SPACE_RING_SELF_INTERSECTION", StringComparison.Ordinal)),
+        "Self-intersecting authoritative program polygons must be rejected before routing.");
+
+    var resultJson = CirculationJsonWriter.SerializeResult(new CirculationResult
+    {
+        AccessPoints = generated.Selected,
+        Nodes = [new("node-main", new(0, 30), "entrance")],
+        Edges =
+        [
+            new()
+            {
+                Id = "edge-primary-1", StartNodeId = "node-main", EndNodeId = "node-play",
+                Centerline = [new(0, 30), new(30, 32)], Network = "public", Hierarchy = "primary",
+                LengthM = 30.067, WidthM = 3, TotalFlow = 8, Accessible = true, ReusedRouteCount = 2
+            }
+        ]
+    });
+    using var resultDocument = JsonDocument.Parse(resultJson);
+    var exportedEdge = resultDocument.RootElement.GetProperty("edges")[0];
+    Require(exportedEdge.GetProperty("lands_design").GetProperty("stable_object_key").GetString() == "edge-primary-1",
+        "Circulation-result JSON must expose stable Lands Design object keys.");
+
+    var previewRegions = SpaceRegionAdapters.FromBubbles(
+        [new BubblePlacement("preview", "Preview", new(20, 20), 5, Math.PI * 25, "")]);
+    Require(previewRegions.Single().PreviewOnly && previewRegions.Single().Ring.Count == 24,
+        "Bubble geometry must remain available only through an explicitly marked preview adapter.");
+
+    var routingSite = new List<Point2> { new(0, 0), new(100, 0), new(100, 60), new(0, 60) };
+    var barrier = new SpaceRegion("building", "Building",
+        [new(40, 0), new(60, 0), new(60, 45), new(40, 45)],
+        SpaceCirculationBehavior.HardBarrier);
+    var field = MovementCostFieldBuilder.Build(routingSite, [barrier], new() { CellSizeM = 5 });
+    Require(field.Cells.Any(cell => !cell.Traversable && cell.ContainingProgramId == "building"),
+        "Hard-barrier polygons must create impassable movement-cost cells.");
+    var path = GridPathfinder.FindPath(field, new(5, 30), new(95, 30));
+    Require(path.Found && path.Points.Any(point => point.Y > 45),
+        "A* must find the available route around a blocking program polygon.");
+    Require(path.Points.Where(point => point != path.Points[0] && point != path.Points[^1])
+            .All(point => !PolygonMath.Contains(barrier.Ring, point)),
+        "A* must never route through hard-barrier cells.");
+    var repeatedPath = GridPathfinder.FindPath(field, new(5, 30), new(95, 30));
+    Require(path.Points.SequenceEqual(repeatedPath.Points) && Math.Abs(path.AccumulatedCost - repeatedPath.AccumulatedCost) < 1e-9,
+        "Grid construction and A* routing must be deterministic.");
+
+    var networkSpaces = new List<SpaceRegion>
+    {
+        new("hub", "Community Plaza", [new(42, 25), new(52, 25), new(52, 35), new(42, 35)],
+            SpaceCirculationBehavior.DestinationOnly),
+        new("play-east", "Play East", [new(82, 42), new(92, 42), new(92, 52), new(82, 52)],
+            SpaceCirculationBehavior.DestinationOnly),
+        new("garden-east", "Garden East", [new(82, 8), new(92, 8), new(92, 18), new(82, 18)],
+            SpaceCirculationBehavior.DestinationOnly),
+        new("operations", "Operations", [new(5, 5), new(15, 5), new(15, 15), new(5, 15)],
+            SpaceCirculationBehavior.HardBarrier, PublicAccess: false, RequiresService: true)
+    };
+    var networkInput = new CirculationInput
+    {
+        Spaces = networkSpaces,
+        Entrances =
+        [
+            new("main", new(0, 30), SiteEntranceType.Main, DemandWeight: 2),
+            new("secondary", new(100, 30), SiteEntranceType.Secondary),
+            new("service", new(0, 8), SiteEntranceType.Service, AllowsService: true)
+        ],
+        MovementDemands =
+        [
+            new() { Origin = "hub", Destination = "play-east", Weight = 8, JourneyIds = ["family"] },
+            new() { Origin = "hub", Destination = "garden-east", Weight = 5, JourneyIds = ["quiet"] }
+        ],
+        PointDestinations = [new("fountain", "Fountain", new(70, 30))],
+        DesignerHubProgramId = "hub",
+        CostSettings = new() { CellSizeM = 3, RouteReuseBenefit = 0.5 }
+    };
+    var network = CirculationNetworkBuilder.Build(routingSite, networkInput);
+    Require(network.Audit.IsValid && network.HubProgramId == "hub",
+        "The circulation builder must honor a valid designer hub and connect all required destinations.");
+    Require(network.Edges.Any(edge => edge.Hierarchy == "primary")
+        && network.Edges.Any(edge => edge.Network == "service" && edge.Hierarchy == "service"),
+        "The circulation builder must create a demand hierarchy and a separately classified service graph.");
+    Require(network.Edges.Where(edge => edge.Network == "public").Max(edge => edge.ReusedRouteCount) > 1,
+        "Merged public graph edges must record reuse by multiple routed demands.");
+    Require(network.OdAssignments.All(assignment => assignment.Found),
+        "Every valid test OD pair must retain a successful graph assignment.");
+    var repeatedNetwork = CirculationNetworkBuilder.Build(routingSite, networkInput);
+    Require(CirculationJsonWriter.SerializeResult(network) == CirculationJsonWriter.SerializeResult(repeatedNetwork),
+        "The complete circulation graph JSON must be byte-stable for identical inputs.");
+    var chains = CirculationPathExtractor.Extract(network);
+    Require(chains.Count > 0 && chains.All(chain => chain.Points.Count >= 2)
+        && chains.SelectMany(chain => chain.EdgeIds).OrderBy(id => id, StringComparer.Ordinal)
+            .SequenceEqual(network.Edges.Select(edge => edge.Id).OrderBy(id => id, StringComparer.Ordinal)),
+        "Display path chains must cover every graph edge exactly once without exposing disconnected grid fragments.");
+
+    var missingEndpointInput = new CirculationInput
+    {
+        Spaces = networkInput.Spaces,
+        Entrances = networkInput.Entrances,
+        PointDestinations = networkInput.PointDestinations,
+        MovementDemands = [new() { Origin = "hub", Destination = "missing-program", Weight = 1 }]
+    };
+    var missingEndpointNetwork = CirculationNetworkBuilder.Build(routingSite, missingEndpointInput);
+    Require(missingEndpointNetwork.OdAssignments.Single(assignment => assignment.OriginId == "hub").Found == false
+        && CirculationJsonWriter.SerializeResult(missingEndpointNetwork).Contains("\"accumulated_cost\": null", StringComparison.Ordinal),
+        "Missing OD endpoints must remain visible as serializable failed assignments instead of being silently dropped.");
 }

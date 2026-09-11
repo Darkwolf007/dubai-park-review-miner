@@ -105,6 +105,26 @@ The access evaluator uses exported pair metrics and does not invent service/publ
 
 Outputs include separate primary, secondary, and service curves, shared-edge portals, width-aware corridor edges, and JSON records carrying Lands Design target type, hierarchy, width, stable program IDs, and unresolved material/detail fields. The generated centreline graph is a deterministic planning network; surface build-ups, crossfalls, edge details, and final curve refinement remain designer decisions.
 
+## Demand-led circulation
+
+ParkCirculation in Park Design > Planning is the replacement path engine for authoritative packed polygons. Connect:
+
+- the site boundary;
+- matching Program Polygons and Program IDs;
+- the exact Main Entrance and any Secondary/Service Entrances;
+- the current design-package ZIP, extracted directory, or canonical JSON;
+- optional Point Programs and Point Program IDs from ParkBubbles;
+- optional explicit boundary access points and their program IDs; and
+- optional circulation behaviours for every polygon.
+
+The supported behaviours are hard_barrier, destination_only, permeable_landscape, and preferred_corridor. When that list is omitted, the component applies deterministic name-based defaults and reports every inference for review.
+
+The component generates candidate access points on program boundaries, selects stable access IDs, chooses a movement-demand hub unless overridden, builds a movement-cost grid, and routes OD pairs with deterministic A*. Accepted routes discount their grid cells so later routes prefer shared trunks. The resulting paths are merged into an explicit graph, assigned accumulated flow, and exposed as merged Primary, Secondary, Tertiary, and independent Service chains. The JSON output contains stable graph IDs, OD assignments, flow, hierarchy, accessibility flags, an audit block, and Lands Design target metadata.
+
+Blocked Grid Cells is a diagnostic output; disable its preview after checking permeability. A larger Cell Size solves faster but can close narrow passages. The current slice uses distance, polygon permeability, hard obstacles, and route reuse. Heat/shade, terrain slope, retained-path attraction, topological hierarchy repair, and curve refinement remain the next implementation stages.
+
+TreemapPaths remains available as a legacy shared-edge-only adapter. Use ParkCirculation for the general park network.
+
 ## Authoritative CAD grid
 
 `CADGrid` in `Park Design > GIS` reads closed curves and hatch boundaries directly from named Rhino layers and exports EPSG:32640 plus EPSG:4326 GeoJSON without AutoCAD. Connect the UTM result to the optional `ParkBubbles.CAD Grid GeoJSON` input to replace the package-generated analysis grid. See [docs/cad-grid-workflow.md](docs/cad-grid-workflow.md).
