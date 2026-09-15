@@ -99,6 +99,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         parameters.AddCurveParameter("Public Walking Paths", "WP", "Only the connected public walking spine and merged secondary branches. Preview this instead of the combined Routes output when reviewing circulation.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Service Paths", "SVP", "Only service-access routes.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Other Route Systems", "ORS", "Lighting, irrigation, bioswale, and other non-walking networks, separated from public circulation.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Node Program IDs", "NPID", "Stable point-program IDs matching Nodes and Node Names. Connect directly to ParkCirculation Point Program IDs.", GH_ParamAccess.list);
     }
 
     protected override void SolveInstance(IGH_DataAccess data)
@@ -474,6 +475,7 @@ public sealed class DistributeSpacesComponent : GH_Component
         data.SetDataList(50, result.Routes.Select((route, index) => (route, index))
             .Where(item => item.route.ProgramId is not "walkingPromenade" and not "serviceAccess"
                 && !item.route.Closed).Select(item => routeCurves[item.index]));
+        data.SetDataList(51, result.Nodes.Select(node => node.ProgramId));
     }
 
     private DesignPackage LoadPackageCached(string packagePath, string cadGridPath, List<string> warnings)

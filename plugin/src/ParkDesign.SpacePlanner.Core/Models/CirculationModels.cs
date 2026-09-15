@@ -200,6 +200,20 @@ public sealed record CirculationPathChain(
     IReadOnlyList<string> EdgeIds,
     double MaximumFlow);
 
+public sealed record PathRefinementSettings
+{
+    public int SmoothingPasses { get; init; } = 2;
+    public double CornerCutRatio { get; init; } = 0.2;
+    public double ValidationStepM { get; init; } = 0.5;
+}
+
+public sealed record PathRefinementResult(
+    CirculationPathChain Source,
+    IReadOnlyList<Point2> Points,
+    string Status,
+    int RawPointCount,
+    int RefinedPointCount);
+
 public sealed class CirculationAudit
 {
     public List<string> DisconnectedProgramIds { get; init; } = [];
@@ -220,6 +234,7 @@ public sealed class CirculationResult
     public List<CirculationNode> Nodes { get; init; } = [];
     public List<CirculationEdge> Edges { get; init; } = [];
     public List<CirculationDemandAssignment> OdAssignments { get; init; } = [];
+    public List<PathRefinementResult> DisplayPaths { get; init; } = [];
     public string? HubProgramId { get; init; }
     public CirculationAudit Audit { get; init; } = new();
 }

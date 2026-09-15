@@ -33,6 +33,32 @@ var boundary = new List<Point2>
     new(500100, 2780100),
     new(500000, 2780100)
 };
+var generatedA = StrategyGenerator.GenerateStrategyCandidates(package, boundary, 42, new(CandidateCount: 4));
+var generatedB = StrategyGenerator.GenerateStrategyCandidates(package, boundary, 42, new(CandidateCount: 4));
+Require(JsonSerializer.Serialize(generatedA) == JsonSerializer.Serialize(generatedB), "Generated strategies must be seed-reproducible.");
+Require(generatedA.Select(g => g.Organisation.AnchorProgramIds[0]).Distinct(StringComparer.Ordinal).Count() > 1,
+    "Generated strategies must vary anchor selection.");
+Require(generatedA.Select(g => g.Organisation.CentralityBias).Distinct().Count() > 1,
+    "Generated strategies must vary organisation parameters.");
+var generatedPlan = PlanningEngine.Generate(boundary, package, 42, generatedStrategy: generatedA[0]);
+Require(generatedPlan.Best.GeneratedStrategy?.StrategyId == generatedA[0].StrategyId,
+    "PlanningEngine must preserve the supplied strategy and seed.");
+Require(generatedPlan.Best.Seed == generatedA[0].Seed && generatedPlan.Best.SolverDiagnostics?.Valid == true,
+    "Generated planning must preserve reproducibility and hard-constraint diagnostics.");
+var generatedSet = PlanningEngine.GenerateCandidates(boundary, package, 42,
+    new StrategyGenerationSettings(CandidateCount: 2, PlacementsPerStrategy: 1, MinimumCentreDisplacement: .05));
+Require(generatedSet.Scenarios.Count > 0 && generatedSet.Scenarios.All(s => s.SolverDiagnostics?.Valid == true),
+    "Candidate generation must return only solver-valid scenarios.");
+package.Relationships.Add(new RelationshipDefinition { Id = "unproven-numeric", Source = "play", Target = "seating",
+    Accepted = true, Mandatory = true, Authority = "accepted_rule", NumericValue = 5, NumericUnit = "m", NumericParameter = "minimum_distance" });
+var rejectedUnproven = false;
+try { PlanningEngine.GenerateCandidates(boundary, package, 42, new StrategyGenerationSettings(CandidateCount: 1, PlacementsPerStrategy: 1)); }
+catch (ArgumentException) { rejectedUnproven = true; }
+Require(rejectedUnproven, "Generated planning must reject a numeric accepted rule without source provenance.");
+package.Relationships.Clear();
+var invalidGenome = generatedA[0] with { Organisation = generatedA[0].Organisation with { CentralityBias = double.NaN } };
+try { StrategyGenerator.ValidateStrategy(invalidGenome, package); throw new Exception("Invalid genome accepted."); }
+catch (ArgumentException) { }
 var result = BubbleDistributor.Distribute(boundary, package.Programs, seed: 7);
 Require(Math.Abs(Math.Abs(PolygonMath.SignedArea(boundary)) - 10000) < 0.001, "Boundary area must be 10,000 m2.");
 Require(result.Placements.Count == 2, "Both bubbles must be placed.");
@@ -493,6 +519,25 @@ static void CirculationFoundationTests()
         "Bubble geometry must remain available only through an explicitly marked preview adapter.");
 
     var routingSite = new List<Point2> { new(0, 0), new(100, 0), new(100, 60), new(0, 60) };
+    IReadOnlyList<IReadOnlyList<Point2>> edgeCells =
+    [
+        [new(0, 0), new(10, 0), new(10, 5), new(10, 10), new(0, 10)],
+        [new(10, 0), new(20, 0), new(20, 10), new(10, 10)],
+        [new(20, 0), new(30, 0), new(30, 10), new(20, 10)]
+    ];
+    var edgeTree = CellEdgeTreeBuilder.Build(edgeCells, new(0, 5), [new(10, 5), new(20, 5), new(30, 5)]);
+    Require(edgeTree.Chains.Count > 0 && edgeTree.UnreachableTerminals.Count == 0,
+        "Cell-edge routing must connect every portal, including differently subdivided shared edges.");
+    Require(edgeTree.Chains.SelectMany(chain => chain.Zip(chain.Skip(1)))
+            .All(segment => PolygonMath.DistanceToBoundary(edgeCells[0], Midpoint(segment.First, segment.Second)) < 1e-6
+                || PolygonMath.DistanceToBoundary(edgeCells[1], Midpoint(segment.First, segment.Second)) < 1e-6
+                || PolygonMath.DistanceToBoundary(edgeCells[2], Midpoint(segment.First, segment.Second)) < 1e-6),
+        "Every tree-edge segment must lie on a cell boundary rather than pass through a centroid.");
+    var repeatedEdgeTree = CellEdgeTreeBuilder.Build(edgeCells, new(0, 5), [new(10, 5), new(20, 5), new(30, 5)]);
+    Require(edgeTree.Chains.SelectMany(chain => chain).SequenceEqual(repeatedEdgeTree.Chains.SelectMany(chain => chain)),
+        "Cell-edge routing must be deterministic for identical cells and portals.");
+    static Point2 Midpoint(Point2 a, Point2 b) => new((a.X + b.X) / 2, (a.Y + b.Y) / 2);
+
     var barrier = new SpaceRegion("building", "Building",
         [new(40, 0), new(60, 0), new(60, 45), new(40, 45)],
         SpaceCirculationBehavior.HardBarrier);
@@ -508,6 +553,14 @@ static void CirculationFoundationTests()
     var repeatedPath = GridPathfinder.FindPath(field, new(5, 30), new(95, 30));
     Require(path.Points.SequenceEqual(repeatedPath.Points) && Math.Abs(path.AccumulatedCost - repeatedPath.AccumulatedCost) < 1e-9,
         "Grid construction and A* routing must be deterministic.");
+    var obstacleChain = new CirculationPathChain("obstacle-chain", "public", "primary", 3,
+        path.Points, [], 1);
+    var refinedObstaclePath = PathGeometryRefiner.Refine(obstacleChain, field,
+        new() { SmoothingPasses = 3, CornerCutRatio = 0.25, ValidationStepM = 1 });
+    Require(refinedObstaclePath.Points[0] == path.Points[0]
+        && refinedObstaclePath.Points[^1] == path.Points[^1]
+        && PathGeometryRefiner.Valid(refinedObstaclePath.Points, field, 1),
+        "Fluid refinement must preserve graph endpoints and remain in traversable space.");
 
     var networkSpaces = new List<SpaceRegion>
     {

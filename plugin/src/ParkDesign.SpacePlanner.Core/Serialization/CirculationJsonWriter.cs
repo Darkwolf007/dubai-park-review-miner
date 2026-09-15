@@ -91,6 +91,25 @@ public static class CirculationJsonWriter
                 journey_ids = assignment.JourneyIds,
                 edge_ids = assignment.EdgeIds
             }),
+            display_paths = result.DisplayPaths.Select(path => new
+            {
+                id = path.Source.Id,
+                network = path.Source.Network,
+                hierarchy = path.Source.Hierarchy,
+                width_m = path.Source.WidthM,
+                maximum_flow = path.Source.MaximumFlow,
+                refinement_status = path.Status,
+                raw_point_count = path.RawPointCount,
+                refined_point_count = path.RefinedPointCount,
+                centerline = path.Points.Select(point => new[] { point.X, point.Y }),
+                edge_ids = path.Source.EdgeIds,
+                lands_design = new
+                {
+                    target_class = "path",
+                    stable_object_key = path.Source.Id,
+                    layer = $"PARK_DESIGN_GIS::Movement::{path.Source.Network}::{path.Source.Hierarchy}"
+                }
+            }),
             audit = new
             {
                 valid = result.Audit.IsValid,

@@ -1,5 +1,6 @@
 using ParkDesign.SpacePlanner.Core.Models;
 using ParkDesign.SpacePlanner.Core.Geometry;
+using ParkDesign.SpacePlanner.Core.Validation;
 
 namespace ParkDesign.SpacePlanner.Core.Algorithms;
 
@@ -10,9 +11,15 @@ public static class PlanningEngine
         DesignPackage package,
         int seed,
         string strategyName = "AUTO",
-        bool includeOptionalNodesAndRoutes = false)
+        bool includeOptionalNodesAndRoutes = false,
+        GeneratedStrategy? generatedStrategy = null)
     {
-        var strategies = ParseStrategies(strategyName);
+        if (generatedStrategy is not null)
+        {
+            StrategyGenerator.ValidateStrategy(generatedStrategy, package);
+            ValidateGeneratedNumericProvenance(package);
+        }
+        var strategies = generatedStrategy is null ? ParseStrategies(strategyName) : [LayoutStrategy.Balanced];
         var scenarios = new List<LayoutScenarioResult>();
         var boundaryArea = Math.Abs(PolygonMath.SignedArea(boundary));
         var allocation = ProgramAreaAllocator.AllocateAll(package.Programs, boundaryArea);
@@ -20,7 +27,9 @@ public static class PlanningEngine
         var unresolvedAreaPrograms = package.Programs.Where(program => program.TargetAreaM2 is null or <= 0).ToList();
         foreach (var strategy in strategies)
         {
-            var areas = BubbleDistributor.Distribute(boundary, allocation.Programs, seed, grid: package.Grid, relationships: package.Relationships, strategy: strategy);
+            var actualSeed = generatedStrategy?.Seed ?? seed;
+            var areas = BubbleDistributor.Distribute(boundary, allocation.Programs, actualSeed, grid: package.Grid, relationships: package.Relationships, strategy: strategy,
+                generatedStrategy: generatedStrategy, accessCandidates: package.AccessCandidates, movementDemands: package.MovementDemands);
             var warnings = new List<string>(allocation.Warnings);
             warnings.AddRange(areas.Warnings);
             warnings.AddRange(compilation.Warnings);
@@ -39,7 +48,7 @@ public static class PlanningEngine
                 warnings.Add($"Area solver result is invalid: {solved.Diagnostics.HardViolationCount} hard violation(s): {string.Join(", ", failedIds)}.");
             }
             var allPointPrograms = unresolvedAreaPrograms.Concat(package.NodePrograms).ToList();
-            var placedPoints = NodePlacer.Place(boundary, package.Grid, allPointPrograms, areas.Placements, package.Relationships, includeOptional: true, seed: seed, warnings: warnings);
+            var placedPoints = NodePlacer.Place(boundary, package.Grid, allPointPrograms, areas.Placements, package.Relationships, includeOptional: true, seed: actualSeed, warnings: warnings);
             var unresolvedIds = unresolvedAreaPrograms.Select(program => program.Id).ToHashSet(StringComparer.Ordinal);
             var areaAnchors = placedPoints.Where(point => unresolvedIds.Contains(point.ProgramId)).ToList();
             var nodes = placedPoints.Where(point => !unresolvedIds.Contains(point.ProgramId)).ToList();
@@ -59,9 +68,18 @@ public static class PlanningEngine
             var placementRatio = resolvedAreaCount == 0 ? 0 : (double)areas.Placements.Count / resolvedAreaCount;
             var relationshipSatisfaction = Math.Clamp(1 - areas.RelationshipPenalty, 0, 1);
             var score = placementRatio * 60 + areas.AverageSuitability * 25 + relationshipSatisfaction * 15;
+            if (generatedStrategy is not null)
+            {
+                var objective = generatedStrategy.ObjectiveWeights;
+                var totalWeight = objective.AreaCompliance + objective.SiteSuitability + objective.RelationshipSatisfaction;
+                score = totalWeight <= 0 ? 0 : 100 * (placementRatio * objective.AreaCompliance
+                    + areas.AverageSuitability * objective.SiteSuitability
+                    + relationshipSatisfaction * objective.RelationshipSatisfaction) / totalWeight;
+            }
             scenarios.Add(new LayoutScenarioResult
             {
-                Strategy = strategy.ToString(), AreaSizingMode = allocation.Mode, Areas = areas, AreaAnchors = areaAnchors, Nodes = nodes, Routes = routes,
+                Strategy = generatedStrategy?.StrategyId ?? strategy.ToString(), GeneratedStrategy = generatedStrategy, Seed = actualSeed,
+                AreaSizingMode = allocation.Mode, Areas = areas, AreaAnchors = areaAnchors, Nodes = nodes, Routes = routes,
                 SharedTerritories = sharedTerritories, LandscapeOverlays = landscapeOverlays,
                 RelationshipLines = relationshipLines, MorphologyAxes = morphologyAxes, BarahaCandidates = barahaCandidates,
                 Warnings = warnings, Score = score, SolverDiagnostics = solved.Diagnostics
@@ -72,6 +90,54 @@ public static class PlanningEngine
             .ThenBy(scenario => scenario.Strategy, StringComparer.Ordinal)
             .First();
         return new PlanningResult { Scenarios = scenarios, Best = best };
+    }
+
+    public static PlanningResult GenerateCandidates(IReadOnlyList<Point2> boundary, DesignPackage package,
+        int seed, StrategyGenerationSettings? settings = null, StrategyObjectiveWeights? weights = null)
+    {
+        settings ??= new();
+        var errors = DesignPackageValidator.Validate(package).Where(m => m.IsError).ToList();
+        if (errors.Count > 0) throw new ArgumentException(string.Join("; ", errors.Select(e => e.Message)), nameof(package));
+        ValidateGeneratedNumericProvenance(package);
+        if (settings.PlacementsPerStrategy < 1 || settings.PlacementsPerStrategy > 10 ||
+            !double.IsFinite(settings.MinimumCentreDisplacement) || settings.MinimumCentreDisplacement < 0 || settings.MinimumCentreDisplacement > 1)
+            throw new ArgumentOutOfRangeException(nameof(settings));
+        var generated = StrategyGenerator.GenerateStrategyCandidates(package, boundary, seed, settings, weights);
+        var all = new List<LayoutScenarioResult>();
+        foreach (var strategy in generated)
+            for (var i = 0; i < settings.PlacementsPerStrategy; i++)
+            {
+                var placementStrategy = strategy with { Seed = unchecked(strategy.Seed + i * 1009) };
+                var candidate = Generate(boundary, package, placementStrategy.Seed, generatedStrategy: placementStrategy).Best;
+                if (candidate.SolverDiagnostics?.Valid != true || candidate.Areas.Placements.Count == 0) continue;
+                if (all.Any(existing => IsDuplicate(existing, candidate, boundary, settings.MinimumCentreDisplacement))) continue;
+                all.Add(candidate);
+            }
+        if (all.Count == 0) throw new InvalidOperationException("No valid, distinct scenario satisfies the package constraints.");
+        var ranked = all.OrderByDescending(s => s.Score).ThenBy(s => s.Strategy, StringComparer.Ordinal).ToList();
+        return new PlanningResult { Scenarios = ranked, Best = ranked[0] };
+    }
+
+    private static void ValidateGeneratedNumericProvenance(DesignPackage package)
+    {
+        var unsupportedNumeric = package.Relationships.Where(r => r.Accepted && r.NumericValue.HasValue &&
+            (r.Authority.Equals("accepted_rule", StringComparison.OrdinalIgnoreCase)
+                ? string.IsNullOrWhiteSpace(r.SourceProvenance)
+                : !r.Authority.Contains("designer_approved", StringComparison.OrdinalIgnoreCase)))
+            .Select(r => r.Id).ToList();
+        if (unsupportedNumeric.Count > 0)
+            throw new ArgumentException($"Numeric relationship provenance or designer approval is missing: {string.Join(", ", unsupportedNumeric)}.", nameof(package));
+    }
+
+    private static bool IsDuplicate(LayoutScenarioResult a, LayoutScenarioResult b, IReadOnlyList<Point2> boundary, double threshold)
+    {
+        var scale = Math.Sqrt(Math.Abs(PolygonMath.SignedArea(boundary)));
+        var left = a.Areas.Placements.ToDictionary(p => p.ProgramId, p => p.Center, StringComparer.Ordinal);
+        var right = b.Areas.Placements.ToDictionary(p => p.ProgramId, p => p.Center, StringComparer.Ordinal);
+        var shared = left.Keys.Intersect(right.Keys, StringComparer.Ordinal).ToList();
+        if (shared.Count == 0 || left.Count != right.Count) return false;
+        var displacement = shared.Average(id => PolygonMath.Distance(left[id], right[id])) / Math.Max(1, scale);
+        return displacement < threshold;
     }
 
     private static IReadOnlyList<LayoutStrategy> ParseStrategies(string strategyName)

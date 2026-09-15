@@ -72,6 +72,8 @@ public sealed class DistributionResult
 public sealed class LayoutScenarioResult
 {
     public string Strategy { get; init; } = "Balanced";
+    public GeneratedStrategy? GeneratedStrategy { get; init; }
+    public int Seed { get; init; }
     public string AreaSizingMode { get; init; } = "exported_targets";
     public DistributionResult Areas { get; init; } = new();
     public List<NodePlacement> AreaAnchors { get; init; } = [];

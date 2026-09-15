@@ -12,14 +12,22 @@ public static class BubbleDistributor
         int candidateCount = 6000,
         GridDefinition? grid = null,
         IEnumerable<RelationshipDefinition>? relationships = null,
-        LayoutStrategy strategy = LayoutStrategy.Balanced)
+        LayoutStrategy strategy = LayoutStrategy.Balanced,
+        GeneratedStrategy? generatedStrategy = null,
+        IReadOnlyList<AccessCandidateDefinition>? accessCandidates = null,
+        IReadOnlyList<MovementDemandDefinition>? movementDemands = null)
     {
         if (boundary.Count < 3) throw new ArgumentException("Boundary requires at least three vertices.", nameof(boundary));
 
         var area = Math.Abs(PolygonMath.SignedArea(boundary));
+        var genome = generatedStrategy?.Organisation;
+        var anchors = genome?.AnchorProgramIds.ToHashSet(StringComparer.Ordinal);
+        var movementIds = movementDemands?.GroupBy(d => d.Destination, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Sum(d => Math.Max(0, d.Weight)), StringComparer.Ordinal);
         var placeable = programs
             .Where(program => program.Selected && program.TargetAreaM2 is > 0)
             .OrderBy(program => string.Equals(program.SpatialMode, "exclusive", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(program => anchors?.Contains(program.Id) == true ? 0 : 1)
             .ThenByDescending(program => program.TargetAreaM2)
             .ThenBy(program => program.Id, StringComparer.Ordinal)
             .ToList();
@@ -105,6 +113,31 @@ public static class BubbleDistributor
                     + weights.Relationships * relationshipPenalty
                     + 20 * overlapPenalty
                     + SpatialScoring.SeedNoise(seed, program.Id, candidateId) * 0.1;
+                if (genome is not null)
+                {
+                    var centerDistance = PolygonMath.Distance(candidate, centroid) / Math.Max(1, siteScale);
+                    var edgeDistance = clearance / Math.Max(1, siteScale);
+                    var isAnchor = anchors!.Contains(program.Id);
+                    score += (isAnchor ? genome.CentralityBias : genome.CentralityBias * .25) * centerDistance;
+                    score += genome.EdgeAffinity * (isAnchor ? .25 : 1) * edgeDistance;
+                    score += genome.EnvironmentalInfluence * (1 - suitability);
+                    score += genome.RelationshipInfluence * relationshipPenalty;
+                    if (!isAnchor && result.Placements.Count > 0)
+                    {
+                        var nearestAnchor = result.Placements.Where(p => anchors.Contains(p.ProgramId))
+                            .Select(p => PolygonMath.Distance(candidate, p.Center)).DefaultIfEmpty(siteScale).Min() / Math.Max(1, siteScale);
+                        score += genome.ClusteringStrength * nearestAnchor;
+                        score += genome.DispersionStrength * (1 - Math.Clamp(nearestAnchor, 0, 1));
+                    }
+                    var projected = ((candidate.X - centroid.X) * genome.OrientationX +
+                        (candidate.Y - centroid.Y) * genome.OrientationY) / Math.Max(1, siteScale);
+                    score -= genome.RouteInfluence * (movementIds?.GetValueOrDefault(program.Id) > 0 ? .45 : .1) * projected;
+                    if (accessCandidates is { Count: > 0 })
+                    {
+                        var entranceDistance = accessCandidates.Min(a => PolygonMath.Distance(candidate, new Point2(a.Coordinates.X, a.Coordinates.Y))) / Math.Max(1, siteScale);
+                        score += genome.EntranceInfluence * entranceDistance;
+                    }
+                }
                 if (score >= bestScore) continue;
                 best = candidate;
                 bestScore = score;
