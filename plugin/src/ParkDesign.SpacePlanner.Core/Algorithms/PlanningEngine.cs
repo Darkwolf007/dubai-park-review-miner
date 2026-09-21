@@ -56,7 +56,7 @@ public static class PlanningEngine
             var landscapeOverlays = TerritoryConsolidator.BuildLandscapeOverlays(package.Programs, areaAnchors, package.AreaReconciliation);
             var (routes, relationshipLines) = RouteGenerator.Generate(boundary, package.RoutePrograms, areas.Placements, areaAnchors, nodes,
                 package.Relationships, includeOptional: true, warnings, package.MovementDemands);
-            var morphologyAxes = DuneMorphologyGenerator.GenerateAxes(boundary, package.ClimateMorphology);
+            var morphologyAxes = DuneMorphologyGenerator.GenerateAxes(boundary, package.ClimateMorphology, actualSeed, areas.Placements);
             var barahaCandidates = DuneMorphologyGenerator.GenerateBaraha(routes, areas.Placements, package.ClimateMorphology.BarahaRules);
             var pointById = areas.Placements.Select(p => (p.ProgramId, p.Center))
                 .Concat(areaAnchors.Select(p => (p.ProgramId, p.Point))).Concat(nodes.Select(p => (p.ProgramId, p.Point)))

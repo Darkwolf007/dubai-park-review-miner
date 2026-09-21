@@ -167,7 +167,18 @@ public static class BubbleDistributor
     private static double NearestSuitability(Point2 point, IReadOnlyList<(Point2 Point, GridCell Cell, double? Suitability)> candidates)
     {
         if (candidates.Count == 0) return 0;
-        return candidates.OrderBy(candidate => PolygonMath.Distance(point, candidate.Point)).First().Suitability ?? 0;
+        var nearest = candidates[0];
+        var best = double.PositiveInfinity;
+        foreach (var candidate in candidates)
+        {
+            var dx = point.X - candidate.Point.X;
+            var dy = point.Y - candidate.Point.Y;
+            var squared = dx * dx + dy * dy;
+            if (squared >= best) continue;
+            best = squared;
+            nearest = candidate;
+        }
+        return nearest.Suitability ?? 0;
     }
 
     private static double RequiredSeparation(ProgramDefinition program, double radius, ProgramDefinition other, double otherRadius,

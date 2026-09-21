@@ -9,12 +9,40 @@ namespace ParkDesign.SpacePlanner.Core.Algorithms;
 /// </summary>
 public static class DuneMorphologyGenerator
 {
-    public static List<MorphologyAxisPlacement> GenerateAxes(IReadOnlyList<Point2> boundary, ClimateMorphologyDefinition definition)
+    public static List<MorphologyAxisPlacement> GenerateAxes(IReadOnlyList<Point2> boundary,
+        ClimateMorphologyDefinition definition, int seed = 0, IEnumerable<BubblePlacement>? protectedAreas = null)
     {
         var axes = new List<MorphologyAxisDefinition>();
         if (!string.IsNullOrWhiteSpace(definition.SiteAxes.PrimarySikka.Id)) axes.Add(definition.SiteAxes.PrimarySikka);
         axes.AddRange(definition.SiteAxes.VentilationCuts.Where(axis => !string.IsNullOrWhiteSpace(axis.Id)));
-        return axes.Select(axis => ClipAxis(boundary, axis)).Where(axis => axis is not null).Cast<MorphologyAxisPlacement>().ToList();
+        var protectedList = (protectedAreas ?? []).Where(area => IsProtected(area.ProgramId, area.ProgramName)).ToList();
+        return axes.Select((axis, index) => SeededAxis(boundary, axis, definition.SiteAxes, seed, index, protectedList))
+            .Where(axis => axis is not null).Cast<MorphologyAxisPlacement>().ToList();
+    }
+
+    private static MorphologyAxisPlacement? SeededAxis(IReadOnlyList<Point2> boundary, MorphologyAxisDefinition baseline,
+        SiteAxesDefinition settings, int masterSeed, int index, IReadOnlyList<BubblePlacement> protectedAreas)
+    {
+        var subsystemSeed = DeterministicSeed.Derive(masterSeed, $"dune-axis:{baseline.Id}", index);
+        var angleLimit = Math.Clamp(settings.SeedAzimuthVariationMaxDeg, 0, 30);
+        var offsetLimit = Math.Max(0, settings.SeedLateralVariationMaxM);
+        var candidates = new List<MorphologyAxisPlacement>();
+        for (var candidateIndex = 0; candidateIndex < 9; candidateIndex++)
+        {
+            var angleNoise = DeterministicSeed.Unit(subsystemSeed, $"angle:{candidateIndex}") * 2 - 1;
+            var offsetNoise = DeterministicSeed.Unit(subsystemSeed, $"offset:{candidateIndex}") * 2 - 1;
+            var angle = baseline.AzimuthDegFromNorth + angleNoise * angleLimit;
+            var offset = baseline.OffsetM + offsetNoise * offsetLimit;
+            var generated = ClipAxis(boundary, baseline, angle, offset, subsystemSeed);
+            if (generated is null) continue;
+            var climateCompliance = 1 - Math.Abs(angle - baseline.AzimuthDegFromNorth) / Math.Max(1, angleLimit * 2);
+            var protectedClearance = protectedAreas.Count == 0 ? 1 : protectedAreas
+                .Select(area => DistanceToSegment(area.Center, generated.Points[0], generated.Points[^1]) - area.Radius)
+                .Select(distance => Math.Clamp(distance / 20, 0, 1)).Average();
+            candidates.Add(generated with { Score = .7 * climateCompliance + .3 * protectedClearance });
+        }
+        return candidates.OrderByDescending(candidate => candidate.Score)
+            .ThenBy(candidate => candidate.AzimuthDegFromNorth).FirstOrDefault();
     }
 
     public static List<BarahaCandidate> GenerateBaraha(IEnumerable<RoutePlacement> routes,
@@ -66,14 +94,15 @@ public static class DuneMorphologyGenerator
             .ToList();
     }
 
-    private static MorphologyAxisPlacement? ClipAxis(IReadOnlyList<Point2> boundary, MorphologyAxisDefinition axis)
+    private static MorphologyAxisPlacement? ClipAxis(IReadOnlyList<Point2> boundary, MorphologyAxisDefinition axis,
+        double generatedAzimuth, double generatedOffset, int seed)
     {
         if (boundary.Count < 3) return null;
         var centroid = PolygonMath.Centroid(boundary);
-        var radians = axis.AzimuthDegFromNorth * Math.PI / 180d;
+        var radians = generatedAzimuth * Math.PI / 180d;
         var direction = new Point2(Math.Sin(radians), Math.Cos(radians));
         var perpendicular = new Point2(-direction.Y, direction.X);
-        var origin = new Point2(centroid.X + perpendicular.X * axis.OffsetM, centroid.Y + perpendicular.Y * axis.OffsetM);
+        var origin = new Point2(centroid.X + perpendicular.X * generatedOffset, centroid.Y + perpendicular.Y * generatedOffset);
         var intersections = new List<(double T, Point2 Point)>();
         for (var i = 0; i < boundary.Count; i++)
         {
@@ -90,7 +119,23 @@ public static class DuneMorphologyGenerator
         var unique = intersections.OrderBy(item => item.T).Select(item => item.Point)
             .Aggregate(new List<Point2>(), (list, point) => { if (list.Count == 0 || PolygonMath.Distance(list[^1], point) > 1e-6) list.Add(point); return list; });
         if (unique.Count < 2) return null;
-        return new(axis.Id, axis.Role, [unique[0], unique[^1]], axis.AzimuthDegFromNorth, axis.Basis);
+        return new(axis.Id, axis.Role, [unique[0], unique[^1]], generatedAzimuth,
+            $"{axis.Basis}; seeded climate-constrained variation", axis.AzimuthDegFromNorth, generatedOffset, seed);
+    }
+
+    private static bool IsProtected(string id, string name)
+    {
+        var value = $"{id} {name}";
+        return new[] { "operation", "maintenance", "court", "playground", "toddler", "children play" }
+            .Any(token => value.Contains(token, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static double DistanceToSegment(Point2 point, Point2 a, Point2 b)
+    {
+        var dx = b.X - a.X; var dy = b.Y - a.Y;
+        var denominator = dx * dx + dy * dy;
+        var t = denominator <= 1e-12 ? 0 : Math.Clamp(((point.X - a.X) * dx + (point.Y - a.Y) * dy) / denominator, 0, 1);
+        return PolygonMath.Distance(point, new(a.X + dx * t, a.Y + dy * t));
     }
 
     private static bool SegmentIntersection(Point2 a, Point2 b, Point2 c, Point2 d, out Point2 point)

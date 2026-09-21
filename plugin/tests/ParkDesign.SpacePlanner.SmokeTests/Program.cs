@@ -205,7 +205,16 @@ RelationshipCompilerAndSolverTests();
 CirculationFoundationTests();
 Console.WriteLine("All ParkDesign.SpacePlanner core smoke tests passed.");
 
-if (args.Length > 0)
+if (args.Length > 1 && args[0] == "--generated")
+{
+    var timer = System.Diagnostics.Stopwatch.StartNew();
+    var input = DesignPackageLoader.LoadFile(args[1]);
+    var options = PlanningEngine.GenerateCandidates(input.PackageBoundary, input, 1,
+        new StrategyGenerationSettings(CandidateCount: 2, PlacementsPerStrategy: 1));
+    Require(options.Scenarios.All(s => s.SolverDiagnostics?.Valid == true), "Real generated options must be solver-valid.");
+    Console.WriteLine($"GENERATED_PACKAGE options={options.Scenarios.Count} elapsed_seconds={timer.Elapsed.TotalSeconds:0.0}");
+}
+else if (args.Length > 0)
 {
     var realPackage = DesignPackageLoader.LoadFile(args[0]);
     Require(realPackage.PackageBoundary.Count >= 3, "The supplied real package must contain a boundary.");
@@ -622,3 +631,112 @@ static void CirculationFoundationTests()
         && CirculationJsonWriter.SerializeResult(missingEndpointNetwork).Contains("\"accumulated_cost\": null", StringComparison.Ordinal),
         "Missing OD endpoints must remain visible as serializable failed assignments instead of being silently dropped.");
 }
+
+var packingBoundary = new List<Point2> { new(0, 0), new(200, 0), new(200, 120), new(0, 120) };
+var packingPrograms = new List<PackingProgram>
+{
+    new("mainEntrancePlaza", "Main Entrance Plaza / Gateway", 300, 1),
+    new("dropOffZone", "Drop-off / Arrival Zone", 160, 1),
+    new("operationsArea", "Operations / Maintenance Area", 200, 1),
+    new("communityPlaza", "Community Plaza", 400, .8),
+    new("toddlerPlay", "Toddler Play", 200, .7)
+};
+var packingInput = new ConstrainedPackingInput
+{
+    Boundary = packingBoundary,
+    Programs = packingPrograms,
+    PublicEntranceEdges =
+    [
+        new("northwest-road-edge", new(0, 60), new(0, 118), ["road_facing", "public_entrance_eligible"]),
+        new("southwest-road-edge", new(2, 0), new(100, 0), ["road_facing", "public_entrance_eligible", "service_entrance_eligible"])
+    ],
+    OperationsCandidateZones =
+    [
+        new("operations-option-north", [new(150, 75), new(195, 75), new(195, 115), new(150, 115)], .9),
+        new("operations-option-south", [new(150, 5), new(195, 5), new(195, 45), new(150, 45)], .7)
+    ],
+    ParkingBay = [new(-5, 80), new(-5, 110)]
+};
+var packedA = ConstrainedRectanglePacker.Pack(packingInput, new(MasterSeed: 31, AlternativeCount: 5, CandidateSamples: 2500));
+var packedB = ConstrainedRectanglePacker.Pack(packingInput, new(MasterSeed: 31, AlternativeCount: 5, CandidateSamples: 2500));
+Require(packedA.Alternatives.Count == 5 && JsonSerializer.Serialize(packedA) == JsonSerializer.Serialize(packedB),
+    "Five constrained alternatives must be byte-stable for an identical master seed.");
+Require(packedA.Alternatives.Any(alternative => alternative.Rectangles.Any(rectangle => rectangle.ProgramId == "operationsArea"
+        && rectangle.CandidateZoneId is not null)),
+    "Operations must occupy exactly one designer candidate zone in feasible alternatives.");
+Require(packedA.Alternatives.SelectMany(alternative => alternative.Rectangles)
+        .All(rectangle => rectangle.RotationDegrees is >= -180 and <= 360),
+    "Packed rectangles must retain an auditable site-axis orientation.");
+Require(packedA.Alternatives.SelectMany(alternative => alternative.Rectangles)
+        .All(rectangle => Math.Min(rectangle.WidthM, rectangle.HeightM) / Math.Max(rectangle.WidthM, rectangle.HeightM) >= .75 - 1e-6),
+    "Every program rectangle must be square-like with a short-to-long aspect ratio of at least 3:4.");
+Require(packedA.Alternatives.SelectMany(alternative => alternative.Rectangles)
+        .Any(rectangle => rectangle.PlacementBasis == "fast_treemap_seed"),
+    "The fast spatial treemap must seed at least one accepted constrained placement.");
+Require(packedA.Alternatives.All(alternative => !ConstrainedLayoutValidator.Validate(packingBoundary, alternative.Rectangles)
+        .Any(message => message.StartsWith("OVERLAP", StringComparison.Ordinal))),
+    "Exclusive packed spaces must never overlap.");
+Require(packedA.Alternatives.Where(alternative => alternative.Rectangles.Any(rectangle => rectangle.ProgramId == "dropOffZone"))
+        .All(alternative => ConstrainedLayoutValidator.SharedBoundaryLength(
+            alternative.Rectangles.Single(rectangle => rectangle.ProgramId == "mainEntrancePlaza"),
+            alternative.Rectangles.Single(rectangle => rectangle.ProgramId == "dropOffZone")) >= 7.99),
+    "Drop-off must physically share at least eight metres of boundary with Main Entrance Plaza.");
+
+var completeProgramTargets = new (string Id, string Name, double Area)[]
+{
+    ("inclusivePlayground", "Inclusive Playground", 1600), ("olderChildrenPlay", "Older Children Play", 1600),
+    ("communityPlaza", "Community Plaza", 1000), ("mainEntrancePlaza", "Main Entrance Plaza / Gateway", 1000),
+    ("toddlerPlay", "Toddler Play", 875), ("sportsCourt", "Sports Court / Multipurpose Court", 600),
+    ("operationsArea", "Operations / Maintenance Area", 500), ("quietGarden", "Quiet Garden", 500),
+    ("outdoorFitness", "Outdoor Fitness", 350), ("dropOffZone", "Drop-off / Arrival Zone", 250),
+    ("flexibleEventLawn", "Flexible Event Lawn", 2000), ("multipurposeLawn", "Multipurpose Lawn", 2000),
+    ("smallEventZone", "Small Event / Gathering Zone", 1000), ("naturePlay", "Nature / Interactive Play", 900),
+    ("picnicArea", "Picnic Area", 900), ("flexibleRecreation", "Flexible Recreation Zone", 475),
+    ("sensoryGarden", "Sensory / Therapeutic Garden", 400), ("wellnessZone", "Wellness / Stretching Zone", 350)
+};
+var completePackingInput = new ConstrainedPackingInput
+{
+    Boundary = packingInput.Boundary, PublicEntranceEdges = packingInput.PublicEntranceEdges,
+    OperationsCandidateZones = packingInput.OperationsCandidateZones, ParkingBay = packingInput.ParkingBay,
+    Programs = completeProgramTargets.Select(item => new PackingProgram(item.Id, item.Name, item.Area * .55, .7,
+        ApprovedTargetUsableAreaM2: item.Area)).ToList()
+};
+var completePacking = ConstrainedRectanglePacker.Pack(completePackingInput,
+    new(MasterSeed: 9, AlternativeCount: 1, CandidateSamples: 6000));
+var completeIds = completePacking.Alternatives[0].Rectangles.Select(rectangle => rectangle.ProgramId).ToHashSet(StringComparer.Ordinal);
+Require(completeProgramTargets.All(program => completeIds.Contains(program.Id)) && completeIds.Contains("secondaryEntrancePlaza"),
+    "All 18 requested spaces plus the generated Secondary Entrance Plaza must remain present after normalized packing.");
+
+var crossingPrograms = new[]
+{
+    new ProgramDefinition { Id = "toddlerPlay", Name = "Toddler Play", Category = "Play" },
+    new ProgramDefinition { Id = "mainEntrancePlaza", Name = "Main Entrance Plaza", Category = "Arrival" }
+};
+var crossingScores = SpaceCrossingScorer.Score(crossingPrograms);
+Require(crossingScores.Single(score => score.ProgramId == "toddlerPlay" && score.Mode == "cycling").Allowed == false,
+    "Cycling must be forbidden through toddler play.");
+Require(crossingScores.Single(score => score.ProgramId == "mainEntrancePlaza" && score.Mode == "cycling").Allowed,
+    "A controlled cycling crossing must be available through the main entrance plaza.");
+
+var rubberPath = RubberBandPathfinder.Find(new(5, 50), new(95, 50),
+    [new(0, 0), new(100, 0), new(100, 100), new(0, 100)],
+    [new RubberBandObstacle("play", [new(40, 30), new(60, 30), new(60, 70), new(40, 70)])], 2.5);
+Require(rubberPath.Found && rubberPath.Points.Count > 2 && rubberPath.LengthM > 90,
+    "Rubber-band routing must bend around a full-width forbidden space.");
+
+var seededClimate = new ClimateMorphologyDefinition
+{
+    SiteAxes = new SiteAxesDefinition
+    {
+        SeedAzimuthVariationMaxDeg = 10,
+        SeedLateralVariationMaxM = 12,
+        PrimarySikka = new MorphologyAxisDefinition { Id = "sikka", Role = "ventilation", AzimuthDegFromNorth = 20, Basis = "climate" }
+    }
+};
+var axesA = DuneMorphologyGenerator.GenerateAxes(packingBoundary, seededClimate, 77);
+var axesB = DuneMorphologyGenerator.GenerateAxes(packingBoundary, seededClimate, 77);
+var axesC = DuneMorphologyGenerator.GenerateAxes(packingBoundary, seededClimate, 78);
+Require(JsonSerializer.Serialize(axesA) == JsonSerializer.Serialize(axesB), "Dune axes must repeat for the same master seed.");
+Require(axesA.Count == 1 && Math.Abs(axesA[0].AzimuthDegFromNorth - 20) <= 10.0001,
+    "Seeded dune-axis variation must remain inside the climate-authorized angle.");
+Require(JsonSerializer.Serialize(axesA) != JsonSerializer.Serialize(axesC), "Changing the master seed must change the dune-axis alternative.");

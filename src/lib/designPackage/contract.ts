@@ -19,6 +19,52 @@ export interface PackageSite {
   boundary: { type: 'Polygon'; coordinates: number[][][] } | null;
   road_edge_roles: Array<{ edge: string; role: string; authority: string }>;
   registered_objects: Record<string, string[]>;
+  boundary_segments?: BoundarySegmentRule[];
+  placement_zones?: PlacementZone[];
+}
+
+export interface BoundarySegmentRule {
+  id: string;
+  roles: string[];
+  authority: string;
+  coordinates?: number[][];
+}
+
+export interface PlacementZone {
+  id: string;
+  type: 'candidate_zone' | string;
+  geometry: { type: 'Polygon'; coordinates: number[][][] };
+  priority: number;
+  authority?: string;
+}
+
+export type CrossingPolicy = 'forbidden' | 'destination_only' | 'controlled_only' | 'allowed' | 'preferred';
+
+export interface PlacementRules {
+  hard?: {
+    must_touch_boundary?: boolean;
+    allowed_boundary_segment_ids?: string[];
+    allowed_boundary_roles?: string[];
+    allowed_zone_ids?: string[];
+    must_be_adjacent_to?: string[];
+    maximum_boundary_setback_m?: number | null;
+    maximum_adjacency_gap_m?: number | null;
+    minimum_shared_edge_m?: number | null;
+  };
+  soft?: {
+    preferred_entrance_id?: string | null;
+    minimize_distance_to_entrance?: boolean;
+    minimize_service_route_length?: boolean;
+    avoid_public_arrival?: boolean;
+    orientation?: 'either' | 'parallel_to_boundary' | 'perpendicular_to_boundary' | string;
+    zone_scores?: Record<string, number>;
+  };
+}
+
+export interface CirculationProfile {
+  walking?: { crossing_policy: CrossingPolicy; designer_score?: number | null; minimum_clear_width_m?: number | null };
+  cycling?: { crossing_policy: CrossingPolicy; designer_score?: number | null; minimum_clear_width_m?: number | null; minimum_turning_radius_m?: number | null };
+  service?: { crossing_policy: CrossingPolicy; minimum_clear_width_m?: number | null };
 }
 
 export interface PackagePersona {
@@ -74,6 +120,9 @@ export interface PackageProgramItem {
   constraints?: string[];
   evidence?: string[];
   provenance?: Record<string, unknown>;
+  placement_rules?: PlacementRules;
+  circulation_profile?: CirculationProfile;
+  target_usable_area_m2?: number | null;
 }
 
 export interface PackageRelationship {

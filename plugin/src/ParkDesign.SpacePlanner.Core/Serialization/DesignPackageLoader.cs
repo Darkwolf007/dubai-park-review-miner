@@ -261,6 +261,10 @@ public static class DesignPackageLoader
 
         if (site.TryGetProperty("boundary", out var boundary))
             package.PackageBoundary = ReadPolygonBoundary(boundary, "Canonical site boundary");
+        if (site.TryGetProperty("boundary_segments", out var boundarySegments) && boundarySegments.ValueKind == JsonValueKind.Array)
+            package.BoundarySegments = JsonSerializer.Deserialize<List<BoundarySegmentDefinition>>(boundarySegments.GetRawText(), Options) ?? [];
+        if (site.TryGetProperty("placement_zones", out var placementZones) && placementZones.ValueKind == JsonValueKind.Array)
+            package.PlacementZones = JsonSerializer.Deserialize<List<PlacementZoneDefinition>>(placementZones.GetRawText(), Options) ?? [];
 
         foreach (var item in programs.EnumerateArray())
         {
@@ -272,6 +276,7 @@ public static class DesignPackageLoader
                 Name = ReadString(item, "name") ?? ReadString(item, "id") ?? string.Empty,
                 GeometryType = ReadString(item, "geometry_type") ?? "area",
                 TargetAreaM2 = ReadDouble(item, "target_area"),
+                TargetUsableAreaM2 = ReadDouble(item, "target_usable_area_m2") ?? ReadDouble(item, "target_area"),
                 MinimumAreaM2 = ReadDouble(item, "min_area"),
                 MaximumAreaM2 = ReadDouble(item, "max_area"),
                 Priority = ReadDouble(item, "priority") ?? .5,
@@ -297,6 +302,10 @@ public static class DesignPackageLoader
                     CommonClass = ReadString(item, "common_class")
                 }
             };
+            if (item.TryGetProperty("placement_rules", out var placementRules) && placementRules.ValueKind == JsonValueKind.Object)
+                program.PlacementRules = JsonSerializer.Deserialize<PlacementRulesDefinition>(placementRules.GetRawText(), Options) ?? new();
+            if (item.TryGetProperty("circulation_profile", out var circulationProfile) && circulationProfile.ValueKind == JsonValueKind.Object)
+                program.CirculationProfile = JsonSerializer.Deserialize<ProgramCirculationProfile>(circulationProfile.GetRawText(), Options) ?? new();
 
             if (program.GeometryType.Equals("point", StringComparison.OrdinalIgnoreCase)) package.NodePrograms.Add(program);
             else if (program.GeometryType.Equals("linear", StringComparison.OrdinalIgnoreCase)
@@ -389,6 +398,8 @@ public static class DesignPackageLoader
         package.Relationships ??= [];
         package.Unresolved ??= [];
         package.PackageBoundary ??= [];
+        package.BoundarySegments ??= [];
+        package.PlacementZones ??= [];
         package.AccessCandidates ??= [];
         package.AccessCandidatePairs ??= [];
         package.MovementRequirements ??= new MovementRequirementsDefinition();
@@ -405,6 +416,9 @@ public static class DesignPackageLoader
 
         foreach (var program in package.Programs)
         {
+            program.TargetUsableAreaM2 ??= program.TargetAreaM2;
+            program.PlacementRules ??= new PlacementRulesDefinition();
+            program.CirculationProfile ??= new ProgramCirculationProfile();
             if (string.IsNullOrWhiteSpace(program.Name)) program.Name = program.Id;
             if (string.IsNullOrWhiteSpace(program.LocationZone))
                 program.LocationZone = package.AdaptedFromLegacyManifest ? "INNER_BUFFER" : "UNSPECIFIED";

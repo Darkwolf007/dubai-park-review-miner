@@ -74,6 +74,9 @@ public sealed class GenerateCirculationComponent : GH_Component
         parameters.AddCurveParameter("Raw Grid Paths", "RAW", "Unrefined merged graph chains for routing and smoothing diagnostics.", GH_ParamAccess.list);
         parameters.AddTextParameter("Refinement Data", "RD", "JSON status for each displayed path chain.", GH_ParamAccess.list);
         parameters.AddCurveParameter("Routed Program Footprints", "RPF", "Site-clipped program footprints actually used by the router. In Voronoi mode these are inset/scaled from the territory cells.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Routed Program IDs", "RID", "Program IDs matching Routed Program Footprints.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Routed Program Names", "RN", "Program names matching Routed Program Footprints.", GH_ParamAccess.list);
+        parameters.AddTextParameter("Missing Required Spaces", "MISS", "Required non-overlay area programs absent from the circulation input. Any item here is a hard pipeline error.", GH_ParamAccess.list);
     }
 
     protected override void SolveInstance(IGH_DataAccess data)
@@ -171,6 +174,15 @@ public sealed class GenerateCirculationComponent : GH_Component
             var samplingLength = Math.Max(0.25, Math.Min(1, cellSize / 2));
             var boundary = Ring(boundaryCurve, samplingLength);
             var package = DesignPackageLoader.LoadFile(packagePath);
+            var requiredSpaceIds = package.Programs.Where(program => program.Selected && program.Mandatory
+                    && program.TargetAreaM2 is > 0 && !string.Equals(program.SpatialMode, "overlay", StringComparison.OrdinalIgnoreCase))
+                .Select(program => program.Id).ToHashSet(StringComparer.Ordinal);
+            var suppliedSpaceIds = ids.ToHashSet(StringComparer.Ordinal);
+            var missingRequiredSpaces = requiredSpaceIds.Except(suppliedSpaceIds, StringComparer.Ordinal)
+                .OrderBy(id => id, StringComparer.Ordinal).ToList();
+            data.SetDataList(16, missingRequiredSpaces);
+            if (missingRequiredSpaces.Count > 0)
+                throw new ArgumentException($"MISSING_REQUIRED_SPACES: circulation input is missing {missingRequiredSpaces.Count} required spaces: {string.Join(", ", missingRequiredSpaces)}. Connect the complete PackParkRects Rectangles and Program IDs outputs.");
             var regions = new List<SpaceRegion>();
             var modelTolerance = RhinoDoc.ActiveDoc?.ModelAbsoluteTolerance ?? 0.01;
             var orderedPolygonCurves = programCenters.Count == polygonCurves.Count
@@ -298,6 +310,8 @@ public sealed class GenerateCirculationComponent : GH_Component
                 refined_points = item.Path.RefinedPointCount
             })));
             data.SetDataList(13, routedFootprints);
+            data.SetDataList(14, ids);
+            data.SetDataList(15, names.Count == 0 ? ids : names);
         }
         catch (Exception exception)
         {

@@ -30,6 +30,12 @@ public sealed class SiteAxesDefinition
 
     [JsonPropertyName("ventilation_cuts")]
     public List<MorphologyAxisDefinition> VentilationCuts { get; set; } = [];
+
+    [JsonPropertyName("seed_azimuth_variation_max_deg")]
+    public double SeedAzimuthVariationMaxDeg { get; set; } = 10;
+
+    [JsonPropertyName("seed_lateral_variation_max_m")]
+    public double SeedLateralVariationMaxM { get; set; } = 12;
 }
 
 public sealed class MorphologyAxisDefinition
@@ -156,7 +162,8 @@ public sealed class HydrozoneDefinition
 }
 
 public sealed record MorphologyAxisPlacement(string Id, string Role, IReadOnlyList<Point2> Points,
-    double AzimuthDegFromNorth, string Basis);
+    double AzimuthDegFromNorth, string Basis, double BaselineAzimuthDegFromNorth = 0,
+    double GeneratedOffsetM = 0, int Seed = 0, double Score = 0);
 
 public sealed record BarahaCandidate(Point2 Point, double RadiusM, IReadOnlyList<string> RouteProgramIds,
     double Score, string Basis);

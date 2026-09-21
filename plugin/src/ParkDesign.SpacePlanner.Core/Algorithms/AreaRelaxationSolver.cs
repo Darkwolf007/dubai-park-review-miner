@@ -134,7 +134,19 @@ public static class AreaRelaxationSolver
         return edge.RelationshipType == "avoid" ? 1 / Math.Max(1, distance) : 0;
     }
 
-    private static double Suitability(AreaAgent agent, GridDefinition grid) => grid.Cells.Select(c => (Cell: c, Score: CellScore(c, agent))).Where(x => x.Score.HasValue).OrderBy(x => PolygonMath.Distance(agent.Position, new(x.Cell.X, x.Cell.Y))).ThenBy(x => x.Cell.Id, StringComparer.Ordinal).Select(x => x.Score!.Value).FirstOrDefault();
+    private static double Suitability(AreaAgent agent, GridDefinition grid)
+    {
+        var best = double.PositiveInfinity; var score = 0d; string? bestId = null;
+        foreach (var cell in grid.Cells)
+        {
+            var value = CellScore(cell, agent);
+            if (!value.HasValue) continue;
+            var distance = PolygonMath.Distance(agent.Position, new(cell.X, cell.Y));
+            if (distance > best || (distance == best && bestId is not null && StringComparer.Ordinal.Compare(cell.Id, bestId) >= 0)) continue;
+            best = distance; bestId = cell.Id; score = value.Value;
+        }
+        return score;
+    }
     private static double? CellScore(GridCell cell, AreaAgent agent) { if (cell.Constraint || cell.ProgramConstraints.ContainsKey(agent.ProgramId)) return null; foreach (var key in new[] { agent.SuitabilityField, $"{agent.ProgramId}_suitability", $"{agent.ProgramId}_opportunity" }.Where(k => !string.IsNullOrWhiteSpace(k))) if (cell.Scores.TryGetValue(key!, out var value) && value.HasValue) return Math.Clamp(value.Value, 0, 1); return 0; }
 
     private static AreaSolverDiagnostics Diagnose(List<AreaAgent> agents, Dictionary<string, Point2> original, IReadOnlyList<Point2> boundary, GridDefinition grid, SpatialRelationshipGraph graph, AreaSolverWeights weights, int iterations, bool converged)

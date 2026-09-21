@@ -38,6 +38,12 @@ public sealed class DesignPackage
     public List<Point2> PackageBoundary { get; set; } = [];
 
     [JsonIgnore]
+    public List<BoundarySegmentDefinition> BoundarySegments { get; set; } = [];
+
+    [JsonIgnore]
+    public List<PlacementZoneDefinition> PlacementZones { get; set; } = [];
+
+    [JsonIgnore]
     public List<AccessCandidateDefinition> AccessCandidates { get; set; } = [];
 
     [JsonIgnore]
@@ -75,6 +81,40 @@ public sealed class DesignPackage
 
     [JsonIgnore]
     public List<MovementDemandDefinition> MovementDemands { get; set; } = [];
+}
+
+public sealed class BoundarySegmentDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("roles")]
+    public List<string> Roles { get; set; } = [];
+    [JsonPropertyName("authority")]
+    public string Authority { get; set; } = string.Empty;
+    [JsonPropertyName("coordinates")]
+    public List<List<double>> Coordinates { get; set; } = [];
+}
+
+public sealed class PlacementZoneDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "candidate_zone";
+    [JsonPropertyName("priority")]
+    public double Priority { get; set; } = .5;
+    [JsonPropertyName("authority")]
+    public string Authority { get; set; } = string.Empty;
+    [JsonPropertyName("geometry")]
+    public PolygonGeometryDefinition Geometry { get; set; } = new();
+}
+
+public sealed class PolygonGeometryDefinition
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "Polygon";
+    [JsonPropertyName("coordinates")]
+    public List<List<List<double>>> Coordinates { get; set; } = [];
 }
 
 public sealed class MovementDemandDefinition
@@ -267,6 +307,82 @@ public sealed class ProgramDefinition
 
     [JsonPropertyName("coverage_target_percent")]
     public double? CoverageTargetPercent { get; set; }
+
+    [JsonPropertyName("target_usable_area_m2")]
+    public double? TargetUsableAreaM2 { get; set; }
+
+    [JsonPropertyName("placement_rules")]
+    public PlacementRulesDefinition PlacementRules { get; set; } = new();
+
+    [JsonPropertyName("circulation_profile")]
+    public ProgramCirculationProfile CirculationProfile { get; set; } = new();
+}
+
+public sealed class PlacementRulesDefinition
+{
+    [JsonPropertyName("hard")]
+    public HardPlacementRules Hard { get; set; } = new();
+
+    [JsonPropertyName("soft")]
+    public SoftPlacementRules Soft { get; set; } = new();
+}
+
+public sealed class HardPlacementRules
+{
+    [JsonPropertyName("must_touch_boundary")]
+    public bool MustTouchBoundary { get; set; }
+    [JsonPropertyName("allowed_boundary_segment_ids")]
+    public List<string> AllowedBoundarySegmentIds { get; set; } = [];
+    [JsonPropertyName("allowed_boundary_roles")]
+    public List<string> AllowedBoundaryRoles { get; set; } = [];
+    [JsonPropertyName("allowed_zone_ids")]
+    public List<string> AllowedZoneIds { get; set; } = [];
+    [JsonPropertyName("must_be_adjacent_to")]
+    public List<string> MustBeAdjacentTo { get; set; } = [];
+    [JsonPropertyName("maximum_boundary_setback_m")]
+    public double? MaximumBoundarySetbackM { get; set; }
+    [JsonPropertyName("maximum_adjacency_gap_m")]
+    public double? MaximumAdjacencyGapM { get; set; }
+    [JsonPropertyName("minimum_shared_edge_m")]
+    public double? MinimumSharedEdgeM { get; set; }
+}
+
+public sealed class SoftPlacementRules
+{
+    [JsonPropertyName("preferred_entrance_id")]
+    public string? PreferredEntranceId { get; set; }
+    [JsonPropertyName("minimize_distance_to_entrance")]
+    public bool MinimizeDistanceToEntrance { get; set; }
+    [JsonPropertyName("minimize_service_route_length")]
+    public bool MinimizeServiceRouteLength { get; set; }
+    [JsonPropertyName("avoid_public_arrival")]
+    public bool AvoidPublicArrival { get; set; }
+    [JsonPropertyName("orientation")]
+    public string Orientation { get; set; } = "either";
+    [JsonPropertyName("zone_scores")]
+    public Dictionary<string, double> ZoneScores { get; set; } = [];
+}
+
+public sealed class ProgramCirculationProfile
+{
+    [JsonPropertyName("walking")]
+    public ModeCrossingRule Walking { get; set; } = new() { CrossingPolicy = "allowed", MinimumClearWidthM = 1.5 };
+    [JsonPropertyName("cycling")]
+    public ModeCrossingRule Cycling { get; set; } = new() { CrossingPolicy = "controlled_only", MinimumClearWidthM = 2.5 };
+    [JsonPropertyName("service")]
+    public ModeCrossingRule Service { get; set; } = new() { CrossingPolicy = "forbidden", MinimumClearWidthM = 3 };
+}
+
+public sealed class ModeCrossingRule
+{
+    [JsonPropertyName("crossing_policy")]
+    public string CrossingPolicy { get; set; } = "forbidden";
+    [JsonPropertyName("designer_score")]
+    public double? DesignerScore { get; set; }
+    [JsonPropertyName("minimum_clear_width_m")]
+    public double? MinimumClearWidthM { get; set; }
+    [JsonPropertyName("minimum_turning_radius_m")]
+    public double? MinimumTurningRadiusM { get; set; }
 }
 
 public sealed class ProgramOntologyDefinition
